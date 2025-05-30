@@ -1,57 +1,57 @@
 import { list } from '@keystone-6/core'
-import { text, relationship, select, checkbox, integer, timestamp } from '@keystone-6/core/fields'
+import { text, timestamp, checkbox, integer, select } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
 const listConfigurations = list({
   fields: {
-    name: text({
-      label: '活動名稱',
+    title: text({
+      label: '職位名稱',
       validation: { isRequired: true },
     }),
-    heroImage: relationship({
-      ref: 'Photo',
-      label: '首圖',
-    }),
-    organizer: text({
-      label: '主辦單位',
-    }),
-    contactInfo: text({
-      label: '聯絡方式',
-    }),
-    eventType: select({
-      label: '活動類型',
-      type: 'string',
-      options: [
-        { label: '實體活動', value: 'physical' },
-        { label: '線上活動', value: 'online' },
-      ],
+    company: text({
+      label: '招募單位',
       validation: { isRequired: true },
     }),
-    startDate: timestamp({
-      label: '活動開始日期',
-      validation: { isRequired: true },
-    }),
-    endDate: timestamp({
-      label: '活動結束日期',
-      validation: { isRequired: true },
-    }),
-    location: text({
-      label: '活動地點',
-      validation: { isRequired: true },
-    }),
-    fee: text({
-      label: '活動費用',
-    }),
-    registrationUrl: text({
-      label: '活動／報名網址',
-    }),
-    content: text({
-      label: '活動內容',
+    jobDescription: text({
+      label: '工作內容',
       ui: {
         displayMode: 'textarea',
       },
+      validation: { isRequired: true },
+    }),
+    requirements: text({
+      label: '需求與條件',
+      ui: {
+        displayMode: 'textarea',
+      },
+      validation: { isRequired: true },
+    }),
+    salary: text({
+      label: '薪資待遇',
+      validation: { isRequired: true },
+    }),
+    bonus: text({
+      label: '加分條件',
+      ui: {
+        displayMode: 'textarea',
+      },
+    }),
+    applicationMethod: text({
+      label: '應徵方式',
+      ui: {
+        displayMode: 'textarea',
+      },
+      validation: { isRequired: true },
+    }),
+    startDate: timestamp({
+      label: '徵才開始日期',
+      validation: { isRequired: true },
+    }),
+    endDate: timestamp({
+      label: '徵才截止日期',
+      validation: { isRequired: true },
     }),
     isApproved: checkbox({
       label: '審核通過',
@@ -80,7 +80,7 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['name', 'organizer', 'state', 'isApproved', 'showOnHomepage', 'sortOrder'],
+      initialColumns: ['title', 'company', 'state', 'isApproved', 'showOnHomepage', 'sortOrder'],
       pageSize: 50,
     },
   },
@@ -97,4 +97,4 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+export default utils.addTrackingFields(listConfigurations) 

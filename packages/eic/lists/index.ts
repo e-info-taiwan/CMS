@@ -1,25 +1,59 @@
-import Post from './Post'
-import Tag from './Tag'
-import Category from './Category'
-import Audio from './Audio'
-import Video from './Video'
-import Data from './Data'
-import EditorChoice from './EditorChoice'
-import User from './User'
+import Ad from './Ad'
+import Attachment from './Attachment'
 import Author from './Author'
-import Image from './Image'
-import Award from './Award'
-import PageVariable from './PageVariable'
+import Category from './Category'
+import Classify from './Classify'
+import Config from './Config'
+import Donation from './Donation'
+import DonationPV from './DonationPV'
+import Event from './Event'
+import Favorite from './Favorite'
+import HomepagePick from './HomepagePick'
+import InfoGraph from './InfoGraph'
+import Job from './Job'
+import Location from './Location'
+import Member from './Member'
+import Newsletter from './Newsletter'
+import Photo from './Photo'
+import Poll from './Poll'
+import PollResult from './PollResult'
+import Post from './Post'
+import ReadingHistory from './ReadingHistory'
+import Section from './Section'
+import Tag from './Tag'
+import Timeline from './Timeline'
+import TimelineItem from './TimelineItem'
+import Topic from './Topic'
+import User from './User'
+import Video from './Video'
 
 export const listDefinition = {
-  EditorChoice,
-  Photo: Image,
+  Ad,
+  Attachment,
   Author,
-  PageVariable,
-  Video,
-  AudioFile: Audio,
-  Tag,
   Category,
-  User,
+  Classify,
+  Config,
+  Donation,
+  DonationPV,
+  Event,
+  Favorite,
+  HomepagePick,
+  InfoGraph,
+  Job,
+  Location,
+  Member,
+  Newsletter,
+  Photo,
+  Poll,
+  PollResult,
   Post,
+  ReadingHistory,
+  Section,
+  Tag,
+  Timeline,
+  TimelineItem,
+  Topic,
+  User,
+  Video,
 }

@@ -1,43 +1,50 @@
 import { list } from '@keystone-6/core'
-import { text, relationship } from '@keystone-6/core/fields'
-import { addTrackingFields } from '../../utils/trackingHandler'
-import {
-  allowRoles,
-  admin,
-  moderator,
-  editor,
-  owner,
-} from '../../utils/accessControl'
+import { relationship, timestamp, text } from '@keystone-6/core/fields'
+import { utils } from '@mirrormedia/lilith-core'
+
+const { allowRoles, admin, moderator, editor } = utils.accessControl
 
 const listConfigurations = list({
-  // ui: {
-  //     isHidden: true,
-  // },
   fields: {
-    name: text({ label: '選項', validation: { isRequired: true }, isIndexed: 'unique' }),
-    poll: relationship({ 
-	  ref: 'Poll.result', 
-	  ui: {
-		hideCreate: true,
-	  },
-	  many: false
-	}),
-    option: relationship({ 
-	  ref: 'PollOption.result', 
-	  ui: {
-		hideCreate: true,
-	  },
-	  many: false
-	}),
+    poll: relationship({
+      ref: 'Poll',
+      label: '投票工具名稱',
+      many: false,
+    }),
+    member: relationship({
+      ref: 'Member',
+      label: '會員',
+      many: true,
+    }),
+    post: relationship({
+      ref: 'Post.pollResult',
+      label: '相關文章',
+      many: false,
+    }),
+    // TODO: Review poll result format
+    result: text({
+      label: '投票結果',
+      validation: { isRequired: true },
+    }),
+    endTime: timestamp({
+      label: '投票截止時間',
+      validation: { isRequired: true },
+    }),
+  },
+  ui: {
+    listView: {
+      initialColumns: ['poll', 'member', 'result', 'endTime'],
+      pageSize: 50,
+    },
   },
   access: {
     operation: {
       query: allowRoles(admin, moderator, editor),
-      update: allowRoles(admin, moderator),
-      create: allowRoles(admin, moderator),
+      update: allowRoles(admin, moderator, editor),
+      create: allowRoles(admin, moderator, editor),
       delete: allowRoles(admin),
     },
   },
 })
 
-export default addTrackingFields(listConfigurations)
+export default utils.addTrackingFields(listConfigurations)

@@ -1,9 +1,5 @@
 import { list } from '@keystone-6/core'
-import {
-  text,
-  relationship,
-  integer,
-} from '@keystone-6/core/fields'
+import { text, relationship, integer, checkbox, select } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
@@ -24,24 +20,35 @@ const listConfigurations = list({
       label: '名稱',
       validation: { isRequired: true },
     }),
+    style: select({
+      label: '列表頁樣式',
+      defaultValue: 'default',
+      options: [
+        { label: '一般文章列表頁', value: 'default' },
+        { label: '專欄列表頁', value: 'column' },
+      ],
+    }),
+    showInHeader: checkbox({
+      label: '顯示於Header',
+      defaultValue: false,
+    }),
     sortOrder: integer({
       label: '排序',
-      defaultValue: 1,
+    }),
+    categories: relationship({
+      ref: 'Category.section',
+      many: true,
+      label: '包含的中分類',
     }),
     posts: relationship({
-      ref: 'Post.classify',
+      ref: 'Post.section',
       many: true,
       label: '相關文章',
-    }),
-    category: relationship({
-      ref: 'Category.classifies',
-      many: false,
-      label: '所屬中分類',
     }),
   },
   ui: {
     listView: {
-      initialColumns: ['name', 'slug', 'sortOrder', 'category'],
+      initialColumns: ['name', 'slug', 'style', 'showInHeader', 'sortOrder'],
       initialSort: {
         field: 'sortOrder',
         direction: 'ASC',
@@ -57,6 +64,9 @@ const listConfigurations = list({
       delete: allowRoles(admin),
     },
   },
+  graphql: {
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' }
+  },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+export default utils.addTrackingFields(listConfigurations) 
