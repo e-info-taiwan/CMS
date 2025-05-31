@@ -9,7 +9,6 @@ const listConfigurations = list({
     member: relationship({
       ref: 'Member',
       label: '會員',
-      many: true,
     }),
     post: relationship({
       ref: 'Post.pollResults',
