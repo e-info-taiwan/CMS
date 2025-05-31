@@ -32,7 +32,6 @@ const listConfigurations = list({
         displayMode: 'textarea',
       },
     }),
-    // todo
     tags: text({
       label: '標籤',
       ui: {

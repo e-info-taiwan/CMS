@@ -18,7 +18,6 @@ const listConfigurations = list({
       ref: 'Photo',
       label: '圖片',
     }),
-    // TODO: Check if this field is needed
     imageUrl: text({
       label: '圖片連結',
       validation: { isRequired: true },

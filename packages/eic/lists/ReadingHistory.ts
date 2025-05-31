@@ -14,14 +14,10 @@ const listConfigurations = list({
       ref: 'Post',
       label: '文章',
     }),
-    readTime: timestamp({
-      label: '閱讀瀏覽日期',
-      validation: { isRequired: true },
-    }),
   },
   ui: {
     listView: {
-      initialColumns: ['member', 'post', 'readTime'],
+      initialColumns: ['member', 'post'],
       pageSize: 50,
     },
   },
