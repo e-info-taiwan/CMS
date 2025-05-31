@@ -147,7 +147,7 @@ const listConfigurations = list({
       ref: 'Poll.posts',
       label: '投票工具',
     }),
-    pollResult: relationship({
+    pollResults: relationship({
       ref: 'PollResult.post',
       label: '投票結果',
     }),
