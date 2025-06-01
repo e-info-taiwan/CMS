@@ -6,6 +6,11 @@ const { allowRoles, admin, moderator, editor } = utils.accessControl
 
 const listConfigurations = list({
   fields: {
+    poll: relationship({
+      ref: 'Poll',
+      label: '投票工具名稱',
+      many: false,
+    }),
     member: relationship({
       ref: 'Member',
       label: '會員',
@@ -22,7 +27,7 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['member', 'result'],
+      initialColumns: ['member', 'result', 'post'],
       pageSize: 50,
     },
   },
