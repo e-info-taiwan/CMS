@@ -2,13 +2,7 @@
   "private": true,
   "workspaces": [
     "packages/core",
-    "packages/draft-editor",
-    "packages/draft-renderer",
-    "packages/editools",
-    "packages/mirrormedia",
-    "packages/readr",
-    "packages/openrelationship",
-    "packages/mirrordaily"
+    "packages/eic"
   ],
   "scripts": {
     "prepare": "husky install",

@@ -1,7 +1,7 @@
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
 import { list } from '@keystone-6/core'
-import { relationship, checkbox, select, text } from '@keystone-6/core/fields'
+import { relationship, checkbox, integer, text } from '@keystone-6/core/fields'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
@@ -13,55 +13,40 @@ const listConfigurations = list({
       validation: { isRequired: true },
     }),
     brief: text({
-      label: '前言',
-      ui: { displayMode: 'textarea' },
+      label: '標籤內容',
     }),
-    heroVideo: relationship({
-      ref: 'Video',
-      label: 'Leading Video',
-    }),
-    state: select({
-      defaultValue: 'active',
-      options: [
-        { label: 'inactive', value: 'inactive' },
-        { label: 'active', value: 'active' },
-        { label: 'archived', value: 'archived' },
-      ],
-      label: '狀態',
-    }),
-    ogTitle: text({
-      validation: { isRequired: false },
-      label: 'FB分享標題',
-    }),
-    ogDescription: text({
-      validation: { isRequired: false },
-      label: 'FB分享說明',
-    }),
-    ogImage: relationship({
+    heroImage: relationship({
       ref: 'Photo',
-      label: 'FB分享縮圖',
+      label: '標題頁首圖',
     }),
     isFeatured: checkbox({
-      label: '置頂',
+      label: '是否顯示在首頁',
+    }),
+    sortOrder: integer({
+      label: '排序',
     }),
     posts: relationship({
       ref: 'Post.tags',
       many: true,
       label: '相關文章',
     }),
-    images: relationship({
-      ref: 'Photo.tags',
+    topics: relationship({
+      ref: 'Topic.tags',
       many: true,
-      label: '相關標籤',
+      label: '相關專題',
     }),
   },
   access: {
     operation: {
       query: allowRoles(admin, moderator, editor),
-      update: allowRoles(admin, moderator),
-      create: allowRoles(admin, moderator),
+      update: allowRoles(admin, moderator, editor),
+      create: allowRoles(admin, moderator, editor),
       delete: allowRoles(admin),
     },
   },
+  graphql: {
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' }
+  },
 })
+
 export default utils.addTrackingFields(listConfigurations)

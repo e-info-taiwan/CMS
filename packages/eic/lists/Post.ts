@@ -3,26 +3,19 @@ import { customFields, utils } from '@mirrormedia/lilith-core'
 import { list } from '@keystone-6/core'
 import {
   checkbox,
-  integer,
+  multiselect,
   relationship,
   timestamp,
   text,
   select,
-  json,
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 
-const { allowRoles, admin, moderator, editor } = utils.accessControl
+const { allowRoles, admin, moderator, editor, contributor } = utils.accessControl
 
 const listConfigurations = list({
   fields: {
-    slug: text({
-      label: '網址名稱（英文）',
-    }),
-    sortOrder: integer({
-      label: '排列順序',
-    }),
-    name: text({
+    title: text({
       label: '標題',
       validation: { isRequired: true },
     }),
@@ -36,251 +29,161 @@ const listConfigurations = list({
     state: select({
       label: '狀態',
       options: [
-        { label: 'draft', value: 'draft' },
-        { label: 'published', value: 'published' },
-        { label: 'scheduled', value: 'scheduled' },
-        { label: 'archived', value: 'archived' },
-        { label: 'invisible', value: 'invisible' },
+        { label: '已發布', value: 'published' },
+        { label: '預約發佈', value: 'scheduled' },
+        { label: '草稿', value: 'draft' },
+        { label: '已下線', value: 'archived' },
+        { label: '前台不可見', value: 'invisible' },
       ],
       defaultValue: 'draft',
       isIndexed: true,
     }),
     publishTime: timestamp({
-      isIndexed: true,
-      label: '發佈日期',
+      label: '發佈時間',
+      validation: { isRequired: true },
     }),
-    categories: relationship({
-      ref: 'Category.relatedPost',
-      label: '分類',
-      many: true,
-      ui: {
-        labelField: 'title',
-      },
+    ogImage: relationship({
+      ref: 'Photo',
+      label: 'og image',
     }),
-    writers: relationship({
-      ref: 'Author.posts',
-      many: true,
-      label: '作者',
-      ui: {
-        labelField: 'name',
-      },
-    }),
-    photographers: relationship({
-      many: true,
-      label: '攝影',
+    author1: relationship({
       ref: 'Author',
-      ui: {
-        labelField: 'name',
-      },
+      label: '作者-角色1',
     }),
-    cameraOperators: relationship({
-      label: '影音',
-      many: true,
+    author2: relationship({
       ref: 'Author',
-      ui: {
-        labelField: 'name',
-      },
+      label: '作者-角色2',
     }),
-    designers: relationship({
-      label: '設計',
-      many: true,
+    author3: relationship({
       ref: 'Author',
-      ui: {
-        labelField: 'name',
-      },
-    }),
-    engineers: relationship({
-      many: true,
-      label: '工程',
-      ref: 'Author',
-      ui: {
-        labelField: 'name',
-      },
-    }),
-    dataAnalysts: relationship({
-      many: true,
-      label: '資料分析',
-      ref: 'Author',
-      ui: {
-        labelField: 'name',
-      },
+      label: '作者-角色3',
     }),
     otherByline: text({
-      validation: { isRequired: false },
       label: '作者（其他）',
-      db: {
-        isNullable: true,
-      },
     }),
-    leadingEmbeddedCode: text({
-      label: 'Leading embedded code',
-      ui: { displayMode: 'textarea' },
+    locations: relationship({
+      ref: 'Location',
+      label: '地點',
+      many: true,
     }),
-    heroVideo: relationship({
-      label: 'Leading Video',
-      ref: 'Video',
+    section: relationship({
+      ref: 'Section.posts',
+      label: '大分類',
+    }),
+    category: relationship({
+      ref: 'Category.posts',
+      label: '中分類',
+    }),
+    classify: relationship({
+      ref: 'Classify.posts',
+      label: '小分類',
+    }),
+    topic: relationship({
+      ref: 'Topic.posts',
+      label: '專題',
+    }),
+    style: select({
+      label: '文章樣式',
+      options: [
+        { label: '一般文章頁', value: 'default' },
+        { label: '編輯直送', value: 'editor' },
+      ],
+      defaultValue: 'default',
     }),
     heroImage: relationship({
-      label: '首圖',
       ref: 'Photo',
+      label: '首圖',
     }),
     heroCaption: text({
       label: '首圖圖說',
-      validation: { isRequired: false },
-      db: {
-        isNullable: true,
-      },
     }),
-    heroImageSize: select({
-      label: '首圖尺寸',
-      options: [
-        { label: 'extend', value: 'extend' },
-        { label: 'normal', value: 'normal' },
-        { label: 'small', value: 'small' },
-      ],
-      defaultValue: 'normal',
-    }),
-    summary: customFields.richTextEditor({
-      label: '重點摘要',
-      disabledButtons: ['header-three', 'header-four'],
-      website: 'readr',
-    }),
-    // brief: customFields.richTextEditor({
-    //   label: '前言',
-    //   disabledButtons: [],
-    //   website: 'readr',
-    // }),
     content: customFields.richTextEditor({
       label: '內文',
       disabledButtons: ['header-three', 'header-four'],
       website: 'readr',
     }),
-    tags: relationship({
-      ref: 'Tag.posts',
+    attachments: relationship({
+      ref: 'Attachment.posts',
+      label: '附加檔案',
       many: true,
-      label: '標籤',
     }),
-    wordCount: integer({
-      label: '字數',
-    }),
-    readingTime: integer({
-      label: '閱讀時間',
+    citations: text({
+      label: '參考資料',
+      ui: {
+        displayMode: 'textarea',
+      },
     }),
     relatedPosts: relationship({
       ref: 'Post',
-      many: true,
       label: '相關文章',
+      many: true,
     }),
-    ogTitle: text({
-      validation: { isRequired: false },
-      label: 'FB分享標題',
-      db: {
-        isNullable: true,
-      },
+    ad1: relationship({
+      ref: 'Ad',
+      label: '廣告位置1',
     }),
-    ogDescription: text({
-      label: 'FB分享說明',
-      validation: { isRequired: false },
-      db: {
-        isNullable: true,
-      },
+    ad2: relationship({
+      ref: 'Ad',
+      label: '廣告位置2',
     }),
-    ogImage: relationship({
-      label: 'FB分享縮圖',
-      ref: 'Photo',
+    // TODO: Implement tag count limit: <=10
+    tags: relationship({
+      ref: 'Tag.posts',
+      label: '標籤',
+      many: true,
     }),
-    isFeatured: checkbox({
-      label: '置頂',
+    rssTargets: multiselect({
+      label: '送出RSS',
+      type: 'string',
+      options: [
+        { label: 'twitter X串接', value: 'twitter' },
+        { label: 'yahoo news', value: 'yahoo' },
+        { label: 'Line today', value: 'line' },
+        { label: 'Mesh', value: 'mesh' },
+        { label: '環境新聞RSS(公版)', value: 'eic' },
+      ],
     }),
-    css: text({
-      ui: { displayMode: 'textarea' },
-      label: 'CSS',
+    poll: relationship({
+      ref: 'Poll.posts',
+      label: '投票工具',
     }),
-    summaryApiData: json({
-      label: '資料庫使用',
+    pollResults: relationship({
+      ref: 'PollResult.post',
+      label: '投票結果',
+    }),
+    aiPollHelper: checkbox({
+      label: 'AI 投票小幫手',
+      defaultValue: false,
+    }),
+    // TODO: Implement AI helper result pipeline
+    aiPollHelperResult: text({
+      label: 'AI 投票小幫手建議結果',
       ui: {
-        createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
-      },
-    }),
-    // briefApiData: json({
-    //   label: '資料庫使用',
-    //   ui: {
-    //     createView: { fieldMode: 'hidden' },
-    //     itemView: { fieldMode: 'hidden' },
-    //   },
-    // }),
-    apiData: json({
-      label: '資料庫使用',
-      ui: {
-        createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
-      },
-    }),
-    actionlistApiData: json({
-      label: '資料庫使用',
-      ui: {
-        createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
-      },
-    }),
-    citationApiData: json({
-      label: '資料庫使用',
-      ui: {
-        createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
+        displayMode: 'textarea',
       },
     }),
   },
   ui: {
-    labelField: 'name',
     listView: {
-      initialColumns: ['id', 'slug', 'state'],
+      initialColumns: ['id', 'title', 'state', 'publishTime'],
       initialSort: { field: 'publishTime', direction: 'DESC' },
       pageSize: 50,
     },
   },
+  // TODO: contributor can only create draft and cannot edit post's state
   access: {
     operation: {
-      query: allowRoles(admin, moderator, editor),
-      update: allowRoles(admin, moderator, editor),
-      create: allowRoles(admin, moderator, editor),
+      query: allowRoles(admin, moderator, editor, contributor),
+      update: allowRoles(admin, moderator, editor, contributor),
+      create: allowRoles(admin, moderator, editor, contributor),
       delete: allowRoles(admin),
     },
   },
   graphql: {
     cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
+  // TODO: Implement hooks
   hooks: {
-    resolveInput: async ({ resolvedData }) => {
-      const { summary, content, actionList, citation } = resolvedData
-      if (content) {
-        resolvedData.apiData = customFields.draftConverter
-          .convertToApiData(content)
-          .toJS()
-      }
-      if (summary) {
-        resolvedData.summaryApiData = customFields.draftConverter
-          .convertToApiData(summary)
-          .toJS()
-      }
-      // if (brief) {
-      //   resolvedData.briefApiData = customFields.draftConverter
-      //     .convertToApiData(brief)
-      //     .toJS()
-      // }
-      if (actionList) {
-        resolvedData.actionlistApiData = customFields.draftConverter
-          .convertToApiData(actionList)
-          .toJS()
-      }
-      if (citation) {
-        resolvedData.citationApiData = customFields.draftConverter
-          .convertToApiData(citation)
-          .toJS()
-      }
-      return resolvedData
-    },
   },
 })
 
@@ -296,57 +199,4 @@ if (typeof envVar.invalidateCDNCacheServerURL === 'string') {
   )
 }
 
-export default utils.addManualOrderRelationshipFields(
-  [
-    {
-      fieldName: 'manualOrderOfWriters',
-      fieldLabel: '作者手動排序結果',
-      targetFieldName: 'writers',
-      targetListName: 'Author',
-      targetListLabelField: 'name',
-    },
-    {
-      fieldName: 'manualOrderOfPhotographers',
-      fieldLabel: '攝影手動排序結果',
-      targetFieldName: 'photographers',
-      targetListName: 'Author',
-      targetListLabelField: 'name',
-    },
-    {
-      fieldName: 'manualOrderOfCameraOperators',
-      fieldLabel: '影音手動排序結果',
-      targetFieldName: 'cameraOperators',
-      targetListName: 'Author',
-      targetListLabelField: 'name',
-    },
-    {
-      fieldName: 'manualOrderOfDesigners',
-      fieldLabel: '設計手動排序結果',
-      targetFieldName: 'designers',
-      targetListName: 'Author',
-      targetListLabelField: 'name',
-    },
-    {
-      fieldName: 'manualOrderOfEngineers',
-      fieldLabel: '工程手動排序結果',
-      targetFieldName: 'engineers',
-      targetListName: 'Author',
-      targetListLabelField: 'name',
-    },
-    {
-      fieldName: 'manualOrderOfDataAnalysts',
-      fieldLabel: '資料分析手動排序結果',
-      targetFieldName: 'dataAnalysts',
-      targetListName: 'Author',
-      targetListLabelField: 'name',
-    },
-    {
-      fieldName: 'manualOrderOfRelatedPosts',
-      fieldLabel: '相關文章手動排序結果',
-      targetFieldName: 'relatedPosts',
-      targetListName: 'Post',
-      targetListLabelField: 'name',
-    },
-  ],
-  extendedListConfigurations
-)
+export default extendedListConfigurations

@@ -1,7 +1,6 @@
 import { list } from '@keystone-6/core'
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
-
 import { text, password, select, checkbox } from '@keystone-6/core/fields'
 
 const { allowRolesForUsers, admin, moderator, editor } = utils.accessControl
@@ -16,7 +15,6 @@ const listConfigurations = list({
       label: 'Email',
       validation: { isRequired: true },
       isIndexed: 'unique',
-      isFilterable: true,
     }),
     password: password({
       label: '密碼',
@@ -27,33 +25,26 @@ const listConfigurations = list({
       type: 'string',
       options: [
         {
-          label: 'admin',
-          value: 'admin',
+          label: 'Pro Editor',
+          value: 'pro_editor',
         },
         {
-          label: 'moderator',
-          value: 'moderator',
-        },
-        {
-          label: 'editor',
+          label: 'Editor',
           value: 'editor',
         },
         {
-          label: 'contributor',
-          value: 'contributor',
+          label: 'Volunteer',
+          value: 'volunteer',
         },
       ],
       validation: { isRequired: true },
     }),
-    isProtected: checkbox({
-      defaultValue: false,
-    }),
-    // posts: relationship({ ref: 'Post.author', many: true }),
   },
 
   ui: {
     listView: {
-      initialColumns: ['name', 'role'],
+      initialColumns: ['name', 'email', 'role'],
+      pageSize: 50,
     },
   },
   access: {
@@ -64,7 +55,10 @@ const listConfigurations = list({
       delete: allowRolesForUsers(admin),
     },
   },
+  graphql: {
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
+  },
   hooks: {},
 })
 
-export default listConfigurations
+export default utils.addTrackingFields(listConfigurations)

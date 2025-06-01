@@ -1,27 +1,25 @@
-// @ts-ignore: no definition
 import { list } from '@keystone-6/core'
-import { relationship, text } from '@keystone-6/core/fields'
+import { relationship, timestamp } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
-
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
 const listConfigurations = list({
   fields: {
-    name: text({
-      label: '作者姓名',
-      validation: { isRequired: true },
+    member: relationship({
+      ref: 'Member',
+      label: '會員',
     }),
-    image: relationship({
-      label: '作者照片',
-      ref: 'Photo',
+    post: relationship({
+      ref: 'Post',
+      label: '文章',
     }),
-    bio: text({
-      label: '簡介',
-      ui: {
-        displayMode: 'textarea',
-      },
-    }),
+  },
+  ui: {
+    listView: {
+      initialColumns: ['member', 'post'],
+      pageSize: 50,
+    },
   },
   access: {
     operation: {
@@ -31,6 +29,9 @@ const listConfigurations = list({
       delete: allowRoles(admin),
     },
   },
+  graphql: {
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
+  },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+export default utils.addTrackingFields(listConfigurations) 

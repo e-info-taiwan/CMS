@@ -1,139 +1,87 @@
 import { list } from '@keystone-6/core'
-import { text, select, relationship, timestamp } from '@keystone-6/core/fields'
-import { CustomRelationship } from '../../customFields/CustomRelationship'
-import { addTrackingFields } from '../../utils/trackingHandler'
-import { allowRoles, admin, moderator, editor } from '../../utils/accessControl'
+import { text, relationship, select } from '@keystone-6/core/fields'
+import { utils } from '@mirrormedia/lilith-core'
+
+const { allowRoles, admin, moderator, editor } = utils.accessControl
 
 const listConfigurations = list({
-  // ui: {
-  //     isHidden: true,
-  // },
   fields: {
     name: text({
-      label: '標題',
-      validation: { isRequired: true },
-      isIndexed: 'unique',
-    }),
-    image: CustomRelationship({
-      label: '首圖',
-      ref: 'Photo',
-      ui: {
-        hideCreate: true,
-      },
-      customConfig: {
-        isImage: true,
-      },
-    }),
-    choice: select({
-      label: '選項',
-      options: [
-        { label: '單選', value: 'single' },
-        { label: '複選', value: 'multiple' },
-      ],
-    }),
-    type: select({
-      label: '結果樣式',
-      options: [
-        { label: '圓餅', value: 'pie' },
-        { label: '長條圖', value: 'bar' },
-        { label: '百分比', value: 'percentage' },
-      ],
-    }),
-    status: select({
-      options: [
-        { label: '上架', value: 'published' },
-        { label: '草稿', value: 'draft' },
-        { label: '下架', value: 'archived' },
-      ],
-      defaultValue: 'draft',
-      ui: {
-        displayMode: 'segmented-control',
-      },
-    }),
-    startTime: timestamp({
-      label: '開始時間（必填）',
+      label: '名稱',
       validation: { isRequired: true },
     }),
-    endTime: timestamp({
-      label: '結束時間（必填）',
+    content: text({
+      label: '投票內容',
       validation: { isRequired: true },
-    }),
-    publishTime: timestamp({
-      label: '發布時間（必填）（預設為現在）',
-      validation: { isRequired: true },
-      defaultValue: { kind: 'now' },
-    }),
-    description: text({
-      label: '描述',
       ui: {
         displayMode: 'textarea',
       },
     }),
-    options: relationship({
-      ref: 'PollOption.poll',
-      ui: {
-        hideCreate: true,
-        displayMode: 'select',
-        cardFields: ['name'],
-        inlineEdit: { fields: ['name'] },
-        linkToItem: true,
-        inlineConnect: true,
-        inlineCreate: { fields: ['name'] },
-      },
-      many: true,
+    option1: text({
+      label: '投票選項1',
     }),
-    result: relationship({
-      ref: 'PollResult.poll',
-      ui: {
-        hideCreate: true,
-      },
-      many: true,
+    option1Image: relationship({
+      ref: 'Photo',
+      label: '投票選項1圖示',
     }),
-    ref_posts: relationship({
+    option2: text({
+      label: '投票選項2',
+    }),
+    option2Image: relationship({
+      ref: 'Photo',
+      label: '投票選項2圖示',
+    }),
+    option3: text({
+      label: '投票選項3',
+    }),
+    option3Image: relationship({
+      ref: 'Photo',
+      label: '投票選項3圖示',
+    }),
+    option4: text({
+      label: '投票選項4',
+    }),
+    option4Image: relationship({
+      ref: 'Photo',
+      label: '投票選項4圖示',
+    }),
+    option5: text({
+      label: '投票選項5',
+    }),
+    option5Image: relationship({
+      ref: 'Photo',
+      label: '投票選項5圖示',
+    }),
+    posts: relationship({
+      ref: 'Post.poll',
+      many: true,
       label: '相關文章',
-      ref: 'Post.ref_polls',
-      ui: {
-        hideCreate: true,
-        inlineEdit: { fields: ['name'] },
-        linkToItem: true,
-        inlineConnect: true,
-        inlineCreate: { fields: ['name'] },
-      },
-      many: true,
     }),
+    status: select({
+      label: '狀態',
+      type: 'string',
+      options: [
+        { label: '啟用', value: 'active' },
+        { label: '停用', value: 'inactive' },
+      ],
+      defaultValue: 'active',
+      validation: { isRequired: true },
+    }),
+  },
+  ui: {
+    listView: {
+      initialColumns: ['name', 'content', 'status'],
+      pageSize: 50,
+    },
   },
   access: {
     operation: {
       query: allowRoles(admin, moderator, editor),
-      update: allowRoles(admin, moderator),
-      create: allowRoles(admin, moderator),
+      update: allowRoles(admin, moderator, editor),
+      create: allowRoles(admin, moderator, editor),
       delete: allowRoles(admin),
-    },
-  },
-  hooks: {
-    validateInput: async ({
-      operation,
-      resolvedData,
-      inputData,
-      addValidationError,
-    }) => {
-      const { disconnect = [], connect = [] } = resolvedData?.options || {}
-      if (operation === 'create') {
-        if (!connect.length) {
-          addValidationError('選項為必填欄位唷')
-        } else {
-          return
-        }
-      }
-      if (!disconnect.length) {
-        return
-      }
-      const optionsCount = inputData.option?.length || 0
-      if (!connect.length && optionsCount <= disconnect.length) {
-        addValidationError('選項為必填欄位唷')
-      }
     },
   },
 })
 
-export default addTrackingFields(listConfigurations)
+export default utils.addTrackingFields(listConfigurations)
