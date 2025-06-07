@@ -173,7 +173,7 @@ const listConfigurations = list({
           fieldMode: 'read',
         },
       },
-    }),    
+    }),
     posts: relationship({
       ref: 'Post',
       many: true,

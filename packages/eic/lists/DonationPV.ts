@@ -18,7 +18,7 @@ const listConfigurations = list({
     clickTimeString: virtual({
       field: graphql.field({
         type: graphql.String,
-        resolve: (item: Record<string, unknown>) => {
+        resolve: () => {
           return ''
         },
       }),
@@ -47,4 +47,4 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations) 
+export default utils.addTrackingFields(listConfigurations)

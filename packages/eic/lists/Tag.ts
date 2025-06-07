@@ -45,7 +45,7 @@ const listConfigurations = list({
     },
   },
   graphql: {
-    cacheHint: { maxAge: 1200, scope: 'PUBLIC' }
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
 })
 

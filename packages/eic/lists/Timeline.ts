@@ -35,7 +35,7 @@ const listConfigurations = list({
     embedCode: virtual({
       field: graphql.field({
         type: graphql.String,
-        resolve(item: Record<string, unknown>): string {
+        resolve(): string {
           return `` //TODO: Implement embed code
         },
       }),
@@ -57,8 +57,8 @@ const listConfigurations = list({
     },
   },
   graphql: {
-    cacheHint: { maxAge: 1200, scope: 'PUBLIC' }
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
 })
 
-export default utils.addTrackingFields(listConfigurations) 
+export default utils.addTrackingFields(listConfigurations)
