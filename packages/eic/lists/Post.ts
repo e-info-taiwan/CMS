@@ -11,7 +11,8 @@ import {
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 
-const { allowRoles, admin, moderator, editor, contributor } = utils.accessControl
+const { allowRoles, admin, moderator, editor, contributor } =
+  utils.accessControl
 
 const listConfigurations = list({
   fields: {
@@ -183,8 +184,7 @@ const listConfigurations = list({
     cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
   // TODO: Implement hooks
-  hooks: {
-  },
+  hooks: {},
 })
 
 let extendedListConfigurations = utils.addTrackingFields(listConfigurations)

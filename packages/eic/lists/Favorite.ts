@@ -33,12 +33,12 @@ const listConfigurations = list({
   },
   access: {
     operation: {
-        query: allowRoles(admin, moderator, editor),
-        update: allowRoles(admin, moderator),
-        create: allowRoles(admin, moderator),
-        delete: allowRoles(admin),
+      query: allowRoles(admin, moderator, editor),
+      update: allowRoles(admin, moderator),
+      create: allowRoles(admin, moderator),
+      delete: allowRoles(admin),
     },
   },
 })
 
-export default utils.addTrackingFields(listConfigurations) 
+export default utils.addTrackingFields(listConfigurations)

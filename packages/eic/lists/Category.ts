@@ -1,7 +1,7 @@
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
 import { list } from '@keystone-6/core'
-import { integer, relationship, checkbox, select, text } from '@keystone-6/core/fields'
+import { integer, relationship, text } from '@keystone-6/core/fields'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
@@ -60,7 +60,7 @@ const listConfigurations = list({
     },
   },
   graphql: {
-    cacheHint: { maxAge: 1200, scope: 'PUBLIC' }
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
 })
 

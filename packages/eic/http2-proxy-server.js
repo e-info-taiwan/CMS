@@ -16,12 +16,17 @@ const defaultWebHandler = (err, req, res) => {
 const server = http2.createServer({ allowHTTP1: true })
 
 server.on('request', (req, res) => {
-  proxy.web(req, res, {
-    hostname: 'localhost',
-    port: keystoneServerPort,
-  }, defaultWebHandler)
+  proxy.web(
+    req,
+    res,
+    {
+      hostname: 'localhost',
+      port: keystoneServerPort,
+    },
+    defaultWebHandler
+  )
 })
 
 server.listen(reverseProxyPort, () => {
   console.log('server is listening on ' + reverseProxyPort)
-});
+})

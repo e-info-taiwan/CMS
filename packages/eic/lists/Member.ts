@@ -72,7 +72,13 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['email', 'lastName', 'firstName', 'state', 'newsletterSubscription'],
+      initialColumns: [
+        'email',
+        'lastName',
+        'firstName',
+        'state',
+        'newsletterSubscription',
+      ],
       pageSize: 50,
     },
   },
@@ -89,4 +95,4 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations) 
+export default utils.addTrackingFields(listConfigurations)

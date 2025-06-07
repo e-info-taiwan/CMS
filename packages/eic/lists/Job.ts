@@ -1,5 +1,11 @@
 import { list } from '@keystone-6/core'
-import { text, timestamp, checkbox, integer, select } from '@keystone-6/core/fields'
+import {
+  text,
+  timestamp,
+  checkbox,
+  integer,
+  select,
+} from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
@@ -80,7 +86,14 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['title', 'company', 'state', 'isApproved', 'showOnHomepage', 'sortOrder'],
+      initialColumns: [
+        'title',
+        'company',
+        'state',
+        'isApproved',
+        'showOnHomepage',
+        'sortOrder',
+      ],
       pageSize: 50,
     },
   },
@@ -97,4 +110,4 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations) 
+export default utils.addTrackingFields(listConfigurations)
