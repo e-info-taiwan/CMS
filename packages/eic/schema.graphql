@@ -1901,11 +1901,9 @@ input PollCreateInput {
 type PollResult {
   id: ID!
   poll: Poll
-  member(where: MemberWhereInput! = {}, orderBy: [MemberOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MemberWhereUniqueInput): [Member!]
-  memberCount(where: MemberWhereInput! = {}): Int
+  member: Member
   post: Post
-  result: String
-  endTime: DateTime
+  result: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -1922,47 +1920,31 @@ input PollResultWhereInput {
   NOT: [PollResultWhereInput!]
   id: IDFilter
   poll: PollWhereInput
-  member: MemberManyRelationFilter
+  member: MemberWhereInput
   post: PostWhereInput
-  result: StringFilter
-  endTime: DateTimeFilter
+  result: IntFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
 }
 
-input MemberManyRelationFilter {
-  every: MemberWhereInput
-  some: MemberWhereInput
-  none: MemberWhereInput
-}
-
 input PollResultOrderByInput {
   id: OrderDirection
   result: OrderDirection
-  endTime: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
 
 input PollResultUpdateInput {
   poll: PollRelateToOneForUpdateInput
-  member: MemberRelateToManyForUpdateInput
+  member: MemberRelateToOneForUpdateInput
   post: PostRelateToOneForUpdateInput
-  result: String
-  endTime: DateTime
+  result: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
   updatedBy: UserRelateToOneForUpdateInput
-}
-
-input MemberRelateToManyForUpdateInput {
-  disconnect: [MemberWhereUniqueInput!]
-  set: [MemberWhereUniqueInput!]
-  create: [MemberCreateInput!]
-  connect: [MemberWhereUniqueInput!]
 }
 
 input PollResultUpdateArgs {
@@ -1972,19 +1954,13 @@ input PollResultUpdateArgs {
 
 input PollResultCreateInput {
   poll: PollRelateToOneForCreateInput
-  member: MemberRelateToManyForCreateInput
+  member: MemberRelateToOneForCreateInput
   post: PostRelateToOneForCreateInput
-  result: String
-  endTime: DateTime
+  result: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
   updatedBy: UserRelateToOneForCreateInput
-}
-
-input MemberRelateToManyForCreateInput {
-  create: [MemberCreateInput!]
-  connect: [MemberWhereUniqueInput!]
 }
 
 type Post {
@@ -2019,7 +1995,7 @@ type Post {
   tagsCount(where: TagWhereInput! = {}): Int
   rssTargets: [String!]
   poll: Poll
-  pollResult: PollResult
+  pollResults: PollResult
   aiPollHelper: Boolean
   aiPollHelperResult: String
   createdAt: DateTime
@@ -2061,7 +2037,7 @@ input PostWhereInput {
   ad2: AdWhereInput
   tags: TagManyRelationFilter
   poll: PollWhereInput
-  pollResult: PollResultWhereInput
+  pollResults: PollResultWhereInput
   aiPollHelper: BooleanFilter
   aiPollHelperResult: StringFilter
   createdAt: DateTimeNullableFilter
@@ -2131,7 +2107,7 @@ input PostUpdateInput {
   tags: TagRelateToManyForUpdateInput
   rssTargets: [String!]
   poll: PollRelateToOneForUpdateInput
-  pollResult: PollResultRelateToOneForUpdateInput
+  pollResults: PollResultRelateToOneForUpdateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
   createdAt: DateTime
@@ -2223,7 +2199,7 @@ input PostCreateInput {
   tags: TagRelateToManyForCreateInput
   rssTargets: [String!]
   poll: PollRelateToOneForCreateInput
-  pollResult: PollResultRelateToOneForCreateInput
+  pollResults: PollResultRelateToOneForCreateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
   createdAt: DateTime
@@ -2276,7 +2252,6 @@ type ReadingHistory {
   id: ID!
   member: Member
   post: Post
-  readTime: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2294,7 +2269,6 @@ input ReadingHistoryWhereInput {
   id: IDFilter
   member: MemberWhereInput
   post: PostWhereInput
-  readTime: DateTimeFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -2303,7 +2277,6 @@ input ReadingHistoryWhereInput {
 
 input ReadingHistoryOrderByInput {
   id: OrderDirection
-  readTime: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -2311,7 +2284,6 @@ input ReadingHistoryOrderByInput {
 input ReadingHistoryUpdateInput {
   member: MemberRelateToOneForUpdateInput
   post: PostRelateToOneForUpdateInput
-  readTime: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2326,7 +2298,6 @@ input ReadingHistoryUpdateArgs {
 input ReadingHistoryCreateInput {
   member: MemberRelateToOneForCreateInput
   post: PostRelateToOneForCreateInput
-  readTime: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput

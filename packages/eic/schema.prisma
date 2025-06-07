@@ -462,11 +462,11 @@ model PollResult {
   id          Int       @id @default(autoincrement())
   poll        Poll?     @relation("PollResult_poll", fields: [pollId], references: [id])
   pollId      Int?      @map("poll")
-  member      Member[]  @relation("PollResult_member")
+  member      Member?   @relation("PollResult_member", fields: [memberId], references: [id])
+  memberId    Int?      @map("member")
   post        Post?     @relation("PollResult_post", fields: [postId], references: [id])
   postId      Int?      @unique @map("post")
-  result      String    @default("")
-  endTime     DateTime
+  result      Int
   createdAt   DateTime?
   updatedAt   DateTime?
   createdBy   User?     @relation("PollResult_createdBy", fields: [createdById], references: [id])
@@ -475,6 +475,7 @@ model PollResult {
   updatedById Int?      @map("updatedBy")
 
   @@index([pollId])
+  @@index([memberId])
   @@index([createdById])
   @@index([updatedById])
 }
@@ -519,7 +520,7 @@ model Post {
   rssTargets                   Json             @default("[]")
   poll                         Poll?            @relation("Post_poll", fields: [pollId], references: [id])
   pollId                       Int?             @map("poll")
-  pollResult                   PollResult?      @relation("PollResult_post")
+  pollResults                  PollResult?      @relation("PollResult_post")
   aiPollHelper                 Boolean          @default(false)
   aiPollHelperResult           String           @default("")
   createdAt                    DateTime?
@@ -559,7 +560,6 @@ model ReadingHistory {
   memberId    Int?      @map("member")
   post        Post?     @relation("ReadingHistory_post", fields: [postId], references: [id])
   postId      Int?      @map("post")
-  readTime    DateTime
   createdAt   DateTime?
   updatedAt   DateTime?
   createdBy   User?     @relation("ReadingHistory_createdBy", fields: [createdById], references: [id])
