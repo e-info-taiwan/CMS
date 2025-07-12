@@ -1,7 +1,7 @@
 import { list } from '@keystone-6/core'
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
-import { text, password, select, checkbox } from '@keystone-6/core/fields'
+import { text, password, select } from '@keystone-6/core/fields'
 
 const { allowRolesForUsers, admin, moderator, editor } = utils.accessControl
 
@@ -25,16 +25,20 @@ const listConfigurations = list({
       type: 'string',
       options: [
         {
-          label: 'Pro Editor',
-          value: 'pro_editor',
+          label: 'admin',
+          value: 'admin',
         },
         {
-          label: 'Editor',
+          label: 'moderator',
+          value: 'moderator',
+        },
+        {
+          label: 'editor',
           value: 'editor',
         },
         {
-          label: 'Volunteer',
-          value: 'volunteer',
+          label: 'contributor',
+          value: 'contributor',
         },
       ],
       validation: { isRequired: true },
