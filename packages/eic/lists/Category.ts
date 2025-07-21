@@ -25,6 +25,13 @@ const listConfigurations = list({
       label: '排序',
       defaultValue: 1,
     }),
+    heroImage: relationship({
+      ref: 'Photo',
+      label: 'Photos 首圖',
+    }),
+    heroImageCaption: text({
+      label: '首圖圖說',
+    }),
     posts: relationship({
       ref: 'Post.category',
       many: true,

@@ -34,6 +34,13 @@ const listConfigurations = list({
         { label: '專欄列表頁', value: 'column' },
       ],
     }),
+    heroImage: relationship({
+      ref: 'Photo',
+      label: 'Photos 首圖',
+    }),
+    heroImageCaption: text({
+      label: '首圖圖說',
+    }),
     showInHeader: checkbox({
       label: '顯示於Header',
       defaultValue: false,
