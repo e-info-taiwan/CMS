@@ -102,7 +102,7 @@ const listConfigurations = list({
     brief: customFields.richTextEditor({
       label: '前言',
       disabledButtons: ['header-one', 'header-six'],
-      website: 'einfo',
+      website: 'readr',
     }),
     briefApiData: json({
       label: '資料庫使用',
@@ -114,7 +114,7 @@ const listConfigurations = list({
     content: customFields.richTextEditor({
       label: '內文',
       disabledButtons: ['header-three', 'header-four'],
-      website: 'einfo',
+      website: 'readr',
     }),
     contentApiData: json({
       label: '資料庫使用',
