@@ -348,6 +348,8 @@ type Category {
   slug: String
   name: String
   sortOrder: Int
+  heroImage: Photo
+  heroImageCaption: String
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
   section: Section
@@ -371,6 +373,8 @@ input CategoryWhereInput {
   slug: StringFilter
   name: StringFilter
   sortOrder: IntNullableFilter
+  heroImage: PhotoWhereInput
+  heroImageCaption: StringFilter
   posts: PostManyRelationFilter
   section: SectionWhereInput
   classifies: ClassifyManyRelationFilter
@@ -402,6 +406,7 @@ input CategoryOrderByInput {
   slug: OrderDirection
   name: OrderDirection
   sortOrder: OrderDirection
+  heroImageCaption: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -410,6 +415,8 @@ input CategoryUpdateInput {
   slug: String
   name: String
   sortOrder: Int
+  heroImage: PhotoRelateToOneForUpdateInput
+  heroImageCaption: String
   posts: PostRelateToManyForUpdateInput
   section: SectionRelateToOneForUpdateInput
   classifies: ClassifyRelateToManyForUpdateInput
@@ -441,6 +448,8 @@ input CategoryCreateInput {
   slug: String
   name: String
   sortOrder: Int
+  heroImage: PhotoRelateToOneForCreateInput
+  heroImageCaption: String
   posts: PostRelateToManyForCreateInput
   section: SectionRelateToOneForCreateInput
   classifies: ClassifyRelateToManyForCreateInput
@@ -1983,7 +1992,10 @@ type Post {
   style: String
   heroImage: Photo
   heroCaption: String
+  brief: JSON
+  briefApiData: JSON
   content: JSON
+  contentApiData: JSON
   attachments(where: AttachmentWhereInput! = {}, orderBy: [AttachmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AttachmentWhereUniqueInput): [Attachment!]
   attachmentsCount(where: AttachmentWhereInput! = {}): Int
   citations: String
@@ -2098,7 +2110,10 @@ input PostUpdateInput {
   style: String
   heroImage: PhotoRelateToOneForUpdateInput
   heroCaption: String
+  brief: JSON
+  briefApiData: JSON
   content: JSON
+  contentApiData: JSON
   attachments: AttachmentRelateToManyForUpdateInput
   citations: String
   relatedPosts: PostRelateToManyForUpdateInput
@@ -2190,7 +2205,10 @@ input PostCreateInput {
   style: String
   heroImage: PhotoRelateToOneForCreateInput
   heroCaption: String
+  brief: JSON
+  briefApiData: JSON
   content: JSON
+  contentApiData: JSON
   attachments: AttachmentRelateToManyForCreateInput
   citations: String
   relatedPosts: PostRelateToManyForCreateInput
@@ -2309,6 +2327,8 @@ type Section {
   slug: String
   name: String
   style: String
+  heroImage: Photo
+  heroImageCaption: String
   showInHeader: Boolean
   sortOrder: Int
   categories(where: CategoryWhereInput! = {}, orderBy: [CategoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CategoryWhereUniqueInput): [Category!]
@@ -2333,6 +2353,8 @@ input SectionWhereInput {
   slug: StringFilter
   name: StringFilter
   style: StringNullableFilter
+  heroImage: PhotoWhereInput
+  heroImageCaption: StringFilter
   showInHeader: BooleanFilter
   sortOrder: IntNullableFilter
   categories: CategoryManyRelationFilter
@@ -2354,6 +2376,7 @@ input SectionOrderByInput {
   slug: OrderDirection
   name: OrderDirection
   style: OrderDirection
+  heroImageCaption: OrderDirection
   showInHeader: OrderDirection
   sortOrder: OrderDirection
   createdAt: OrderDirection
@@ -2364,6 +2387,8 @@ input SectionUpdateInput {
   slug: String
   name: String
   style: String
+  heroImage: PhotoRelateToOneForUpdateInput
+  heroImageCaption: String
   showInHeader: Boolean
   sortOrder: Int
   categories: CategoryRelateToManyForUpdateInput
@@ -2390,6 +2415,8 @@ input SectionCreateInput {
   slug: String
   name: String
   style: String
+  heroImage: PhotoRelateToOneForCreateInput
+  heroImageCaption: String
   showInHeader: Boolean
   sortOrder: Int
   categories: CategoryRelateToManyForCreateInput

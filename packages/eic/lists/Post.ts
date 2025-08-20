@@ -8,6 +8,7 @@ import {
   timestamp,
   text,
   select,
+  json,
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 
@@ -98,10 +99,29 @@ const listConfigurations = list({
     heroCaption: text({
       label: '首圖圖說',
     }),
+    brief: customFields.richTextEditor({
+      label: '前言',
+      disabledButtons: ['header-one', 'header-six'],
+      website: 'einfo',
+    }),
+    briefApiData: json({
+      label: '資料庫使用',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
+    }),
     content: customFields.richTextEditor({
       label: '內文',
       disabledButtons: ['header-three', 'header-four'],
-      website: 'readr',
+      website: 'einfo',
+    }),
+    contentApiData: json({
+      label: '資料庫使用',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
     }),
     attachments: relationship({
       ref: 'Attachment.posts',
@@ -183,8 +203,52 @@ const listConfigurations = list({
   graphql: {
     cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
-  // TODO: Implement hooks
-  hooks: {},
+  hooks: {
+    resolveInput: async ({ resolvedData }) => {
+      const { content, brief } = resolvedData
+      if (content) {
+        resolvedData.contentApiData = customFields.draftConverter
+          .convertToApiData(content)
+          .toJS()
+      }
+      if (brief) {
+        resolvedData.briefApiData = customFields.draftConverter
+          .convertToApiData(brief)
+          .toJS()
+      }
+      return resolvedData
+    },
+    validateInput: async ({
+      operation,
+      item,
+      resolvedData,
+      addValidationError,
+    }) => {
+      // publishTime is must while state is not `draft`
+      if (operation == 'create') {
+        const { state } = resolvedData
+        if (state && state != 'draft') {
+          const { publishTime } = resolvedData
+          if (!publishTime) {
+            addValidationError('需要填入發布時間')
+          }
+        }
+      }
+      if (operation == 'update') {
+        if (resolvedData.state && resolvedData.state != 'draft') {
+          const publishTime = resolvedData.publishTime || item.publishTime
+          if (!publishTime) {
+            addValidationError('需要填入發布時間')
+          }
+        } else if (resolvedData.publishTime == null) {
+          const state = resolvedData.state || item.state
+          if (state && state != 'draft') {
+            addValidationError('需要填入發布時間')
+          }
+        }
+      }
+    },
+  },
 })
 
 let extendedListConfigurations = utils.addTrackingFields(listConfigurations)
