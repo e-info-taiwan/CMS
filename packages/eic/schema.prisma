@@ -80,6 +80,9 @@ model Category {
   slug                       String         @default("")
   name                       String         @default("")
   sortOrder                  Int?           @default(1)
+  heroImage                  Photo?         @relation("Category_heroImage", fields: [heroImageId], references: [id])
+  heroImageId                Int?           @map("heroImage")
+  heroImageCaption           String         @default("")
   posts                      Post[]         @relation("Post_category")
   section                    Section?       @relation("Category_section", fields: [sectionId], references: [id])
   sectionId                  Int?           @map("section")
@@ -92,6 +95,7 @@ model Category {
   updatedById                Int?           @map("updatedBy")
   from_HomepagePick_category HomepagePick[] @relation("HomepagePick_category")
 
+  @@index([heroImageId])
   @@index([sectionId])
   @@index([createdById])
   @@index([updatedById])
@@ -396,6 +400,7 @@ model Photo {
   updatedById                   Int?           @map("updatedBy")
   from_Ad_image                 Ad[]           @relation("Ad_image")
   from_Author_image             Author[]       @relation("Author_image")
+  from_Category_heroImage       Category[]     @relation("Category_heroImage")
   from_Config_image             Config[]       @relation("Config_image")
   from_Donation_image           Donation[]     @relation("Donation_image")
   from_Event_heroImage          Event[]        @relation("Event_heroImage")
@@ -410,6 +415,7 @@ model Photo {
   from_Poll_option5Image        Poll[]         @relation("Poll_option5Image")
   from_Post_ogImage             Post[]         @relation("Post_ogImage")
   from_Post_heroImage           Post[]         @relation("Post_heroImage")
+  from_Section_heroImage        Section[]      @relation("Section_heroImage")
   from_Tag_heroImage            Tag[]          @relation("Tag_heroImage")
   from_TimelineItem_image       TimelineItem[] @relation("TimelineItem_image")
   from_Topic_heroImage          Topic[]        @relation("Topic_heroImage")
@@ -508,7 +514,10 @@ model Post {
   heroImage                    Photo?           @relation("Post_heroImage", fields: [heroImageId], references: [id])
   heroImageId                  Int?             @map("heroImage")
   heroCaption                  String           @default("")
+  brief                        Json?
+  briefApiData                 Json?
   content                      Json?
+  contentApiData               Json?
   attachments                  Attachment[]     @relation("Attachment_posts")
   citations                    String           @default("")
   relatedPosts                 Post[]           @relation("Post_relatedPosts")
@@ -578,6 +587,9 @@ model Section {
   slug                           String     @default("")
   name                           String     @default("")
   style                          String?    @default("default")
+  heroImage                      Photo?     @relation("Section_heroImage", fields: [heroImageId], references: [id])
+  heroImageId                    Int?       @map("heroImage")
+  heroImageCaption               String     @default("")
   showInHeader                   Boolean    @default(false)
   sortOrder                      Int?
   categories                     Category[] @relation("Category_section")
@@ -590,6 +602,7 @@ model Section {
   updatedById                    Int?       @map("updatedBy")
   from_Member_interestedSections Member[]   @relation("Member_interestedSections")
 
+  @@index([heroImageId])
   @@index([createdById])
   @@index([updatedById])
 }
