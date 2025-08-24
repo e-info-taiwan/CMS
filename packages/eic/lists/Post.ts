@@ -306,10 +306,13 @@ const listConfigurations = list({
 
 let extendedListConfigurations = utils.addTrackingFields(listConfigurations)
 
-if (typeof envVar.invalidateCDNCacheServerURL === 'string') {
+if (
+  typeof envVar.invalidateCDNCacheServerURL === 'string' &&
+  envVar.invalidateCDNCacheServerURL.trim() !== ''
+) {
   extendedListConfigurations = utils.invalidateCacheAfterOperation(
     extendedListConfigurations,
-    `${envVar.invalidateCDNCacheServerURL}/story`,
+    `${envVar.invalidateCDNCacheServerURL}/post`,
     (item, originalItem) => ({
       slug: originalItem?.id ?? item?.id,
     })
