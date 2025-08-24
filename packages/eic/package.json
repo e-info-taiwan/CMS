@@ -1,7 +1,11 @@
 {
-  "name": "@mirrormedia/lilith-readr",
+  "name": "@mirrormedia/lilith-eic",
   "version": "0.1.0",
   "description": "",
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
   "scripts": {
     "dev": "keystone dev",
     "start": "keystone start",
@@ -12,11 +16,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mirror-media/lilith.git",
-    "directory": "packages/readr"
+    "url": "https://github.com/e-info-taiwan/CMS",
+    "directory": "packages/eic"
   },
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "1.15.0",
     "@ioredis/commands": "^1.2.0",
     "@keystone-6/auth": "7.0.0",
     "@keystone-6/core": "5.2.0",
@@ -29,7 +34,8 @@
   "resolutions": {
     "**/next": "13.3.4",
     "**/react": "18.2.0",
-    "**/react-dom": "18.2.0"
+    "**/react-dom": "18.2.0",
+    "**/@azure/msal-node": "3.7.2"
   },
   "devDependencies": {
     "typescript": "^4.7.4"

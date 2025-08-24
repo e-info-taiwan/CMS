@@ -15,6 +15,8 @@ const {
   MEMORY_CACHE_SIZE,
   GCS_BASE_URL,
   INVALID_CDN_CACHE_SERVER_URL,
+  GEMINI_API_KEY,
+  GEMINI_MODEL,
 } = process.env
 
 enum DatabaseProvider {
@@ -60,4 +62,10 @@ export default {
     storagePath: IMAGES_STORAGE_PATH || 'public/images',
   },
   invalidateCDNCacheServerURL: INVALID_CDN_CACHE_SERVER_URL,
+  ai: {
+    gemini: {
+      apiKey: GEMINI_API_KEY || '',
+      model: GEMINI_MODEL || 'gemini-2.5-flash',
+    },
+  },
 }

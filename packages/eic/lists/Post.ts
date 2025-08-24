@@ -11,6 +11,7 @@ import {
   json,
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
+import { aiPollHelperService } from '../services/ai-poll-helper'
 
 const { allowRoles, admin, moderator, editor, contributor } =
   utils.accessControl
@@ -204,7 +205,7 @@ const listConfigurations = list({
     cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
   },
   hooks: {
-    resolveInput: async ({ resolvedData }) => {
+    resolveInput: async ({ resolvedData, item }) => {
       const { content, brief } = resolvedData
       if (content) {
         resolvedData.contentApiData = customFields.draftConverter
@@ -215,6 +216,55 @@ const listConfigurations = list({
         resolvedData.briefApiData = customFields.draftConverter
           .convertToApiData(brief)
           .toJS()
+      }
+
+      // AI 投票小幫手處理
+      if (resolvedData.aiPollHelper) {
+        try {
+          const content = resolvedData.content || item?.content
+
+          if (!content) {
+            throw new Error('文章內容為空')
+          }
+
+          const aiResult = await aiPollHelperService.generatePollSuggestion(
+            content
+          )
+          resolvedData.aiPollHelperResult = aiResult
+          resolvedData.aiPollHelper = false
+        } catch (error) {
+          // 記錄錯誤日誌
+          console.error('AI Poll Helper Error:', error)
+
+          // 清空結果欄位和 checkbox
+          resolvedData.aiPollHelperResult = ''
+          resolvedData.aiPollHelper = false
+
+          // 拋出 GraphQL 錯誤，讓 Keystone 能夠捕獲並顯示給使用者
+          if (error instanceof Error) {
+            let errorMessage = 'AI 投票小幫手服務暫時無法使用，請稍後再試'
+
+            switch (error.message) {
+              case 'API_KEY_NOT_CONFIGURED':
+                errorMessage = 'AI 服務未設定 API 金鑰，請聯繫管理員設定'
+                break
+              case 'CLIENT_ERROR':
+                errorMessage = 'AI 服務請求錯誤，請檢查 API 金鑰設定或稍後再試'
+                break
+              case 'SERVER_ERROR':
+                errorMessage = 'AI 服務暫時無法使用，請稍後再試'
+                break
+              case '文章內容為空':
+                errorMessage = '文章內容為空，無法生成投票建議'
+                break
+              default:
+                errorMessage = 'AI 服務發生未知錯誤，請稍後再試'
+            }
+
+            // 拋出 GraphQL 錯誤
+            throw new Error(`AI_POLL_HELPER_ERROR: ${errorMessage}`)
+          }
+        }
       }
       return resolvedData
     },
@@ -235,16 +285,19 @@ const listConfigurations = list({
         }
       }
       if (operation == 'update') {
-        if (resolvedData.state && resolvedData.state != 'draft') {
-          const publishTime = resolvedData.publishTime || item.publishTime
-          if (!publishTime) {
+        const newState = resolvedData.state || item.state
+        const newPublishTime = resolvedData.publishTime || item.publishTime
+        if (newState && newState != 'draft') {
+          if (!newPublishTime) {
             addValidationError('需要填入發布時間')
           }
-        } else if (resolvedData.publishTime == null) {
-          const state = resolvedData.state || item.state
-          if (state && state != 'draft') {
-            addValidationError('需要填入發布時間')
-          }
+        }
+      }
+
+      if (resolvedData.aiPollHelper) {
+        const content = resolvedData.content || item?.content
+        if (!content) {
+          addValidationError('啟用 AI 投票小幫手時，內文欄位不能為空')
         }
       }
     },
