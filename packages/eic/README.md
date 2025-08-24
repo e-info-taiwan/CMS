@@ -1,4 +1,4 @@
-# @mirrormedia/lilith-readr
+# @mirrormedia/lilith-eic
 
 ## Preface
 此Repo
