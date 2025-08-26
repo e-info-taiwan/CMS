@@ -2972,13 +2972,14 @@
     "@keystone-ui/popover" "^6.0.2"
     apply-ref "^1.0.0"
 
-"@mirrormedia/lilith-draft-editor@^3.0.4":
-  version "3.0.8"
-  resolved "https://registry.yarnpkg.com/@mirrormedia/lilith-draft-editor/-/lilith-draft-editor-3.0.8.tgz#e28fcc6cb3e2bb0156094f6d04258c1b89defb48"
-  integrity sha512-ZKSZHTKs6LlpWSWPKdLTmHVWOFzBe3AFgMw2bJyn8eKHWDJ8Gp8B9geEw3S8avizNxwWQ0zvTWztq4uaEw8YnA==
+"@mirrormedia/lilith-draft-editor@3.0.8-beta.1":
+  version "3.0.8-beta.1"
+  resolved "https://registry.yarnpkg.com/@mirrormedia/lilith-draft-editor/-/lilith-draft-editor-3.0.8-beta.1.tgz#52b526accea092e1b052703721e6ba9526325144"
+  integrity sha512-FsX1SVGu2fffDmMV/VtSSlcgO5JbiafjIR12YYpIp0OYqHkuqyh/RptmRds5bQakq5oaPtaEA7EYJg8sPhEQIQ==
   dependencies:
     "@mirrormedia/lilith-draft-renderer" "^1.4.3"
     draft-js "^0.11.7"
+    js-sha256 "^0.11.0"
     usehooks-ts "^2"
 
 "@mirrormedia/lilith-draft-renderer@^1.4.3":

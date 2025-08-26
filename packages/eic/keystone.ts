@@ -96,14 +96,14 @@ export default withAuth(
           },
         })
 
-        // Proxy requests with `/story/id` url path to preview nuxt server
-        app.get('/story/:id', authenticationMw, previewProxyMiddleware)
+        // Proxy requests with `/post/id` url path to preview nuxt server
+        app.get('/post/:id', authenticationMw, previewProxyMiddleware)
 
         // Proxy requests with `/event/:slug` url path to preview nuxt server
-        app.get('/event/:slug', authenticationMw, previewProxyMiddleware)
+        // app.get('/event/:slug', authenticationMw, previewProxyMiddleware)
 
         // Proxy requests with `/news/:id` url path to preview nuxt server
-        app.get('/news/:id', authenticationMw, previewProxyMiddleware)
+        // app.get('/news/:id', authenticationMw, previewProxyMiddleware)
 
         // Proxy requests with `/_nuxt/*` url path to preview nuxt server
         app.use(
