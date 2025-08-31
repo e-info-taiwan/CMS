@@ -22,6 +22,8 @@ server.on('request', (req, res) => {
     {
       hostname: 'localhost',
       port: keystoneServerPort,
+      timeout: 60000,
+      proxyTimeout: 60000,
     },
     defaultWebHandler
   )
