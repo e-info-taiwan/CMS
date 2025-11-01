@@ -109,7 +109,7 @@ const listConfigurations = list({
       label: '資料庫使用',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
       },
     }),
     content: customFields.richTextEditor({
@@ -121,7 +121,7 @@ const listConfigurations = list({
       label: '資料庫使用',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
       },
     }),
     attachments: relationship({
@@ -158,10 +158,12 @@ const listConfigurations = list({
       label: '送出RSS',
       type: 'string',
       options: [
-        { label: 'twitter X串接', value: 'twitter' },
-        { label: 'yahoo news', value: 'yahoo' },
-        { label: 'Line today', value: 'line' },
+        { label: 'Yahoo!自然環境新聞', value: 'yahoo' },
+        { label: 'HiNet政治新聞', value: 'hinet_politics' },
+        { label: 'HiNet國際新聞', value: 'hinet_international' },
+        { label: 'LineToday國際國內新聞', value: 'line' },
         { label: 'Mesh', value: 'mesh' },
+        { label: 'twitter X串接', value: 'twitter' },
         { label: '環境新聞RSS(公版)', value: 'eic' },
       ],
     }),
