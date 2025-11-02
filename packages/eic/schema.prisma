@@ -532,6 +532,7 @@ model Post {
   pollResults                  PollResult?      @relation("PollResult_post")
   aiPollHelper                 Boolean          @default(false)
   aiPollHelperResult           String           @default("")
+  isNewsletter                 Boolean          @default(false)
   createdAt                    DateTime?
   updatedAt                    DateTime?
   createdBy                    User?            @relation("Post_createdBy", fields: [createdById], references: [id])

@@ -186,6 +186,10 @@ const listConfigurations = list({
         displayMode: 'textarea',
       },
     }),
+    isNewsletter: checkbox({
+      label: '是否為電子報',
+      defaultValue: false,
+    }),
   },
   ui: {
     listView: {
