@@ -2010,6 +2010,7 @@ type Post {
   pollResults: PollResult
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  isNewsletter: Boolean
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2052,6 +2053,7 @@ input PostWhereInput {
   pollResults: PollResultWhereInput
   aiPollHelper: BooleanFilter
   aiPollHelperResult: StringFilter
+  isNewsletter: BooleanFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -2088,6 +2090,7 @@ input PostOrderByInput {
   citations: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
+  isNewsletter: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -2125,6 +2128,7 @@ input PostUpdateInput {
   pollResults: PollResultRelateToOneForUpdateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  isNewsletter: Boolean
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2220,6 +2224,7 @@ input PostCreateInput {
   pollResults: PollResultRelateToOneForCreateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  isNewsletter: Boolean
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
