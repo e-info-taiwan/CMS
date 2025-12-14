@@ -364,6 +364,7 @@ model Newsletter {
   pollId              Int?      @map("poll")
   readerResponseTitle String    @default("")
   readerResponseLink  String    @default("")
+  originalUrl         String    @default("")
   readerResponseText  String    @default("")
   standardHtml        String    @default("")
   beautifiedHtml      String    @default("")

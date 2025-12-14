@@ -39,7 +39,7 @@ export default {
       DATABASE_PROVIDER === 'sqlite'
         ? DatabaseProvider.Sqlite
         : DatabaseProvider.Postgres,
-    url: DATABASE_URL || 'postgres://hcchien@localhost:5432/eic',
+    url: DATABASE_URL || 'postgres://00000000@localhost:5432/eic',
   },
   session: {
     secret:
@@ -50,7 +50,7 @@ export default {
       60 * 60 * 24 * 1, // 1 days
   },
   gcs: {
-    bucket: GCS_BUCKET || 'static-vision-tw-dev',
+    bucket: GCS_BUCKET || 'statics-e-info-dev',
   },
   files: {
     baseUrl: FILES_BASE_URL || '/files',
@@ -58,7 +58,8 @@ export default {
   },
   images: {
     baseUrl: IMAGES_BASE_URL || '/images',
-    gcsBaseUrl: GCS_BASE_URL || 'https://statics-readr-tw-dev.readr.tw',
+    gcsBaseUrl:
+      GCS_BASE_URL || 'https://storage.googleapis.com/statics-e-info-dev',
     storagePath: IMAGES_STORAGE_PATH || 'public/images',
   },
   invalidateCDNCacheServerURL: INVALID_CDN_CACHE_SERVER_URL,

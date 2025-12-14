@@ -1535,6 +1535,7 @@ type Newsletter {
   poll: Poll
   readerResponseTitle: String
   readerResponseLink: String
+  originalUrl: String
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String
@@ -1565,6 +1566,7 @@ input NewsletterWhereInput {
   poll: PollWhereInput
   readerResponseTitle: StringFilter
   readerResponseLink: StringFilter
+  originalUrl: StringFilter
   readerResponseText: StringFilter
   standardHtml: StringFilter
   beautifiedHtml: StringFilter
@@ -1594,6 +1596,7 @@ input NewsletterOrderByInput {
   showReadingRank: OrderDirection
   readerResponseTitle: OrderDirection
   readerResponseLink: OrderDirection
+  originalUrl: OrderDirection
   readerResponseText: OrderDirection
   standardHtml: OrderDirection
   beautifiedHtml: OrderDirection
@@ -1614,6 +1617,7 @@ input NewsletterUpdateInput {
   poll: PollRelateToOneForUpdateInput
   readerResponseTitle: String
   readerResponseLink: String
+  originalUrl: String
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String
@@ -1661,6 +1665,7 @@ input NewsletterCreateInput {
   poll: PollRelateToOneForCreateInput
   readerResponseTitle: String
   readerResponseLink: String
+  originalUrl: String
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String

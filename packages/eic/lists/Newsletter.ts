@@ -61,6 +61,9 @@ const listConfigurations = list({
     readerResponseLink: text({
       label: '推薦讀者回應連結',
     }),
+    originalUrl: text({
+      label: '原始網址',
+    }),
     readerResponseText: text({
       label: '推薦讀者回應文字',
       ui: {
