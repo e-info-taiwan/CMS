@@ -13,7 +13,7 @@ const listConfigurations = list({
     posts: relationship({
       ref: 'Post',
       label: '精選文章',
-      many: true,
+      many: false,
     }),
     topics: relationship({
       ref: 'Topic',

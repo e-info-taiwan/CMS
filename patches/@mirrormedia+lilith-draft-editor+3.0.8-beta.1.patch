@@ -1,0 +1,139 @@
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js
+index 14d7c8b..57e66fa 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js
+@@ -31,12 +31,37 @@ const ColorHexInput = (0, _styledComponents.default)(_fields.TextInput)`
+   padding: 10px;
+ `;
+ 
++const PresetColorGrid = _styledComponents.default.div`
++  display: grid;
++  grid-template-columns: repeat(6, 1fr);
++  gap: 0;
++  margin-bottom: 16px;
++  padding: 8px 0;
++`;
++
++const PresetColorButton = _styledComponents.default.button`
++  width: 40px;
++  height: 40px;
++  border: 2px solid #ddd;
++  border-radius: 4px;
++  cursor: pointer;
++  background-color: ${props => props.color || '#fff'};
++  transition: transform 0.2s, box-shadow 0.2s;
++  
++  &:hover {
++    transform: scale(1.1);
++    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
++    border-color: #333;
++  }
++`;
++
+ function FontColorButton(props) {
+   const {
+     isActive,
+     editorState,
+     onChange,
+-    className
++    className,
++    presetColors = []
+   } = props;
+   const [toShowColorInput, setToShowColorInput] = (0, _react.useState)(false);
+   const [colorValue, setColorValue] = (0, _react.useState)('');
+@@ -50,14 +75,14 @@ function FontColorButton(props) {
+     }
+   };
+ 
+-  const confirmColor = () => {
++  const applyColor = (color) => {
+     const selection = editorState.getSelection();
+     const contentState = editorState.getCurrentContent();
+ 
+     let newContentState = _modifier.Modifier.removeInlineStyleByPrefix(contentState, selection, _const.CUSTOM_STYLE_PREFIX_FONT_COLOR);
+ 
+-    if (colorValue) {
+-      newContentState = _modifier.Modifier.applyInlineStyle(newContentState, selection, _const.CUSTOM_STYLE_PREFIX_FONT_COLOR + colorValue);
++    if (color) {
++      newContentState = _modifier.Modifier.applyInlineStyle(newContentState, selection, _const.CUSTOM_STYLE_PREFIX_FONT_COLOR + color);
+     }
+ 
+     onChange(_draftJs.EditorState.push(editorState, newContentState, 'change-inline-style'));
+@@ -65,6 +90,10 @@ function FontColorButton(props) {
+     setColorValue('');
+   };
+ 
++  const confirmColor = () => {
++    applyColor(colorValue);
++  };
++
+   const onColorInputKeyDown = e => {
+     if (e.which === 13) {
+       e.preventDefault();
+@@ -100,12 +129,18 @@ function FontColorButton(props) {
+         action: confirmColor
+       }
+     }
+-  }, /*#__PURE__*/_react.default.createElement(ColorHexInput, {
++  }, /*#__PURE__*/_react.default.createElement(_react.Fragment, null, presetColors && presetColors.length > 0 && /*#__PURE__*/_react.default.createElement(PresetColorGrid, null, presetColors.map((color, index) => /*#__PURE__*/_react.default.createElement(PresetColorButton, {
++    key: index,
++    color: color,
++    onClick: () => applyColor(color),
++    title: color
++  }))), /*#__PURE__*/_react.default.createElement(ColorHexInput, {
+     onChange: e => setColorValue(e.target.value),
+     type: "text",
+     value: colorValue,
+-    onKeyDown: onColorInputKeyDown
+-  }));
++    onKeyDown: onColorInputKeyDown,
++    placeholder: "#ffffff"
++  })));
+ 
+   return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, colorInput, /*#__PURE__*/_react.default.createElement("div", {
+     className: className,
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
+index d74d67e..8470e0d 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
+@@ -23,9 +23,15 @@ const {
+   ImageBlock
+ } = _readr.default.blockRenderers;
+ const ImageBlockWrapper = _styledComponents.default.div`
++  overflow: hidden;
++  max-width: 100%;
++  
+   img {
+-    min-width: 300px;
++    width: auto;
+     max-width: 600px;
++    height: auto;
++    min-width: 300px;
++    display: block;
+   }
+ `;
+ const ImageEditButton = _styledComponents.default.span`
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
+index ceebcbb..951cd10 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
+@@ -655,7 +655,8 @@ class RichTextEditor extends _react.default.Component {
+ 
+   render() {
+     const {
+-      disabledButtons = []
++      disabledButtons = [],
++      presetColors = []
+     } = this.props;
+     let {
+       editorState
+@@ -718,7 +719,8 @@ class RichTextEditor extends _react.default.Component {
+       isActive: Object.prototype.hasOwnProperty.call(customStyle, 'color'),
+       readOnly: readOnly,
+       editorState: editorState,
+-      onChange: this.onChange
++      onChange: this.onChange,
++      presetColors: presetColors
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
+       isDisabled: disabledButtons.includes(buttonNames.divider),
+       editorState: editorState,
