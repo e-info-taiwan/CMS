@@ -104,6 +104,20 @@ const listConfigurations = list({
       label: '前言',
       disabledButtons: ['header-one', 'header-six'],
       website: 'readr',
+      presetColors: [
+        '#000000', // 黑色
+        '#FFFFFF', // 白色
+        '#FF0000', // 紅色
+        '#0000FF', // 藍色
+        '#008000', // 綠色
+        '#FFFF00', // 黃色
+        '#FFA500', // 橘色
+        '#800080', // 紫色
+        '#FFC0CB', // 粉紅色
+        '#808080', // 灰色
+        '#A52A2A', // 棕色
+        '#00CED1', // 深青色
+      ],
     }),
     briefApiData: json({
       label: '資料庫使用',
@@ -116,6 +130,20 @@ const listConfigurations = list({
       label: '內文',
       disabledButtons: ['header-three', 'header-four'],
       website: 'readr',
+      presetColors: [
+        '#000000', // 黑色
+        '#FFFFFF', // 白色
+        '#FF0000', // 紅色
+        '#0000FF', // 藍色
+        '#008000', // 綠色
+        '#FFFF00', // 黃色
+        '#FFA500', // 橘色
+        '#800080', // 紫色
+        '#FFC0CB', // 粉紅色
+        '#808080', // 灰色
+        '#A52A2A', // 棕色
+        '#00CED1', // 深青色
+      ],
     }),
     contentApiData: json({
       label: '資料庫使用',

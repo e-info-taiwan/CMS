@@ -1028,8 +1028,7 @@ input PostRelateToOneForCreateInput {
 type HomepagePick {
   id: ID!
   category: Category
-  posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
-  postsCount(where: PostWhereInput! = {}): Int
+  posts: Post
   topics(where: TopicWhereInput! = {}, orderBy: [TopicOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TopicWhereUniqueInput): [Topic!]
   topicsCount(where: TopicWhereInput! = {}): Int
   customUrl: String
@@ -1053,7 +1052,7 @@ input HomepagePickWhereInput {
   NOT: [HomepagePickWhereInput!]
   id: IDFilter
   category: CategoryWhereInput
-  posts: PostManyRelationFilter
+  posts: PostWhereInput
   topics: TopicManyRelationFilter
   customUrl: StringFilter
   customImage: PhotoWhereInput
@@ -1084,7 +1083,7 @@ input HomepagePickOrderByInput {
 
 input HomepagePickUpdateInput {
   category: CategoryRelateToOneForUpdateInput
-  posts: PostRelateToManyForUpdateInput
+  posts: PostRelateToOneForUpdateInput
   topics: TopicRelateToManyForUpdateInput
   customUrl: String
   customImage: PhotoRelateToOneForUpdateInput
@@ -1111,7 +1110,7 @@ input HomepagePickUpdateArgs {
 
 input HomepagePickCreateInput {
   category: CategoryRelateToOneForCreateInput
-  posts: PostRelateToManyForCreateInput
+  posts: PostRelateToOneForCreateInput
   topics: TopicRelateToManyForCreateInput
   customUrl: String
   customImage: PhotoRelateToOneForCreateInput

@@ -236,7 +236,8 @@ model HomepagePick {
   id                Int       @id @default(autoincrement())
   category          Category? @relation("HomepagePick_category", fields: [categoryId], references: [id])
   categoryId        Int?      @map("category")
-  posts             Post[]    @relation("HomepagePick_posts")
+  posts             Post?     @relation("HomepagePick_posts", fields: [postsId], references: [id])
+  postsId           Int?      @map("posts")
   topics            Topic[]   @relation("HomepagePick_topics")
   customUrl         String    @default("")
   customImage       Photo?    @relation("HomepagePick_customImage", fields: [customImageId], references: [id])
@@ -252,6 +253,7 @@ model HomepagePick {
   updatedById       Int?      @map("updatedBy")
 
   @@index([categoryId])
+  @@index([postsId])
   @@index([customImageId])
   @@index([createdById])
   @@index([updatedById])
