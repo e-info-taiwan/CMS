@@ -19,7 +19,6 @@ RUN set -e; \
     && apt-get clean
 
 ENV APP_DIR /app
-## Set fallback mount directory
 ENV MNT_DIR /app/gcs
 ENV HOST 0.0.0.0
 ENV PORT 3000
@@ -32,6 +31,12 @@ COPY . $APP_DIR
 
 ## Install application dependencies
 RUN yarn install
+
+## Apply local lilith-core modifications (for changes not yet published to npm)
+RUN if [ -d "local-core-lib" ]; then \
+      cp -r local-core-lib/* node_modules/@mirrormedia/lilith-core/lib/; \
+    fi
+
 RUN yarn postinstall
 
 ## Build application bundles
@@ -39,14 +44,10 @@ RUN yarn build
 
 RUN yarn cache clean
 
-## Ensure the script is executable
 RUN chmod +x run.sh
 
 EXPOSE 3000
 
-## Use tini to manage zombie processes and signal forwarding
-## https://github.com/krallin/tini
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-## Pass the startup script as arguments to Tini
 CMD [ "/app/run.sh"]

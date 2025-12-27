@@ -3,3 +3,5 @@ migrations
 public
 .keystone
 .git
+lib
+@types
