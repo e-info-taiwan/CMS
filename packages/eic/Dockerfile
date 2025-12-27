@@ -32,6 +32,14 @@ COPY . $APP_DIR
 
 ## Install application dependencies
 RUN yarn install
+
+## Debug: Check if patches directory exists before applying patches
+RUN echo "=== Checking patches directory ===" && \
+    ls -la patches/ || echo "WARNING: patches directory not found" && \
+    echo "=== Listing patch files ===" && \
+    ls -la patches/*.patch || echo "WARNING: no patch files found" && \
+    echo "=== Running postinstall (patch-package) ==="
+
 RUN yarn postinstall
 
 ## Build application bundles
