@@ -105,18 +105,13 @@ const listConfigurations = list({
       disabledButtons: ['header-one', 'header-six'],
       website: 'readr',
       presetColors: [
-        '#000000', // 黑色
-        '#FFFFFF', // 白色
-        '#FF0000', // 紅色
-        '#0000FF', // 藍色
-        '#008000', // 綠色
-        '#FFFF00', // 黃色
-        '#FFA500', // 橘色
-        '#800080', // 紫色
-        '#FFC0CB', // 粉紅色
-        '#808080', // 灰色
-        '#A52A2A', // 棕色
-        '#00CED1', // 深青色
+        '#FF6544', // 預設紅色
+        '#5085EF', // 預設藍色
+        '#A0A0A2', // 預設灰色
+        '#373740', // 預設黑色
+        '#8BC890', // 預設綠色
+        '#D1951D', // 預設黃色
+        '#B55514', // 預設棕色
       ],
     }),
     briefApiData: json({
@@ -131,18 +126,13 @@ const listConfigurations = list({
       disabledButtons: ['header-three', 'header-four'],
       website: 'readr',
       presetColors: [
-        '#000000', // 黑色
-        '#FFFFFF', // 白色
-        '#FF0000', // 紅色
-        '#0000FF', // 藍色
-        '#008000', // 綠色
-        '#FFFF00', // 黃色
-        '#FFA500', // 橘色
-        '#800080', // 紫色
-        '#FFC0CB', // 粉紅色
-        '#808080', // 灰色
-        '#A52A2A', // 棕色
-        '#00CED1', // 深青色
+        '#FF6544', // 預設紅色
+        '#5085EF', // 預設藍色
+        '#A0A0A2', // 預設灰色
+        '#373740', // 預設黑色
+        '#8BC890', // 預設綠色
+        '#D1951D', // 預設黃色
+        '#B55514', // 預設棕色
       ],
     }),
     contentApiData: json({
