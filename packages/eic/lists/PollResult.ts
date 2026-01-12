@@ -1,5 +1,5 @@
 import { list } from '@keystone-6/core'
-import { relationship, timestamp, integer } from '@keystone-6/core/fields'
+import { relationship, integer } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
@@ -33,9 +33,9 @@ const listConfigurations = list({
   },
   access: {
     operation: {
-      query: allowRoles(admin, moderator, editor),
+      query: () => true,
       update: allowRoles(admin, moderator, editor),
-      create: allowRoles(admin, moderator, editor),
+      create: () => true,
       delete: allowRoles(admin),
     },
   },

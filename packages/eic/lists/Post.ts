@@ -49,17 +49,30 @@ const listConfigurations = list({
       ref: 'Photo',
       label: 'og image',
     }),
-    author1: relationship({
+    reporters: relationship({
       ref: 'Author',
-      label: '作者-角色1',
+      label: '記者',
+      many: true,
     }),
-    author2: relationship({
+    translators: relationship({
       ref: 'Author',
-      label: '作者-角色2',
+      label: '編譯',
+      many: true,
     }),
-    author3: relationship({
+    reviewers: relationship({
       ref: 'Author',
-      label: '作者-角色3',
+      label: '審校',
+      many: true,
+    }),
+    writers: relationship({
+      ref: 'Author',
+      label: '文',
+      many: true,
+    }),
+    sources: relationship({
+      ref: 'Author',
+      label: '稿源',
+      many: true,
     }),
     otherByline: text({
       label: '作者（其他）',

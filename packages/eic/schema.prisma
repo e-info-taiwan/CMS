@@ -12,23 +12,24 @@ generator client {
 }
 
 model Ad {
-  id                  Int          @id @default(autoincrement())
-  name                String       @default("")
-  showOnHomepage      Boolean      @default(false)
-  image               Photo?       @relation("Ad_image", fields: [imageId], references: [id])
-  imageId             Int?         @map("image")
-  imageUrl            String       @default("")
-  state               String       @default("inactive")
-  sortOrder           Int
-  createdAt           DateTime?
-  updatedAt           DateTime?
-  createdBy           User?        @relation("Ad_createdBy", fields: [createdById], references: [id])
-  createdById         Int?         @map("createdBy")
-  updatedBy           User?        @relation("Ad_updatedBy", fields: [updatedById], references: [id])
-  updatedById         Int?         @map("updatedBy")
-  from_Newsletter_ads Newsletter[] @relation("Newsletter_ads")
-  from_Post_ad1       Post[]       @relation("Post_ad1")
-  from_Post_ad2       Post[]       @relation("Post_ad2")
+  id                      Int          @id @default(autoincrement())
+  name                    String       @default("")
+  showOnHomepage          Boolean      @default(false)
+  showOnHomepageDeepTopic Boolean      @default(false)
+  image                   Photo?       @relation("Ad_image", fields: [imageId], references: [id])
+  imageId                 Int?         @map("image")
+  imageUrl                String       @default("")
+  state                   String       @default("inactive")
+  sortOrder               Int
+  createdAt               DateTime?
+  updatedAt               DateTime?
+  createdBy               User?        @relation("Ad_createdBy", fields: [createdById], references: [id])
+  createdById             Int?         @map("createdBy")
+  updatedBy               User?        @relation("Ad_updatedBy", fields: [updatedById], references: [id])
+  updatedById             Int?         @map("updatedBy")
+  from_Newsletter_ads     Newsletter[] @relation("Newsletter_ads")
+  from_Post_ad1           Post[]       @relation("Post_ad1")
+  from_Post_ad2           Post[]       @relation("Post_ad2")
 
   @@index([imageId])
   @@index([createdById])
@@ -55,20 +56,22 @@ model Attachment {
 }
 
 model Author {
-  id                Int       @id @default(autoincrement())
-  name              String    @default("")
-  image             Photo?    @relation("Author_image", fields: [imageId], references: [id])
-  imageId           Int?      @map("image")
-  bio               String    @default("")
-  createdAt         DateTime?
-  updatedAt         DateTime?
-  createdBy         User?     @relation("Author_createdBy", fields: [createdById], references: [id])
-  createdById       Int?      @map("createdBy")
-  updatedBy         User?     @relation("Author_updatedBy", fields: [updatedById], references: [id])
-  updatedById       Int?      @map("updatedBy")
-  from_Post_author1 Post[]    @relation("Post_author1")
-  from_Post_author2 Post[]    @relation("Post_author2")
-  from_Post_author3 Post[]    @relation("Post_author3")
+  id                    Int       @id @default(autoincrement())
+  name                  String    @default("")
+  image                 Photo?    @relation("Author_image", fields: [imageId], references: [id])
+  imageId               Int?      @map("image")
+  bio                   String    @default("")
+  createdAt             DateTime?
+  updatedAt             DateTime?
+  createdBy             User?     @relation("Author_createdBy", fields: [createdById], references: [id])
+  createdById           Int?      @map("createdBy")
+  updatedBy             User?     @relation("Author_updatedBy", fields: [updatedById], references: [id])
+  updatedById           Int?      @map("updatedBy")
+  from_Post_reporters   Post[]    @relation("Post_reporters")
+  from_Post_translators Post[]    @relation("Post_translators")
+  from_Post_reviewers   Post[]    @relation("Post_reviewers")
+  from_Post_writers     Post[]    @relation("Post_writers")
+  from_Post_sources     Post[]    @relation("Post_sources")
 
   @@index([imageId])
   @@index([createdById])
@@ -497,12 +500,11 @@ model Post {
   publishTime                  DateTime
   ogImage                      Photo?           @relation("Post_ogImage", fields: [ogImageId], references: [id])
   ogImageId                    Int?             @map("ogImage")
-  author1                      Author?          @relation("Post_author1", fields: [author1Id], references: [id])
-  author1Id                    Int?             @map("author1")
-  author2                      Author?          @relation("Post_author2", fields: [author2Id], references: [id])
-  author2Id                    Int?             @map("author2")
-  author3                      Author?          @relation("Post_author3", fields: [author3Id], references: [id])
-  author3Id                    Int?             @map("author3")
+  reporters                    Author[]         @relation("Post_reporters")
+  translators                  Author[]         @relation("Post_translators")
+  reviewers                    Author[]         @relation("Post_reviewers")
+  writers                      Author[]         @relation("Post_writers")
+  sources                      Author[]         @relation("Post_sources")
   otherByline                  String           @default("")
   locations                    Location[]       @relation("Post_locations")
   section                      Section?         @relation("Post_section", fields: [sectionId], references: [id])
@@ -552,9 +554,6 @@ model Post {
 
   @@index([state])
   @@index([ogImageId])
-  @@index([author1Id])
-  @@index([author2Id])
-  @@index([author3Id])
   @@index([sectionId])
   @@index([categoryId])
   @@index([classifyId])

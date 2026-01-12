@@ -20,6 +20,10 @@ const listConfigurations = list({
       label: '是否出現在首頁（時事新聞下方）',
       defaultValue: false,
     }),
+    showOnHomepageDeepTopic: checkbox({
+      label: '是否出現在首頁深度專題下方',
+      defaultValue: false,
+    }),
     image: relationship({
       ref: 'Photo',
       label: '圖片',

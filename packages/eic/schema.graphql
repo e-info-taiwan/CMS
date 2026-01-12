@@ -5,6 +5,7 @@ type Ad {
   id: ID!
   name: String
   showOnHomepage: Boolean
+  showOnHomepageDeepTopic: Boolean
   image: Photo
   imageUrl: String
   state: String
@@ -28,6 +29,7 @@ input AdWhereInput {
   id: IDFilter
   name: StringFilter
   showOnHomepage: BooleanFilter
+  showOnHomepageDeepTopic: BooleanFilter
   image: PhotoWhereInput
   imageUrl: StringFilter
   state: StringFilter
@@ -114,6 +116,7 @@ input AdOrderByInput {
   id: OrderDirection
   name: OrderDirection
   showOnHomepage: OrderDirection
+  showOnHomepageDeepTopic: OrderDirection
   imageUrl: OrderDirection
   state: OrderDirection
   sortOrder: OrderDirection
@@ -129,6 +132,7 @@ enum OrderDirection {
 input AdUpdateInput {
   name: String
   showOnHomepage: Boolean
+  showOnHomepageDeepTopic: Boolean
   image: PhotoRelateToOneForUpdateInput
   imageUrl: String
   state: String
@@ -159,6 +163,7 @@ input AdUpdateArgs {
 input AdCreateInput {
   name: String
   showOnHomepage: Boolean
+  showOnHomepageDeepTopic: Boolean
   image: PhotoRelateToOneForCreateInput
   imageUrl: String
   state: String
@@ -1983,9 +1988,16 @@ type Post {
   state: String
   publishTime: DateTime
   ogImage: Photo
-  author1: Author
-  author2: Author
-  author3: Author
+  reporters(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  reportersCount(where: AuthorWhereInput! = {}): Int
+  translators(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  translatorsCount(where: AuthorWhereInput! = {}): Int
+  reviewers(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  reviewersCount(where: AuthorWhereInput! = {}): Int
+  writers(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  writersCount(where: AuthorWhereInput! = {}): Int
+  sources(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  sourcesCount(where: AuthorWhereInput! = {}): Int
   otherByline: String
   locations(where: LocationWhereInput! = {}, orderBy: [LocationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: LocationWhereUniqueInput): [Location!]
   locationsCount(where: LocationWhereInput! = {}): Int
@@ -2035,9 +2047,11 @@ input PostWhereInput {
   state: StringNullableFilter
   publishTime: DateTimeFilter
   ogImage: PhotoWhereInput
-  author1: AuthorWhereInput
-  author2: AuthorWhereInput
-  author3: AuthorWhereInput
+  reporters: AuthorManyRelationFilter
+  translators: AuthorManyRelationFilter
+  reviewers: AuthorManyRelationFilter
+  writers: AuthorManyRelationFilter
+  sources: AuthorManyRelationFilter
   otherByline: StringFilter
   locations: LocationManyRelationFilter
   section: SectionWhereInput
@@ -2062,6 +2076,12 @@ input PostWhereInput {
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
+}
+
+input AuthorManyRelationFilter {
+  every: AuthorWhereInput
+  some: AuthorWhereInput
+  none: AuthorWhereInput
 }
 
 input LocationManyRelationFilter {
@@ -2105,9 +2125,11 @@ input PostUpdateInput {
   state: String
   publishTime: DateTime
   ogImage: PhotoRelateToOneForUpdateInput
-  author1: AuthorRelateToOneForUpdateInput
-  author2: AuthorRelateToOneForUpdateInput
-  author3: AuthorRelateToOneForUpdateInput
+  reporters: AuthorRelateToManyForUpdateInput
+  translators: AuthorRelateToManyForUpdateInput
+  reviewers: AuthorRelateToManyForUpdateInput
+  writers: AuthorRelateToManyForUpdateInput
+  sources: AuthorRelateToManyForUpdateInput
   otherByline: String
   locations: LocationRelateToManyForUpdateInput
   section: SectionRelateToOneForUpdateInput
@@ -2139,10 +2161,11 @@ input PostUpdateInput {
   updatedBy: UserRelateToOneForUpdateInput
 }
 
-input AuthorRelateToOneForUpdateInput {
-  create: AuthorCreateInput
-  connect: AuthorWhereUniqueInput
-  disconnect: Boolean
+input AuthorRelateToManyForUpdateInput {
+  disconnect: [AuthorWhereUniqueInput!]
+  set: [AuthorWhereUniqueInput!]
+  create: [AuthorCreateInput!]
+  connect: [AuthorWhereUniqueInput!]
 }
 
 input LocationRelateToManyForUpdateInput {
@@ -2201,9 +2224,11 @@ input PostCreateInput {
   state: String
   publishTime: DateTime
   ogImage: PhotoRelateToOneForCreateInput
-  author1: AuthorRelateToOneForCreateInput
-  author2: AuthorRelateToOneForCreateInput
-  author3: AuthorRelateToOneForCreateInput
+  reporters: AuthorRelateToManyForCreateInput
+  translators: AuthorRelateToManyForCreateInput
+  reviewers: AuthorRelateToManyForCreateInput
+  writers: AuthorRelateToManyForCreateInput
+  sources: AuthorRelateToManyForCreateInput
   otherByline: String
   locations: LocationRelateToManyForCreateInput
   section: SectionRelateToOneForCreateInput
@@ -2235,9 +2260,9 @@ input PostCreateInput {
   updatedBy: UserRelateToOneForCreateInput
 }
 
-input AuthorRelateToOneForCreateInput {
-  create: AuthorCreateInput
-  connect: AuthorWhereUniqueInput
+input AuthorRelateToManyForCreateInput {
+  create: [AuthorCreateInput!]
+  connect: [AuthorWhereUniqueInput!]
 }
 
 input LocationRelateToManyForCreateInput {

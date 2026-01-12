@@ -92,48 +92,6 @@ index 14d7c8b..75860eb 100644
  
    return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, colorInput, /*#__PURE__*/_react.default.createElement("div", {
      className: className,
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
-index a8aafa5..511efc6 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
-@@ -36,27 +36,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
-   margin-top: 10px;
- `;
- const ImageSelectionWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   overflow: auto;
-   margin-top: 10px;
- `;
- const ImageBlockMetaWrapper = _styledComponents.default.div``;
- const ImageGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
-   margin-top: 5px;
- `;
- const ImageGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
- `;
- const ImageMetaGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
- `;
- const ImageMetaGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
 index d74d67e..8470e0d 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
@@ -179,45 +137,3 @@ index ceebcbb..951cd10 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-index efeb120..681cb80 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-@@ -69,27 +69,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
-   margin-top: 10px;
- `;
- const ImageSelectionWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   overflow: auto;
-   margin-top: 10px;
- `;
- const ImageBlockMetaWrapper = _styledComponents.default.div``;
- const ImageGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
-   margin-top: 5px;
- `;
- const ImageGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
- `;
- const ImageMetaGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
- `;
- const ImageMetaGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
