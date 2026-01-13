@@ -477,7 +477,7 @@ model PollResult {
   member      Member?   @relation("PollResult_member", fields: [memberId], references: [id])
   memberId    Int?      @map("member")
   post        Post?     @relation("PollResult_post", fields: [postId], references: [id])
-  postId      Int?      @unique @map("post")
+  postId      Int?      @map("post")
   result      Int
   createdAt   DateTime?
   updatedAt   DateTime?
@@ -488,6 +488,7 @@ model PollResult {
 
   @@index([pollId])
   @@index([memberId])
+  @@index([postId])
   @@index([createdById])
   @@index([updatedById])
 }
@@ -534,7 +535,7 @@ model Post {
   rssTargets                   Json             @default("[]")
   poll                         Poll?            @relation("Post_poll", fields: [pollId], references: [id])
   pollId                       Int?             @map("poll")
-  pollResults                  PollResult?      @relation("PollResult_post")
+  pollResults                  PollResult[]     @relation("PollResult_post")
   aiPollHelper                 Boolean          @default(false)
   aiPollHelperResult           String           @default("")
   isNewsletter                 Boolean          @default(false)

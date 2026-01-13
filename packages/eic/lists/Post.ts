@@ -205,6 +205,7 @@ const listConfigurations = list({
     pollResults: relationship({
       ref: 'PollResult.post',
       label: '投票結果',
+      many: true,
     }),
     aiPollHelper: checkbox({
       label: 'AI 投票小幫手',

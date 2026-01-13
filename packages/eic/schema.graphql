@@ -2023,7 +2023,8 @@ type Post {
   tagsCount(where: TagWhereInput! = {}): Int
   rssTargets: [String!]
   poll: Poll
-  pollResults: PollResult
+  pollResults(where: PollResultWhereInput! = {}, orderBy: [PollResultOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PollResultWhereUniqueInput): [PollResult!]
+  pollResultsCount(where: PollResultWhereInput! = {}): Int
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean
@@ -2068,7 +2069,7 @@ input PostWhereInput {
   ad2: AdWhereInput
   tags: TagManyRelationFilter
   poll: PollWhereInput
-  pollResults: PollResultWhereInput
+  pollResults: PollResultManyRelationFilter
   aiPollHelper: BooleanFilter
   aiPollHelperResult: StringFilter
   isNewsletter: BooleanFilter
@@ -2100,6 +2101,12 @@ input TagManyRelationFilter {
   every: TagWhereInput
   some: TagWhereInput
   none: TagWhereInput
+}
+
+input PollResultManyRelationFilter {
+  every: PollResultWhereInput
+  some: PollResultWhereInput
+  none: PollResultWhereInput
 }
 
 input PostOrderByInput {
@@ -2151,7 +2158,7 @@ input PostUpdateInput {
   tags: TagRelateToManyForUpdateInput
   rssTargets: [String!]
   poll: PollRelateToOneForUpdateInput
-  pollResults: PollResultRelateToOneForUpdateInput
+  pollResults: PollResultRelateToManyForUpdateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean
@@ -2207,10 +2214,11 @@ input TagRelateToManyForUpdateInput {
   connect: [TagWhereUniqueInput!]
 }
 
-input PollResultRelateToOneForUpdateInput {
-  create: PollResultCreateInput
-  connect: PollResultWhereUniqueInput
-  disconnect: Boolean
+input PollResultRelateToManyForUpdateInput {
+  disconnect: [PollResultWhereUniqueInput!]
+  set: [PollResultWhereUniqueInput!]
+  create: [PollResultCreateInput!]
+  connect: [PollResultWhereUniqueInput!]
 }
 
 input PostUpdateArgs {
@@ -2250,7 +2258,7 @@ input PostCreateInput {
   tags: TagRelateToManyForCreateInput
   rssTargets: [String!]
   poll: PollRelateToOneForCreateInput
-  pollResults: PollResultRelateToOneForCreateInput
+  pollResults: PollResultRelateToManyForCreateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean
@@ -2295,9 +2303,9 @@ input TagRelateToManyForCreateInput {
   connect: [TagWhereUniqueInput!]
 }
 
-input PollResultRelateToOneForCreateInput {
-  create: PollResultCreateInput
-  connect: PollResultWhereUniqueInput
+input PollResultRelateToManyForCreateInput {
+  create: [PollResultCreateInput!]
+  connect: [PollResultWhereUniqueInput!]
 }
 
 type ReadingHistory {
