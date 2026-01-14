@@ -118,15 +118,13 @@ const listConfigurations = list({
       ui: {
         displayMode: 'textarea',
       },
-      db: {
-        isNullable: true,
-      },
     }),
     briefApiData: json({
       label: '資料庫使用',
       ui: {
         createView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
       },
     }),
     content: customFields.richTextEditor({
@@ -148,6 +146,7 @@ const listConfigurations = list({
       ui: {
         createView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
       },
     }),
     attachments: relationship({

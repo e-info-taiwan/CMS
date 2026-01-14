@@ -35,41 +35,118 @@ const listConfigurations = list({
     embedCode: virtual({
       field: graphql.field({
         type: graphql.String,
-        resolve(item): string {
-          // 生成 block key（基於 item.id，確保每次查詢相同 Timeline 時 key 一致）
-          const blockKey = `timeline-${item.id}`
+        async resolve(item, args, context): Promise<string> {
+          // 查詢當前 Timeline 及其關聯的 TimelineItem
+          const timeline = await context.query.Timeline.findOne({
+            where: { id: String(item.id) },
+            query: `
+              id
+              sortOrder
+              items {
+                id
+                title
+                content
+                eventTime
+                timeFormat
+                image {
+                  resized {
+                    w480
+                  }
+                }
+                imageCaption
+              }
+            `,
+          })
 
-          // 創建符合 draft.js 格式的嵌入碼
-          const embedCode = {
-            blocks: [
-              {
-                key: blockKey,
-                text: ' ',
-                type: 'atomic',
-                depth: 0,
-                inlineStyleRanges: [],
-                entityRanges: [
-                  {
-                    offset: 0,
-                    length: 1,
-                    key: 0,
-                  },
-                ],
-                data: {},
-              },
-            ],
-            entityMap: {
-              '0': {
-                type: 'TIMELINE',
-                mutability: 'IMMUTABLE',
-                data: {
-                  id: String(item.id),
-                },
-              },
-            },
+          if (
+            !timeline ||
+            !Array.isArray(timeline.items) ||
+            timeline.items.length === 0
+          ) {
+            return ''
           }
 
-          return JSON.stringify(embedCode)
+          // 依 sortOrder 決定時間排序（預設升冪）
+          const sortOrder =
+            String(timeline.sortOrder) === 'desc' ? 'desc' : 'asc'
+          const items = [...timeline.items].sort((a, b) => {
+            const aTime = a?.eventTime ? new Date(a.eventTime).getTime() : 0
+            const bTime = b?.eventTime ? new Date(b.eventTime).getTime() : 0
+            return sortOrder === 'asc' ? aTime - bTime : bTime - aTime
+          })
+
+          const escapeHtml = (str: unknown): string => {
+            if (typeof str !== 'string') return ''
+            return str
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')
+          }
+
+          const formatDate = (
+            iso: string | null | undefined,
+            format: string | null | undefined
+          ): string => {
+            if (!iso) return ''
+            const d = new Date(iso)
+            if (Number.isNaN(d.getTime())) return ''
+
+            const y = d.getFullYear()
+            const m = String(d.getMonth() + 1).padStart(2, '0')
+            const day = String(d.getDate()).padStart(2, '0')
+
+            switch (format) {
+              case 'year':
+                return `${y}`
+              case 'month':
+                return `${y}-${m}`
+              case 'day':
+              default:
+                return `${y}-${m}-${day}`
+            }
+          }
+
+          const itemHtml = items
+            .map((it) => {
+              const dateText = formatDate(it.eventTime, it.timeFormat)
+              const title = escapeHtml(it.title)
+              const body = escapeHtml(it.content)
+
+              const imageUrl = it.image?.resized?.w480 || ''
+              const imageCaption = escapeHtml(it.imageCaption)
+
+              const imageBlock = imageUrl
+                ? `
+        <div class="timeline-image">
+            <img src="${imageUrl}" alt="${title}">
+            <div class="timeline-image-caption">${imageCaption}</div>
+        </div>`
+                : ''
+
+              const bodyBlock = body
+                ? `
+            <div class="timeline-body">
+                <p>${body}</p>
+            </div>`
+                : ''
+
+              return `
+    <div class="timeline-item">
+        <div class="timeline-content">
+            <div class="timeline-date">${escapeHtml(dateText)}</div>
+            <h2 class="timeline-headline">${title}</h2>${bodyBlock}
+        </div>${imageBlock}
+    </div>`
+            })
+            .join('\n')
+
+          const html = `<div class="timeline" id="timeline">
+${itemHtml}
+</div>`
+
+          return html
         },
       }),
       label: '嵌入碼',
