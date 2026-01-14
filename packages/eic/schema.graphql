@@ -2062,7 +2062,7 @@ input PostWhereInput {
   style: StringNullableFilter
   heroImage: PhotoWhereInput
   heroCaption: StringFilter
-  brief: StringNullableFilter
+  brief: StringFilter
   attachments: AttachmentManyRelationFilter
   citations: StringFilter
   relatedPosts: PostManyRelationFilter
