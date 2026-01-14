@@ -35,8 +35,41 @@ const listConfigurations = list({
     embedCode: virtual({
       field: graphql.field({
         type: graphql.String,
-        resolve(): string {
-          return `` //TODO: Implement embed code
+        resolve(item): string {
+          // 生成 block key（基於 item.id，確保每次查詢相同 Timeline 時 key 一致）
+          const blockKey = `timeline-${item.id}`
+
+          // 創建符合 draft.js 格式的嵌入碼
+          const embedCode = {
+            blocks: [
+              {
+                key: blockKey,
+                text: ' ',
+                type: 'atomic',
+                depth: 0,
+                inlineStyleRanges: [],
+                entityRanges: [
+                  {
+                    offset: 0,
+                    length: 1,
+                    key: 0,
+                  },
+                ],
+                data: {},
+              },
+            ],
+            entityMap: {
+              '0': {
+                type: 'TIMELINE',
+                mutability: 'IMMUTABLE',
+                data: {
+                  id: String(item.id),
+                },
+              },
+            },
+          }
+
+          return JSON.stringify(embedCode)
         },
       }),
       label: '嵌入碼',
