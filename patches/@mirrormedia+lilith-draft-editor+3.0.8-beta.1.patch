@@ -1,304 +1,219 @@
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js
-index 14d7c8b..75860eb 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/font-color.js
-@@ -31,12 +31,37 @@ const ColorHexInput = (0, _styledComponents.default)(_fields.TextInput)`
-   padding: 10px;
- `;
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
+index 5ffdb99..e203af6 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
+@@ -18,6 +18,8 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
  
-+const PresetColorGrid = _styledComponents.default.div`
-+  display: flex;
-+  flex-wrap: wrap;
-+  gap: 8px;
-+  margin-bottom: 16px;
-+  padding: 8px 0;
-+`;
+ var _styledComponents = _interopRequireDefault(require("styled-components"));
+ 
++var _imageSelector = require("./selector/image-selector");
 +
-+const PresetColorButton = _styledComponents.default.button`
-+  width: 40px;
-+  height: 40px;
-+  border: 2px solid #ddd;
-+  border-radius: 4px;
-+  cursor: pointer;
-+  background-color: ${props => props.color || '#fff'};
-+  transition: transform 0.2s, box-shadow 0.2s;
-+  
-+  &:hover {
-+    transform: scale(1.1);
-+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-+    border-color: #333;
-+  }
-+`;
-+
- function FontColorButton(props) {
-   const {
-     isActive,
-     editorState,
-     onChange,
--    className
-+    className,
-+    presetColors = []
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
+ function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+@@ -41,7 +43,9 @@ function ColorBoxInput(props) {
+     color,
+     rawContentStateForColorBoxEditor,
+     renderBasicEditor,
+-    decorators
++    decorators,
++    image: initialImage,
++    ImageSelector = _imageSelector.ImageSelector
    } = props;
-   const [toShowColorInput, setToShowColorInput] = (0, _react.useState)(false);
-   const [colorValue, setColorValue] = (0, _react.useState)('');
-@@ -50,14 +75,14 @@ function FontColorButton(props) {
-     }
+   const rawContentState = rawContentStateForColorBoxEditor || {
+     blocks: [],
+@@ -53,6 +57,8 @@ function ColorBoxInput(props) {
+     editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(rawContentState), decorators)
+   };
+   const [inputValue, setInputValue] = (0, _react.useState)(initialInputValue);
++  const [imageData, setImageData] = (0, _react.useState)(initialImage || null);
++  const [toShowImageSelector, setToShowImageSelector] = (0, _react.useState)(false);
+ 
+   const clearInputValue = () => {
+     setInputValue({
+@@ -62,11 +68,13 @@ function ColorBoxInput(props) {
+         entityMap: {}
+       }), decorators)
+     });
++    setImageData(null);
    };
  
--  const confirmColor = () => {
-+  const applyColor = (color) => {
-     const selection = editorState.getSelection();
-     const contentState = editorState.getCurrentContent();
- 
-     let newContentState = _modifier.Modifier.removeInlineStyleByPrefix(contentState, selection, _const.CUSTOM_STYLE_PREFIX_FONT_COLOR);
- 
--    if (colorValue) {
--      newContentState = _modifier.Modifier.applyInlineStyle(newContentState, selection, _const.CUSTOM_STYLE_PREFIX_FONT_COLOR + colorValue);
-+    if (color) {
-+      newContentState = _modifier.Modifier.applyInlineStyle(newContentState, selection, _const.CUSTOM_STYLE_PREFIX_FONT_COLOR + color);
+   (0, _react.useEffect)(() => {
+     if (isOpen) {
+       setInputValue(initialInputValue);
++      setImageData(initialImage || null);
      }
- 
-     onChange(_draftJs.EditorState.push(editorState, newContentState, 'change-inline-style'));
-@@ -65,6 +90,10 @@ function FontColorButton(props) {
-     setColorValue('');
-   };
- 
-+  const confirmColor = () => {
-+    applyColor(colorValue);
+   }, [isOpen]);
+   const basicEditorJsx = renderBasicEditor({
+@@ -78,6 +86,37 @@ function ColorBoxInput(props) {
+       });
+     }
+   });
++
++  const onImageSelectorChange = (selected, align, delay) => {
++    // ImageSelector 的 onChange 會在以下情況被調用：
++    // 1. 用戶點擊 Confirm 並選擇了圖片：selected 包含選中的圖片
++    // 2. 用戶點擊 Cancel：selected 為空陣列 []
++    // 3. 用戶點擊 Confirm 但沒有選擇任何圖片：selected 為空陣列 []
++    // 我們只在用戶明確選擇了圖片時才更新 imageData
++    if (selected.length > 0) {
++      const selectedImage = selected[0];
++      setImageData({
++        id: selectedImage.image.id,
++        name: selectedImage.image.name || '',
++        resized: selectedImage.image.resized || null,
++        imageFile: selectedImage.image.imageFile || null,
++        caption: selectedImage.desc || ''
++      });
++    }
++    // 關閉選擇器，但不清除已選擇的圖片（除非用戶明確選擇了新的圖片）
++    setToShowImageSelector(false);
 +  };
 +
-   const onColorInputKeyDown = e => {
-     if (e.which === 13) {
-       e.preventDefault();
-@@ -100,12 +129,18 @@ function FontColorButton(props) {
-         action: confirmColor
-       }
-     }
--  }, /*#__PURE__*/_react.default.createElement(ColorHexInput, {
-+  }, /*#__PURE__*/_react.default.createElement(_react.Fragment, null, presetColors && presetColors.length > 0 && /*#__PURE__*/_react.default.createElement(PresetColorGrid, null, presetColors.map((color, index) => /*#__PURE__*/_react.default.createElement(PresetColorButton, {
-+    key: index,
-+    color: color,
-+    onClick: () => applyColor(color),
-+    title: color
-+  }))), /*#__PURE__*/_react.default.createElement(ColorHexInput, {
-     onChange: e => setColorValue(e.target.value),
++  const getImagePreviewSrc = () => {
++    if (!imageData) return '';
++    if (imageData.resized) {
++      return imageData.resized.w800 || imageData.resized.original || '';
++    }
++    if (imageData.imageFile && imageData.imageFile.url) {
++      return imageData.imageFile.url;
++    }
++    return '';
++  };
+   return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+     isOpen: isOpen
+   }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+@@ -96,7 +135,8 @@ function ColorBoxInput(props) {
+           onChange({
+             color: inputValue.color,
+             // convert `contentState` of the `editorState` into raw content state object
+-            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent())
++            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent()),
++            image: imageData
+           });
+           clearInputValue();
+         }
+@@ -110,7 +150,64 @@ function ColorBoxInput(props) {
      type: "text",
-     value: colorValue,
--    onKeyDown: onColorInputKeyDown
--  }));
-+    onKeyDown: onColorInputKeyDown,
-+    placeholder: "#ffffff"
-+  })));
- 
-   return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, colorInput, /*#__PURE__*/_react.default.createElement("div", {
-     className: className,
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
-index a8aafa5..511efc6 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
-@@ -36,27 +36,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
-   margin-top: 10px;
- `;
- const ImageSelectionWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   overflow: auto;
-   margin-top: 10px;
- `;
- const ImageBlockMetaWrapper = _styledComponents.default.div``;
- const ImageGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
-   margin-top: 5px;
- `;
- const ImageGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
- `;
- const ImageMetaGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
- `;
- const ImageMetaGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
-index b78fa88..399dc04 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
-@@ -28,7 +28,7 @@ function SlideshowButton(props) {
-     setToShowImageSelector(true);
-   };
- 
--  const onImageSelectorChange = (selected, align, delay) => {
-+  const onImageSelectorChange = (selected, align, delay, overallCaption) => {
-     if (selected.length === 0) {
-       setToShowImageSelector(false);
-       return;
-@@ -39,6 +39,7 @@ function SlideshowButton(props) {
-     const contentStateWithEntity = contentState.createEntity('slideshow-v2', 'IMMUTABLE', {
-       alignment: align,
-       delay,
-+      overallCaption: overallCaption || '',
-       images: selected.map(ele => {
-         return { ...(ele === null || ele === void 0 ? void 0 : ele.image),
-           desc: ele === null || ele === void 0 ? void 0 : ele.desc
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
-index d74d67e..8470e0d 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
-@@ -23,9 +23,15 @@ const {
-   ImageBlock
- } = _readr.default.blockRenderers;
- const ImageBlockWrapper = _styledComponents.default.div`
-+  overflow: hidden;
-+  max-width: 100%;
-+  
-   img {
--    min-width: 300px;
-+    width: auto;
-     max-width: 600px;
-+    height: auto;
-+    min-width: 300px;
-+    display: block;
-   }
- `;
- const ImageEditButton = _styledComponents.default.span`
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..951cd10 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-@@ -655,7 +655,8 @@ class RichTextEditor extends _react.default.Component {
- 
-   render() {
-     const {
--      disabledButtons = []
-+      disabledButtons = [],
-+      presetColors = []
-     } = this.props;
-     let {
-       editorState
-@@ -718,7 +719,8 @@ class RichTextEditor extends _react.default.Component {
-       isActive: Object.prototype.hasOwnProperty.call(customStyle, 'color'),
-       readOnly: readOnly,
-       editorState: editorState,
--      onChange: this.onChange
-+      onChange: this.onChange,
-+      presetColors: presetColors
-     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
-       isDisabled: disabledButtons.includes(buttonNames.divider),
-       editorState: editorState,
-diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-index efeb120..0859f99 100644
---- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-+++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-@@ -69,27 +69,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
-   margin-top: 10px;
- `;
- const ImageSelectionWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   overflow: auto;
-   margin-top: 10px;
- `;
- const ImageBlockMetaWrapper = _styledComponents.default.div``;
- const ImageGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
-   margin-top: 5px;
- `;
- const ImageGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
- `;
- const ImageMetaGridsWrapper = _styledComponents.default.div`
-+  width: 100%;
-+  box-sizing: border-box;
-   display: flex;
-   flex-wrap: wrap;
-   overflow: auto;
- `;
- const ImageMetaGridWrapper = _styledComponents.default.div`
-+  box-sizing: border-box;
-+  overflow: hidden;
-   flex: 0 0 33.3333%;
-   cursor: pointer;
-   padding: 0 10px 10px;
-@@ -250,6 +260,21 @@ function DelayInput(props) {
-   }));
+     placeholder: "Color",
+     value: inputValue.color
+-  }), /*#__PURE__*/_react.default.createElement(Label, null, "\u5167\u6587"), basicEditorJsx));
++  }), /*#__PURE__*/_react.default.createElement(Label, null, "圖片"), /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginBottom: '10px'
++    }
++  }, imageData && /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginBottom: '10px',
++      padding: '10px',
++      border: '1px solid #e1e5e9',
++      borderRadius: '4px'
++    }
++  }, /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      display: 'flex',
++      justifyContent: 'space-between',
++      alignItems: 'center',
++      marginBottom: '10px'
++    }
++  }, /*#__PURE__*/_react.default.createElement("span", null, imageData.name || "已選擇圖片"), /*#__PURE__*/_react.default.createElement("button", {
++    type: "button",
++    onClick: () => setImageData(null),
++    style: {
++      padding: '4px 8px',
++      cursor: 'pointer'
++    }
++  }, "刪除")), getImagePreviewSrc() && /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginBottom: '10px',
++      textAlign: 'center'
++    }
++  }, /*#__PURE__*/_react.default.createElement("img", {
++    src: getImagePreviewSrc(),
++    alt: imageData.name || '',
++    style: {
++      maxWidth: '100%',
++      height: 'auto',
++      maxHeight: '200px',
++      borderRadius: '4px'
++    }
++  })), imageData.caption && /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginTop: '8px',
++      fontSize: '14px',
++      color: '#666',
++      textAlign: 'center'
++    }
++  }, imageData.caption)), /*#__PURE__*/_react.default.createElement("button", {
++    type: "button",
++    onClick: () => setToShowImageSelector(true),
++    style: {
++      padding: '8px 16px',
++      cursor: 'pointer'
++    }
++  }, imageData ? "修改圖片" : "新增圖片")), toShowImageSelector && /*#__PURE__*/_react.default.createElement(ImageSelector, {
++    onChange: onImageSelectorChange,
++    enableCaption: true,
++    enableMultiSelect: false
++  }), /*#__PURE__*/_react.default.createElement(Label, null, "內文"), basicEditorJsx));
  }
  
-+function OverallCaptionInput(props) {
-+  const {
-+    overallCaption,
-+    onChange
-+  } = props;
-+  return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(Label, null, "\u6574\u9AD4\u5716\u8AAA (Overall Caption):"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
-+    type: "text",
-+    placeholder: "\u8ACB\u8F38\u5165\u6574\u500B slideshow \u7684\u5716\u8AAA",
-+    value: overallCaption,
-+    onChange: e => {
-+      onChange(e.target.value);
-+    }
-+  }));
-+}
-+
- function ImageSelector(props) {
+ function ColorBoxButton(props) {
+@@ -124,14 +221,16 @@ function ColorBoxButton(props) {
+ 
+   const onChange = ({
+     color,
+-    rawContentState
++    rawContentState,
++    image
+   }) => {
+     const contentState = editorState.getCurrentContent(); // create an ColorBox entity
+ 
+     const contentStateWithEntity = contentState.createEntity('COLORBOX', 'IMMUTABLE', {
+       color,
+       rawContentState,
+-      body: _draftConverter.default.convertToHtml(rawContentState)
++      body: _draftConverter.default.convertToHtml(rawContentState),
++      image: image || null
+     });
+     const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+ 
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
+index 825dc22..db4d5f3 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
+@@ -44,12 +44,14 @@ function ColorBoxEditorBlock(props) {
+   const entity = contentState.getEntity(entityKey);
    const {
-     enableMultiSelect = false,
-@@ -276,6 +301,7 @@ function ImageSelector(props) {
-   const [searchText, setSearchText] = (0, _react.useState)('');
-   const [selected, setSelected] = (0, _react.useState)(initialSelected);
-   const [delay, setDelay] = (0, _react.useState)('5');
-+  const [overallCaption, setOverallCaption] = (0, _react.useState)('');
-   const [align, setAlign] = (0, _react.useState)(initialAlign);
-   const contentWrapperRef = (0, _react.useRef)(null);
-   const pageSize = 6;
-@@ -296,7 +322,7 @@ function ImageSelector(props) {
-   const onSave = () => {
-     let adjustedDelay = +delay;
-     adjustedDelay = adjustedDelay < 1 ? 1 : adjustedDelay;
--    onChange(selected, align, adjustedDelay);
-+    onChange(selected, align, adjustedDelay, overallCaption);
-   };
+     color,
+-    rawContentState
++    rawContentState,
++    image
+   } = entity.getData();
  
-   const onCancel = () => {
-@@ -312,6 +338,10 @@ function ImageSelector(props) {
-     setDelay(delay);
+   const onChange = ({
+     color: newColor,
+-    rawContentState: newRawContentState
++    rawContentState: newRawContentState,
++    image: newImage
+   }) => {
+     // close `ColorBoxInput`
+     setToShowInput(false);
+@@ -58,7 +60,8 @@ function ColorBoxEditorBlock(props) {
+       entityData: {
+         color: newColor,
+         body: _draftConverter.default.convertToHtml(newRawContentState),
+-        rawContentState: newRawContentState
++        rawContentState: newRawContentState,
++        image: newImage || null
+       }
+     });
    };
- 
-+  const onOverallCaptionChange = overallCaption => {
-+    setOverallCaption(overallCaption);
-+  };
-+
-   const onAlignSelectChange = align => {
-     setAlign(align);
-   };
-@@ -437,6 +467,9 @@ function ImageSelector(props) {
-   })), /*#__PURE__*/_react.default.createElement(ImageBlockMetaWrapper, null, (enableDelay || enableAlignment) && /*#__PURE__*/_react.default.createElement(SeparationLine, null), enableDelay && /*#__PURE__*/_react.default.createElement(DelayInput, {
-     delay: delay,
-     onChange: onDealyChange
-+  }), enableMultiSelect && enableCaption && /*#__PURE__*/_react.default.createElement(OverallCaptionInput, {
-+    overallCaption: overallCaption,
-+    onChange: onOverallCaptionChange
-   }), enableAlignment && /*#__PURE__*/_react.default.createElement(_alignSelector.AlignSelector // @ts-ignore: align could be undefined
-   , {
-     align: align // @ts-ignore: option with undefined value
+@@ -67,6 +70,7 @@ function ColorBoxEditorBlock(props) {
+     renderBasicEditor: renderBasicEditor,
+     color: color,
+     rawContentStateForColorBoxEditor: rawContentState,
++    image: image,
+     onChange: onChange,
+     onCancel: () => {
+       onEditFinish({});

@@ -1,45 +1,55 @@
-diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
-index f0b401e..8497c2f 100644
---- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
-+++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
-@@ -35,12 +35,13 @@ const SlideShowBlockWrapper = _styledComponents.default.div`
-   ${({
-   theme
- }) => theme.breakpoint.xl} {
--    width: ${SlideShowDesktopSize}px;
-+    width: 100%;
-+    max-width: ${SlideShowDesktopSize}px;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     flex-wrap: wrap;
--    transform: translateX(-180px);
-+    transform: none;
-     gap: ${SpacingBetweenSlideImages}px;
-     max-height: ${props => props.expandSlideShow ? 'none' : '960px'};
-     overflow: ${props => props.expandSlideShow ? 'visible' : 'hidden'};
-@@ -191,7 +192,8 @@ function SlideshowBlock(entity) {
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
+index d0dd133..babe29a 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
+@@ -14,6 +14,22 @@ var _sharedStyle = require("../shared-style");
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
  
- function SlideshowBlockV2(entity) {
+ const colorBoxDefaultSpacing = 32;
++const ColorBoxImageWrapper = _styledComponents.default.div`
++  margin-bottom: 16px;
++  text-align: center;
++`;
++const ColorBoxImage = _styledComponents.default.img`
++  max-width: 100%;
++  height: auto;
++  display: block;
++  margin: 0 auto;
++`;
++const ColorBoxImageCaption = _styledComponents.default.figcaption`
++  margin-top: 8px;
++  font-size: 14px;
++  color: #666;
++  text-align: center;
++`;
+ const ColorBoxRenderWrapper = _styledComponents.default.div`
+   background-color: ${props => props.color ? props.color : ' #FFFFFF'};
+   padding: 12px 24px;
+@@ -82,11 +98,25 @@ function ColorBoxBlock(props) {
+   const entity = contentState.getEntity(entityKey);
    const {
--    images
-+    images,
-+    overallCaption
+     color,
+-    body
++    body,
++    image
    } = entity.getData();
-   const [expandSlideShow, setExpandSlideShow] = (0, _react.useState)(false);
-   const [showLightBox, setShowLightBox] = (0, _react.useState)(false);
-@@ -243,7 +245,13 @@ function SlideshowBlockV2(entity) {
-   }, slideShowImages, shouldMaskSlideShow && /*#__PURE__*/_react.default.createElement(GradientMask, null)), shouldMaskSlideShow && /*#__PURE__*/_react.default.createElement(ExpandText, {
-     className: "slideshow-expand-text",
-     onClick: () => setExpandSlideShow(!expandSlideShow)
--  }, "\u5C55\u958B\u6240\u6709\u5716\u7247"), showLightBox && /*#__PURE__*/_react.default.createElement(_slideshowLightbox.default, {
-+  }, "\u5C55\u958B\u6240\u6709\u5716\u7247"), overallCaption && /*#__PURE__*/_react.default.createElement(FigCaption, {
-+    style: {
-+      marginTop: '16px',
-+      textAlign: 'center',
-+      display: 'block'
++  const getImageSrc = () => {
++    if (!image) return '';
++    if (image.resized) {
++      return image.resized.w800 || image.resized.original || '';
 +    }
-+  }, overallCaption), showLightBox && /*#__PURE__*/_react.default.createElement(_slideshowLightbox.default, {
-     focusImageIndex: focusImageIndex,
-     images: images,
-     setShowLightBox: setShowLightBox,
++    if (image.imageFile && image.imageFile.url) {
++      return image.imageFile.url;
++    }
++    return '';
++  };
+   return /*#__PURE__*/_react.default.createElement(ColorBoxRenderWrapper, {
+     color: color
+-  }, /*#__PURE__*/_react.default.createElement("div", {
++  }, image && /*#__PURE__*/_react.default.createElement(ColorBoxImageWrapper, null, /*#__PURE__*/_react.default.createElement(ColorBoxImage, {
++    src: getImageSrc(),
++    alt: image.name || ''
++  }), image.caption && /*#__PURE__*/_react.default.createElement(ColorBoxImageCaption, null, image.caption)), /*#__PURE__*/_react.default.createElement("div", {
+     dangerouslySetInnerHTML: {
+       __html: body
+     }
