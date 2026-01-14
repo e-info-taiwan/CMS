@@ -2008,7 +2008,7 @@ type Post {
   style: String
   heroImage: Photo
   heroCaption: String
-  brief: JSON
+  brief: String
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
@@ -2062,6 +2062,7 @@ input PostWhereInput {
   style: StringNullableFilter
   heroImage: PhotoWhereInput
   heroCaption: StringFilter
+  brief: StringNullableFilter
   attachments: AttachmentManyRelationFilter
   citations: StringFilter
   relatedPosts: PostManyRelationFilter
@@ -2118,6 +2119,7 @@ input PostOrderByInput {
   otherByline: OrderDirection
   style: OrderDirection
   heroCaption: OrderDirection
+  brief: OrderDirection
   citations: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
@@ -2146,7 +2148,7 @@ input PostUpdateInput {
   style: String
   heroImage: PhotoRelateToOneForUpdateInput
   heroCaption: String
-  brief: JSON
+  brief: String
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
@@ -2246,7 +2248,7 @@ input PostCreateInput {
   style: String
   heroImage: PhotoRelateToOneForCreateInput
   heroCaption: String
-  brief: JSON
+  brief: String
   briefApiData: JSON
   content: JSON
   contentApiData: JSON

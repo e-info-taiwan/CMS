@@ -113,19 +113,14 @@ const listConfigurations = list({
     heroCaption: text({
       label: '首圖圖說',
     }),
-    brief: customFields.richTextEditor({
+    brief: text({
       label: '前言',
-      disabledButtons: ['header-one', 'header-six'],
-      website: 'readr',
-      presetColors: [
-        '#FF6544', // 預設紅色
-        '#5085EF', // 預設藍色
-        '#A0A0A2', // 預設灰色
-        '#373740', // 預設黑色
-        '#8BC890', // 預設綠色
-        '#D1951D', // 預設黃色
-        '#B55514', // 預設棕色
-      ],
+      ui: {
+        displayMode: 'textarea',
+      },
+      db: {
+        isNullable: true,
+      },
     }),
     briefApiData: json({
       label: '資料庫使用',
@@ -244,15 +239,10 @@ const listConfigurations = list({
   },
   hooks: {
     resolveInput: async ({ resolvedData, item }) => {
-      const { content, brief } = resolvedData
+      const { content } = resolvedData
       if (content) {
         resolvedData.contentApiData = customFields.draftConverter
           .convertToApiData(content)
-          .toJS()
-      }
-      if (brief) {
-        resolvedData.briefApiData = customFields.draftConverter
-          .convertToApiData(brief)
           .toJS()
       }
 
