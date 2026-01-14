@@ -92,6 +92,69 @@ index 14d7c8b..75860eb 100644
  
    return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, colorInput, /*#__PURE__*/_react.default.createElement("div", {
      className: className,
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
+index a8aafa5..511efc6 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
+@@ -36,27 +36,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+   margin-top: 10px;
+ `;
+ const ImageSelectionWrapper = _styledComponents.default.div`
++  width: 100%;
++  box-sizing: border-box;
+   overflow: auto;
+   margin-top: 10px;
+ `;
+ const ImageBlockMetaWrapper = _styledComponents.default.div``;
+ const ImageGridsWrapper = _styledComponents.default.div`
++  width: 100%;
++  box-sizing: border-box;
+   display: flex;
+   flex-wrap: wrap;
+   overflow: auto;
+   margin-top: 5px;
+ `;
+ const ImageGridWrapper = _styledComponents.default.div`
++  box-sizing: border-box;
++  overflow: hidden;
+   flex: 0 0 33.3333%;
+   cursor: pointer;
+   padding: 0 10px 10px;
+ `;
+ const ImageMetaGridsWrapper = _styledComponents.default.div`
++  width: 100%;
++  box-sizing: border-box;
+   display: flex;
+   flex-wrap: wrap;
+   overflow: auto;
+ `;
+ const ImageMetaGridWrapper = _styledComponents.default.div`
++  box-sizing: border-box;
++  overflow: hidden;
+   flex: 0 0 33.3333%;
+   cursor: pointer;
+   padding: 0 10px 10px;
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
+index b78fa88..399dc04 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
+@@ -28,7 +28,7 @@ function SlideshowButton(props) {
+     setToShowImageSelector(true);
+   };
+ 
+-  const onImageSelectorChange = (selected, align, delay) => {
++  const onImageSelectorChange = (selected, align, delay, overallCaption) => {
+     if (selected.length === 0) {
+       setToShowImageSelector(false);
+       return;
+@@ -39,6 +39,7 @@ function SlideshowButton(props) {
+     const contentStateWithEntity = contentState.createEntity('slideshow-v2', 'IMMUTABLE', {
+       alignment: align,
+       delay,
++      overallCaption: overallCaption || '',
+       images: selected.map(ele => {
+         return { ...(ele === null || ele === void 0 ? void 0 : ele.image),
+           desc: ele === null || ele === void 0 ? void 0 : ele.desc
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
 index d74d67e..8470e0d 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
@@ -137,3 +200,105 @@ index ceebcbb..951cd10 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
+index efeb120..0859f99 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
+@@ -69,27 +69,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+   margin-top: 10px;
+ `;
+ const ImageSelectionWrapper = _styledComponents.default.div`
++  width: 100%;
++  box-sizing: border-box;
+   overflow: auto;
+   margin-top: 10px;
+ `;
+ const ImageBlockMetaWrapper = _styledComponents.default.div``;
+ const ImageGridsWrapper = _styledComponents.default.div`
++  width: 100%;
++  box-sizing: border-box;
+   display: flex;
+   flex-wrap: wrap;
+   overflow: auto;
+   margin-top: 5px;
+ `;
+ const ImageGridWrapper = _styledComponents.default.div`
++  box-sizing: border-box;
++  overflow: hidden;
+   flex: 0 0 33.3333%;
+   cursor: pointer;
+   padding: 0 10px 10px;
+ `;
+ const ImageMetaGridsWrapper = _styledComponents.default.div`
++  width: 100%;
++  box-sizing: border-box;
+   display: flex;
+   flex-wrap: wrap;
+   overflow: auto;
+ `;
+ const ImageMetaGridWrapper = _styledComponents.default.div`
++  box-sizing: border-box;
++  overflow: hidden;
+   flex: 0 0 33.3333%;
+   cursor: pointer;
+   padding: 0 10px 10px;
+@@ -250,6 +260,21 @@ function DelayInput(props) {
+   }));
+ }
+ 
++function OverallCaptionInput(props) {
++  const {
++    overallCaption,
++    onChange
++  } = props;
++  return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(Label, null, "\u6574\u9AD4\u5716\u8AAA (Overall Caption):"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
++    type: "text",
++    placeholder: "\u8ACB\u8F38\u5165\u6574\u500B slideshow \u7684\u5716\u8AAA",
++    value: overallCaption,
++    onChange: e => {
++      onChange(e.target.value);
++    }
++  }));
++}
++
+ function ImageSelector(props) {
+   const {
+     enableMultiSelect = false,
+@@ -276,6 +301,7 @@ function ImageSelector(props) {
+   const [searchText, setSearchText] = (0, _react.useState)('');
+   const [selected, setSelected] = (0, _react.useState)(initialSelected);
+   const [delay, setDelay] = (0, _react.useState)('5');
++  const [overallCaption, setOverallCaption] = (0, _react.useState)('');
+   const [align, setAlign] = (0, _react.useState)(initialAlign);
+   const contentWrapperRef = (0, _react.useRef)(null);
+   const pageSize = 6;
+@@ -296,7 +322,7 @@ function ImageSelector(props) {
+   const onSave = () => {
+     let adjustedDelay = +delay;
+     adjustedDelay = adjustedDelay < 1 ? 1 : adjustedDelay;
+-    onChange(selected, align, adjustedDelay);
++    onChange(selected, align, adjustedDelay, overallCaption);
+   };
+ 
+   const onCancel = () => {
+@@ -312,6 +338,10 @@ function ImageSelector(props) {
+     setDelay(delay);
+   };
+ 
++  const onOverallCaptionChange = overallCaption => {
++    setOverallCaption(overallCaption);
++  };
++
+   const onAlignSelectChange = align => {
+     setAlign(align);
+   };
+@@ -437,6 +467,9 @@ function ImageSelector(props) {
+   })), /*#__PURE__*/_react.default.createElement(ImageBlockMetaWrapper, null, (enableDelay || enableAlignment) && /*#__PURE__*/_react.default.createElement(SeparationLine, null), enableDelay && /*#__PURE__*/_react.default.createElement(DelayInput, {
+     delay: delay,
+     onChange: onDealyChange
++  }), enableMultiSelect && enableCaption && /*#__PURE__*/_react.default.createElement(OverallCaptionInput, {
++    overallCaption: overallCaption,
++    onChange: onOverallCaptionChange
+   }), enableAlignment && /*#__PURE__*/_react.default.createElement(_alignSelector.AlignSelector // @ts-ignore: align could be undefined
+   , {
+     align: align // @ts-ignore: option with undefined value

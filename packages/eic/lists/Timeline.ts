@@ -43,7 +43,7 @@ const listConfigurations = list({
               id
               sortOrder
               items {
-                id
+                idid
                 title
                 content
                 eventTime
@@ -142,7 +142,7 @@ const listConfigurations = list({
             })
             .join('\n')
 
-          const html = `<div class="timeline" id="timeline">
+          const html = `<div class="timeline">
 ${itemHtml}
 </div>`
 
