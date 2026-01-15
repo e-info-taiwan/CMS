@@ -53,3 +53,60 @@ index d0dd133..babe29a 100644
      dangerouslySetInnerHTML: {
        __html: body
      }
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
+index 5701e67..4beac13 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
+@@ -45,6 +45,22 @@ const InfoTitle = _styledComponents.default.div`
+   padding: 0 32px 0 24px;
+   margin-bottom: ${infoboxDefaultSpacing}px;
+ `;
++const InfoBoxImageWrapper = _styledComponents.default.div`
++  margin-bottom: 16px;
++  text-align: center;
++`;
++const InfoBoxImage = _styledComponents.default.img`
++  max-width: 100%;
++  height: auto;
++  display: block;
++  margin: 0 auto;
++`;
++const InfoBoxImageCaption = _styledComponents.default.figcaption`
++  margin-top: 8px;
++  font-size: 14px;
++  color: #666;
++  text-align: center;
++`;
+ const InfoContent = _styledComponents.default.div`
+   padding: 0px 32px;
+   font-style: normal;
+@@ -108,13 +124,27 @@ function InfoBoxBlock(props) {
+   const entity = contentState.getEntity(entityKey);
+   const {
+     title,
+-    body
++    body,
++    image
+   } = entity.getData();
++  const getImageSrc = () => {
++    if (!image) return '';
++    if (image.resized) {
++      return image.resized.w800 || image.resized.original || '';
++    }
++    if (image.imageFile && image.imageFile.url) {
++      return image.imageFile.url;
++    }
++    return '';
++  };
+   return /*#__PURE__*/_react.default.createElement(InfoBoxRenderWrapper, {
+     className: "infobox-wrapper"
+   }, /*#__PURE__*/_react.default.createElement(InfoTitle, {
+     className: "infobox-title"
+-  }, title), /*#__PURE__*/_react.default.createElement(InfoContent, {
++  }, title), image && /*#__PURE__*/_react.default.createElement(InfoBoxImageWrapper, null, /*#__PURE__*/_react.default.createElement(InfoBoxImage, {
++    src: getImageSrc(),
++    alt: image.name || ''
++  }), image.caption && /*#__PURE__*/_react.default.createElement(InfoBoxImageCaption, null, image.caption)), /*#__PURE__*/_react.default.createElement(InfoContent, {
+     className: "infobox-content"
+   }, /*#__PURE__*/_react.default.createElement("div", {
+     dangerouslySetInnerHTML: {
