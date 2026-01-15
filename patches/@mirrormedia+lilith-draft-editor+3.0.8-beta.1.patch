@@ -178,6 +178,199 @@ index 5ffdb99..e203af6 100644
      });
      const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
  
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/footnote.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/footnote.js
+new file mode 100644
+index 0000000..6fc6cc2
+--- /dev/null
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/footnote.js
+@@ -0,0 +1,173 @@
++"use strict";
++
++Object.defineProperty(exports, "__esModule", {
++  value: true
++});
++exports.FootnoteButton = FootnoteButton;
++
++var _react = _interopRequireWildcard(require("react"));
++
++var _draftJs = require("draft-js");
++
++var _modals = require("@keystone-ui/modals");
++
++var _fields = require("@keystone-ui/fields");
++
++var _draftConverter = _interopRequireDefault(require("../draft-converter"));
++
++var _styledComponents = _interopRequireDefault(require("styled-components"));
++
++function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
++
++function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
++
++function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
++
++const Label = _styledComponents.default.label`
++  display: block;
++  font-weight: 600;
++  margin: 10px 0;
++`;
++
++const TextInput = (0, _styledComponents.default)(_fields.TextInput)`
++  margin-bottom: 10px;
++`;
++
++function FootnoteButton(props) {
++  const toggleEntity = _draftJs.RichUtils.toggleLink;
++  const {
++    isActive,
++    editorState,
++    onChange,
++    renderBasicEditor,
++    decorators,
++    className
++  } = props;
++  const [toShowInput, setToShowInput] = (0, _react.useState)(false);
++  const [inputValue, setInputValue] = (0, _react.useState)({
++    number: '',
++    name: '',
++    editorStateOfBasicEditor: _draftJs.EditorState.createEmpty(decorators)
++  });
++
++  const promptForFootnote = e => {
++    e.preventDefault();
++    setToShowInput(true);
++  };
++
++  const confirmFootnote = () => {
++    const contentState = editorState.getCurrentContent();
++    const rawContentState = (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent()) || {
++      blocks: [],
++      entityMap: {}
++    };
++    const bodyHTML = _draftConverter.default.convertToHtml(rawContentState);
++
++    const selection = editorState.getSelection();
++    const footnoteText = `(${inputValue.number})`;
++
++    let contentStateWithText;
++    let newSelection;
++
++    if (selection.isCollapsed()) {
++      contentStateWithText = _draftJs.Modifier.insertText(contentState, selection, footnoteText);
++      const startOffset = selection.getStartOffset();
++      const endOffset = startOffset + footnoteText.length;
++      newSelection = selection.merge({
++        anchorOffset: startOffset,
++        focusOffset: endOffset
++      });
++    } else {
++      contentStateWithText = _draftJs.Modifier.replaceText(contentState, selection, footnoteText);
++      const startOffset = selection.getStartOffset();
++      const endOffset = startOffset + footnoteText.length;
++      newSelection = selection.merge({
++        anchorOffset: startOffset,
++        focusOffset: endOffset
++      });
++    }
++
++    const contentStateWithEntity = contentStateWithText.createEntity('FOOTNOTE', 'MUTABLE', {
++      number: inputValue.number,
++      name: inputValue.name || '',
++      rawContentState,
++      bodyHTML
++    });
++    const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
++
++    const contentStateWithEntityApplied = _draftJs.Modifier.applyEntity(contentStateWithEntity, newSelection, entityKey);
++
++    const newEditorState = _draftJs.EditorState.set(editorState, {
++      currentContent: contentStateWithEntityApplied
++    });
++
++    const finalEditorState = _draftJs.EditorState.forceSelection(newEditorState, newSelection);
++
++    onChange(finalEditorState);
++    setToShowInput(false);
++    setInputValue({
++      number: '',
++      name: '',
++      editorStateOfBasicEditor: _draftJs.EditorState.createEmpty(decorators)
++    });
++  };
++
++  const removeFootnote = () => {
++    setToShowInput(false);
++    setInputValue({
++      number: '',
++      name: '',
++      editorStateOfBasicEditor: _draftJs.EditorState.createEmpty(decorators)
++    });
++  };
++
++  const basicEditorJsx = renderBasicEditor({
++    editorState: inputValue.editorStateOfBasicEditor,
++    onChange: editorStateOfBasicEditor => {
++      setInputValue({
++        number: inputValue.number,
++        name: inputValue.name,
++        editorStateOfBasicEditor
++      });
++    }
++  });
++
++  const urlInput = /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
++    isOpen: toShowInput
++  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
++    title: "Insert Footnote",
++    actions: {
++      cancel: {
++        label: 'Cancel',
++        action: removeFootnote
++      },
++      confirm: {
++        label: 'Confirm',
++        action: confirmFootnote
++      }
++    }
++  }, /*#__PURE__*/_react.default.createElement(Label, null, "註釋編號"), /*#__PURE__*/_react.default.createElement(TextInput, {
++    onChange: e => setInputValue({
++      number: e.target.value,
++      name: inputValue.name,
++      editorStateOfBasicEditor: inputValue.editorStateOfBasicEditor
++    }),
++    type: "text",
++    placeholder: "例如：註1",
++    value: inputValue.number
++  }), /*#__PURE__*/_react.default.createElement(Label, null, "註釋標題"), /*#__PURE__*/_react.default.createElement(TextInput, {
++    onChange: e => setInputValue({
++      number: inputValue.number,
++      name: e.target.value,
++      editorStateOfBasicEditor: inputValue.editorStateOfBasicEditor
++    }),
++    type: "text",
++    placeholder: "註釋標題",
++    value: inputValue.name
++  }), /*#__PURE__*/_react.default.createElement(Label, null, "灰框內文字內容"), basicEditorJsx));
++
++  return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, urlInput, /*#__PURE__*/_react.default.createElement("div", {
++    className: className,
++    onMouseDown: isActive ? removeFootnote : promptForFootnote
++  }, /*#__PURE__*/_react.default.createElement("span", null, "Footnote")));
++}
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
+index ac7ea11..30d109b 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
+@@ -240,7 +240,8 @@ function convertRawToApiData(raw) {
+   const entityMap = typeof raw.entityMap === 'object' ? raw.entityMap : {};
+ 
+   const entityTagMap = _lodash.default.merge({}, defaultEntityTagMap, {
+-    [_entities.default.ANNOTATION.type]: [`<span data-entity-type="annotation" data-annotation-body="<%= data.bodyEscapedHTML %>">`, '</span>']
++    [_entities.default.ANNOTATION.type]: [`<span data-entity-type="annotation" data-annotation-body="<%= data.bodyEscapedHTML %>">`, '</span>'],
++    'FOOTNOTE': [`<span data-entity-type="footnote" data-footnote-number="<%= data.number %>" data-footnote-name="<%= data.name %>">`, '</span>']
+   });
+ 
+   const apiData = convertBlocksToApiData(blocks, entityMap, entityTagMap);
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
 index 825dc22..db4d5f3 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
@@ -217,3 +410,401 @@ index 825dc22..db4d5f3 100644
      onChange: onChange,
      onCancel: () => {
        onEditFinish({});
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
+index ceebcbb..54028e6 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
+@@ -55,8 +55,16 @@ var _video = require("../../draft-js/buttons/video");
+ 
+ var _audio = require("../../draft-js/buttons/audio");
+ 
++var _footnote = require("../../draft-js/buttons/footnote");
++
+ var _const = require("../../draft-js/const");
+ 
++var _modals = require("@keystone-ui/modals");
++
++var _fields = require("@keystone-ui/fields");
++
++var _draftConverter = _interopRequireDefault(require("../../draft-js/draft-converter"));
++
+ var _imageSelector = require("./selector/image-selector");
+ 
+ var _videoSelector = require("./selector/video-selector");
+@@ -107,10 +115,11 @@ const buttonNames = {
+   relatedPost: 'related-post',
+   sideIndex: 'side-index',
+   video: 'video',
+-  audio: 'audio'
++  audio: 'audio',
++  footnote: 'footnote'
+ };
+ exports.buttonNames = buttonNames;
+-const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio];
++const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio, buttonNames.footnote];
+ const buttonStyle = (0, _styledComponents.css)`
+   border-radius: 6px;
+   text-align: center;
+@@ -275,6 +284,7 @@ const CustomAlignCenterButton = createButtonWithoutProps(_textAlign.AlignCenterB
+ const CustomAlignLeftButton = createButtonWithoutProps(_textAlign.AlignLeftButton, true);
+ const CustomVideoButton = createButtonWithoutProps(_video.VideoButton);
+ const CustomAudioButton = createButtonWithoutProps(_audio.AudioButton);
++const CustomFootnoteButton = createButtonWithoutProps(_footnote.FootnoteButton);
+ const DraftEditorWrapper = _styledComponents.default.div`
+   /* Rich-editor default setting (.RichEditor-root)*/
+   background: #fff;
+@@ -432,7 +442,11 @@ class RichTextEditor extends _react.default.Component {
+     super(props);
+     this.state = {
+       isEnlarged: false,
+-      readOnly: false
++      readOnly: false,
++      toShowFootnoteEdit: false,
++      footnoteEditEntityKey: null,
++      footnoteEditData: null,
++      renderBasicEditor: null
+     }; // Custom overrides for "code" style.
+ 
+     this.customStyleMap = {
+@@ -653,6 +667,84 @@ class RichTextEditor extends _react.default.Component {
+     }
+   };
+ 
++  componentDidMount() {
++    this.footnoteEditHandler = e => {
++      const {
++        entityKey
++      } = e.detail;
++      const contentState = this.props.editorState.getCurrentContent();
++      const entity = contentState.getEntity(entityKey);
++      const currentData = entity.getData();
++      const renderBasicEditor = propsOfBasicEditor => {
++        return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
++          disabledButtons: disabledButtonsOnBasicEditor
++        }));
++      };
++      const decorators = _entityDecorator.default;
++      const safeRawContentState = currentData.rawContentState && typeof currentData.rawContentState === 'object' && Array.isArray(currentData.rawContentState.blocks) ? currentData.rawContentState : {
++        blocks: [],
++        entityMap: {}
++      };
++      const initialInputValue = {
++        number: currentData.number || '',
++        name: currentData.name || '',
++        editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(safeRawContentState), decorators)
++      };
++      this.setState({
++        footnoteEditEntityKey: entityKey,
++        footnoteEditData: currentData,
++        footnoteEditInputValue: initialInputValue,
++        toShowFootnoteEdit: true,
++        renderBasicEditor
++      });
++    };
++    window.addEventListener('footnote-edit', this.footnoteEditHandler);
++  }
++
++  componentWillUnmount() {
++    if (this.footnoteEditHandler) {
++      window.removeEventListener('footnote-edit', this.footnoteEditHandler);
++    }
++  }
++
++  handleFootnoteEditConfirm = () => {
++    const {
++      footnoteEditEntityKey,
++      footnoteEditInputValue
++    } = this.state;
++    if (!footnoteEditEntityKey) return;
++    const contentState = this.props.editorState.getCurrentContent();
++    const rawContentState = (0, _draftJs.convertToRaw)(footnoteEditInputValue.editorStateOfBasicEditor.getCurrentContent()) || {
++      blocks: [],
++      entityMap: {}
++    };
++    const bodyHTML = _draftConverter.default.convertToHtml(rawContentState);
++    const newContentState = contentState.replaceEntityData(footnoteEditEntityKey, {
++      number: footnoteEditInputValue.number,
++      name: footnoteEditInputValue.name || '',
++      rawContentState,
++      bodyHTML
++    });
++    this.onChange(_draftJs.EditorState.set(this.props.editorState, {
++      currentContent: newContentState
++    }));
++    this.setState({
++      toShowFootnoteEdit: false,
++      footnoteEditEntityKey: null,
++      footnoteEditData: null,
++      footnoteEditInputValue: null
++    });
++  };
++
++  handleFootnoteEditCancel = () => {
++    this.setState({
++      toShowFootnoteEdit: false,
++      footnoteEditEntityKey: null,
++      footnoteEditData: null,
++      footnoteEditInputValue: null
++    });
++  };
++
+   render() {
+     const {
+       disabledButtons = []
+@@ -667,7 +759,11 @@ class RichTextEditor extends _react.default.Component {
+ 
+     const {
+       isEnlarged,
+-      readOnly
++      readOnly,
++      toShowFootnoteEdit,
++      footnoteEditEntityKey,
++      footnoteEditData,
++      renderBasicEditor: renderBasicEditorForFootnote
+     } = this.state;
+     const entityType = this.getEntityType(editorState);
+     const customStyle = this.getCustomStyle(editorState.getCurrentInlineStyle());
+@@ -678,7 +774,122 @@ class RichTextEditor extends _react.default.Component {
+       }));
+     };
+ 
+-    return /*#__PURE__*/_react.default.createElement(_styledComponents.ThemeProvider, {
++    const decorators = _entityDecorator.default;
++
++    const FootnoteEditInput = toShowFootnoteEdit && footnoteEditData && renderBasicEditorForFootnote ? /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
++      isOpen: toShowFootnoteEdit
++    }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
++      title: "Edit Footnote",
++      actions: {
++        cancel: {
++          label: 'Cancel',
++          action: this.handleFootnoteEditCancel
++        },
++        confirm: {
++          label: 'Confirm',
++          action: this.handleFootnoteEditConfirm
++        }
++      }
++    }, /*#__PURE__*/_react.default.createElement("label", {
++      style: {
++        display: 'block',
++        fontWeight: 600,
++        margin: '10px 0'
++      }
++    }, "註釋編號"), /*#__PURE__*/_react.default.createElement((0, _styledComponents.default)(_fields.TextInput)`
++      margin-bottom: 10px;
++    `, {
++      onChange: e => {
++        const safeRawContentState = footnoteEditData.rawContentState && typeof footnoteEditData.rawContentState === 'object' && Array.isArray(footnoteEditData.rawContentState.blocks) ? footnoteEditData.rawContentState : {
++          blocks: [],
++          entityMap: {}
++        };
++        const currentValue = this.state.footnoteEditInputValue || {
++          number: footnoteEditData.number || '',
++          name: footnoteEditData.name || '',
++          editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(safeRawContentState), decorators)
++        };
++        this.setState({
++          footnoteEditInputValue: {
++            number: e.target.value,
++            name: currentValue.name,
++            editorStateOfBasicEditor: currentValue.editorStateOfBasicEditor
++          }
++        });
++      },
++      type: "text",
++      placeholder: "例如：註1",
++      value: (this.state.footnoteEditInputValue || {
++        number: footnoteEditData.number || ''
++      }).number
++    }), /*#__PURE__*/_react.default.createElement("label", {
++      style: {
++        display: 'block',
++        fontWeight: 600,
++        margin: '10px 0'
++      }
++    }, "註釋名稱"), /*#__PURE__*/_react.default.createElement((0, _styledComponents.default)(_fields.TextInput)`
++      margin-bottom: 10px;
++    `, {
++      onChange: e => {
++        const safeRawContentState = footnoteEditData.rawContentState && typeof footnoteEditData.rawContentState === 'object' && Array.isArray(footnoteEditData.rawContentState.blocks) ? footnoteEditData.rawContentState : {
++          blocks: [],
++          entityMap: {}
++        };
++        const currentValue = this.state.footnoteEditInputValue || {
++          number: footnoteEditData.number || '',
++          name: footnoteEditData.name || '',
++          editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(safeRawContentState), decorators)
++        };
++        this.setState({
++          footnoteEditInputValue: {
++            number: currentValue.number,
++            name: e.target.value,
++            editorStateOfBasicEditor: currentValue.editorStateOfBasicEditor
++          }
++        });
++      },
++      type: "text",
++      placeholder: "註釋名稱",
++      value: (this.state.footnoteEditInputValue || {
++        name: footnoteEditData.name || ''
++      }).name
++    }), /*#__PURE__*/_react.default.createElement("label", {
++      style: {
++        display: 'block',
++        fontWeight: 600,
++        margin: '10px 0'
++      }
++    }, "灰框內文字內容"), renderBasicEditorForFootnote({
++      editorState: (this.state.footnoteEditInputValue || (() => {
++        const safeRawContentState = footnoteEditData.rawContentState && typeof footnoteEditData.rawContentState === 'object' && Array.isArray(footnoteEditData.rawContentState.blocks) ? footnoteEditData.rawContentState : {
++          blocks: [],
++          entityMap: {}
++        };
++        return {
++          editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(safeRawContentState), decorators)
++        };
++      })()).editorStateOfBasicEditor,
++      onChange: editorStateOfBasicEditor => {
++        const safeRawContentState = footnoteEditData.rawContentState && typeof footnoteEditData.rawContentState === 'object' && Array.isArray(footnoteEditData.rawContentState.blocks) ? footnoteEditData.rawContentState : {
++          blocks: [],
++          entityMap: {}
++        };
++        const currentValue = this.state.footnoteEditInputValue || {
++          number: footnoteEditData.number || '',
++          name: footnoteEditData.name || '',
++          editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(safeRawContentState), decorators)
++        };
++        this.setState({
++          footnoteEditInputValue: {
++            number: currentValue.number,
++            editorStateOfBasicEditor
++          }
++        });
++      }
++    }))) : null;
++
++    return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, FootnoteEditInput, /*#__PURE__*/_react.default.createElement(_styledComponents.ThemeProvider, {
+       theme: _theme.default
+     }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
+       isEnlarged: Boolean(isEnlarged)
+@@ -730,7 +941,15 @@ class RichTextEditor extends _react.default.Component {
+       editorState: editorState,
+       onChange: this.onChange,
+       renderBasicEditor: renderBasicEditor,
+-      decorators: _entityDecorator.default
++      decorators: decorators
++    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomFootnoteButton, {
++      isDisabled: disabledButtons.includes(buttonNames.footnote),
++      isActive: entityType === 'FOOTNOTE',
++      readOnly: readOnly,
++      editorState: editorState,
++      onChange: this.onChange,
++      renderBasicEditor: renderBasicEditor,
++      decorators: decorators
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
+       isDisabled: disabledButtons.includes(buttonNames.image),
+       readOnly: readOnly,
+@@ -845,9 +1064,10 @@ class RichTextEditor extends _react.default.Component {
+       ref: "editor",
+       spellCheck: true,
+       readOnly: readOnly
+-    })))));
++    }))))));
+   }
+ 
++
+ }
+ 
+ class StyleButton extends _react.default.Component {
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js
+index 33802e9..a871fe6 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js
+@@ -15,6 +15,9 @@ const {
+   annotationDecorator,
+   linkDecorator
+ } = _readr.default.entityDecorators;
+-const decorators = new _draftJs.CompositeDecorator([annotationDecorator, linkDecorator]);
++
++var _footnoteDecorator = require("./entity-decorators/footnote-decorator");
++
++const decorators = new _draftJs.CompositeDecorator([annotationDecorator, linkDecorator, _footnoteDecorator.footnoteDecorator]);
+ var _default = decorators;
+ exports.default = _default;
+\ No newline at end of file
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorators/footnote-decorator.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorators/footnote-decorator.js
+new file mode 100644
+index 0000000..091080f
+--- /dev/null
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorators/footnote-decorator.js
+@@ -0,0 +1,69 @@
++"use strict";
++
++Object.defineProperty(exports, "__esModule", {
++  value: true
++});
++exports.footnoteDecorator = void 0;
++
++var _react = _interopRequireWildcard(require("react"));
++
++var _draftJs = require("draft-js");
++
++var _styledComponents = _interopRequireDefault(require("styled-components"));
++
++function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
++
++function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
++
++function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
++
++const FootnoteText = _styledComponents.default.span`
++  color: #22c55e;
++  text-decoration: underline;
++  cursor: pointer;
++`;
++
++const FootnoteWrapper = _styledComponents.default.span`
++  display: inline;
++`;
++
++function FootnoteBlock(props) {
++  const {
++    children: footnoteText
++  } = props;
++  const {
++    contentState,
++    entityKey
++  } = props;
++  const entity = contentState.getEntity(entityKey);
++  const entityData = entity.getData();
++  const number = entityData.number || '';
++
++  const handleClick = e => {
++    e.preventDefault();
++    e.stopPropagation();
++    const event = new CustomEvent('footnote-edit', {
++      detail: {
++        entityKey
++      }
++    });
++    window.dispatchEvent(event);
++  };
++
++  return /*#__PURE__*/_react.default.createElement(FootnoteWrapper, null, "(", /*#__PURE__*/_react.default.createElement(FootnoteText, {
++    onClick: handleClick
++  }, number), ")");
++}
++
++function findFootnoteEntities(contentBlock, callback, contentState) {
++  contentBlock.findEntityRanges(character => {
++    const entityKey = character.getEntity();
++    return entityKey !== null && contentState.getEntity(entityKey).getType() === 'FOOTNOTE';
++  }, callback);
++}
++
++const footnoteDecorator = {
++  strategy: findFootnoteEntities,
++  component: FootnoteBlock
++};
++exports.footnoteDecorator = footnoteDecorator;
