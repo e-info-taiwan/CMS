@@ -357,6 +357,194 @@ index 0000000..6fc6cc2
 +    onMouseDown: isActive ? removeFootnote : promptForFootnote
 +  }, /*#__PURE__*/_react.default.createElement("span", null, "Footnote")));
 +}
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
+index 2a73a12..9698c14 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
+@@ -18,6 +18,8 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
+ 
+ var _styledComponents = _interopRequireDefault(require("styled-components"));
+ 
++var _imageSelector = require("./selector/image-selector");
++
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
+ function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+@@ -28,6 +30,11 @@ const TitleInput = (0, _styledComponents.default)(_fields.TextInput)`
+   margin-top: 30px;
+   margin-bottom: 10px;
+ `;
++const Label = _styledComponents.default.label`
++  display: block;
++  font-weight: 600;
++  margin: 10px 0;
++`;
+ 
+ function InfoBoxInput(props) {
+   const {
+@@ -37,7 +44,9 @@ function InfoBoxInput(props) {
+     title,
+     rawContentStateForInfoBoxEditor,
+     renderBasicEditor,
+-    decorators
++    decorators,
++    image: initialImage,
++    ImageSelector = _imageSelector.ImageSelector
+   } = props;
+   const rawContentState = rawContentStateForInfoBoxEditor || {
+     blocks: [],
+@@ -49,11 +58,20 @@ function InfoBoxInput(props) {
+     editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(rawContentState), decorators)
+   };
+   const [inputValue, setInputValue] = (0, _react.useState)(initialInputValue);
++  const [imageData, setImageData] = (0, _react.useState)(initialImage || null);
++  const [toShowImageSelector, setToShowImageSelector] = (0, _react.useState)(false);
+ 
+   const clearInputValue = () => {
+     setInputValue(initialInputValue);
++    setImageData(null);
+   };
+ 
++  (0, _react.useEffect)(() => {
++    if (isOpen) {
++      setInputValue(initialInputValue);
++      setImageData(initialImage || null);
++    }
++  }, [isOpen]);
+   const basicEditorJsx = renderBasicEditor({
+     editorState: inputValue.editorStateOfBasicEditor,
+     onChange: editorStateOfBasicEditor => {
+@@ -63,6 +81,37 @@ function InfoBoxInput(props) {
+       });
+     }
+   });
++
++  const onImageSelectorChange = (selected, align, delay) => {
++    // ImageSelector 的 onChange 會在以下情況被調用：
++    // 1. 用戶點擊 Confirm 並選擇了圖片：selected 包含選中的圖片
++    // 2. 用戶點擊 Cancel：selected 為空陣列 []
++    // 3. 用戶點擊 Confirm 但沒有選擇任何圖片：selected 為空陣列 []
++    // 我們只在用戶明確選擇了圖片時才更新 imageData
++    if (selected.length > 0) {
++      const selectedImage = selected[0];
++      setImageData({
++        id: selectedImage.image.id,
++        name: selectedImage.image.name || '',
++        resized: selectedImage.image.resized || null,
++        imageFile: selectedImage.image.imageFile || null,
++        caption: selectedImage.desc || ''
++      });
++    }
++    // 關閉選擇器，但不清除已選擇的圖片（除非用戶明確選擇了新的圖片）
++    setToShowImageSelector(false);
++  };
++
++  const getImagePreviewSrc = () => {
++    if (!imageData) return '';
++    if (imageData.resized) {
++      return imageData.resized.w800 || imageData.resized.original || '';
++    }
++    if (imageData.imageFile && imageData.imageFile.url) {
++      return imageData.imageFile.url;
++    }
++    return '';
++  };
+   return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+     isOpen: isOpen
+   }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+@@ -81,7 +130,8 @@ function InfoBoxInput(props) {
+           onChange({
+             title: inputValue.title,
+             // convert `contentState` of the `editorState` into raw content state object
+-            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent())
++            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent()),
++            image: imageData
+           });
+           clearInputValue();
+         }
+@@ -95,6 +145,63 @@ function InfoBoxInput(props) {
+     type: "text",
+     placeholder: "Title",
+     value: inputValue.title
++  }), /*#__PURE__*/_react.default.createElement(Label, null, "圖片"), /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginBottom: '10px'
++    }
++  }, imageData && /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginBottom: '10px',
++      padding: '10px',
++      border: '1px solid #e1e5e9',
++      borderRadius: '4px'
++    }
++  }, /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      display: 'flex',
++      justifyContent: 'space-between',
++      alignItems: 'center',
++      marginBottom: '10px'
++    }
++  }, /*#__PURE__*/_react.default.createElement("span", null, imageData.name || "已選擇圖片"), /*#__PURE__*/_react.default.createElement("button", {
++    type: "button",
++    onClick: () => setImageData(null),
++    style: {
++      padding: '4px 8px',
++      cursor: 'pointer'
++    }
++  }, "刪除")), getImagePreviewSrc() && /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginBottom: '10px',
++      textAlign: 'center'
++    }
++  }, /*#__PURE__*/_react.default.createElement("img", {
++    src: getImagePreviewSrc(),
++    alt: imageData.name || '',
++    style: {
++      maxWidth: '100%',
++      height: 'auto',
++      maxHeight: '200px',
++      borderRadius: '4px'
++    }
++  })), imageData.caption && /*#__PURE__*/_react.default.createElement("div", {
++    style: {
++      marginTop: '8px',
++      fontSize: '14px',
++      color: '#666',
++      textAlign: 'center'
++    }
++  }, imageData.caption)), /*#__PURE__*/_react.default.createElement("button", {
++    type: "button",
++    onClick: () => setToShowImageSelector(true),
++    style: {
++      padding: '8px 16px',
++      cursor: 'pointer'
++    }
++  }, imageData ? "修改圖片" : "新增圖片")), toShowImageSelector && /*#__PURE__*/_react.default.createElement(ImageSelector, {
++    onChange: onImageSelectorChange,
++    enableCaption: true,
++    enableMultiSelect: false
+   }), basicEditorJsx));
+ }
+ 
+@@ -109,14 +216,16 @@ function InfoBoxButton(props) {
+ 
+   const onChange = ({
+     title,
+-    rawContentState
++    rawContentState,
++    image
+   }) => {
+     const contentState = editorState.getCurrentContent(); // create an InfoBox entity
+ 
+     const contentStateWithEntity = contentState.createEntity('INFOBOX', 'IMMUTABLE', {
+       title,
+       rawContentState,
+-      body: _draftConverter.default.convertToHtml(rawContentState)
++      body: _draftConverter.default.convertToHtml(rawContentState),
++      image: image || null
+     });
+     const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+ 
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
 index ac7ea11..30d109b 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
@@ -371,6 +559,31 @@ index ac7ea11..30d109b 100644
    });
  
    const apiData = convertBlocksToApiData(blocks, entityMap, entityTagMap);
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
+index ff465a9..945d764 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
+@@ -9,8 +9,6 @@ var _infoBoxBlock = require("./block-renderer/info-box-block");
+ 
+ var _tableBlock = require("./block-renderer/table-block");
+ 
+-var _colorBoxBlock = require("./block-renderer/color-box-block");
+-
+ var _backgroundImageBlock = require("./block-renderer/background-image-block");
+ 
+ var _backgroundVideoBlock = require("./block-renderer/background-video-block");
+@@ -81,11 +79,6 @@ const AtomicBlock = props => {
+         return (0, _tableBlock.TableEditorBlock)(props);
+       }
+ 
+-    case 'COLORBOX':
+-      {
+-        return (0, _colorBoxBlock.ColorBoxEditorBlock)(props);
+-      }
+-
+     case 'BACKGROUNDIMAGE':
+       {
+         return (0, _backgroundImageBlock.BGImageEditorBlock)(props);
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
 index 825dc22..db4d5f3 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
@@ -410,11 +623,59 @@ index 825dc22..db4d5f3 100644
      onChange: onChange,
      onCancel: () => {
        onEditFinish({});
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
+index ba09096..133addf 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
+@@ -44,12 +44,14 @@ function InfoBoxEditorBlock(props) {
+   const entity = contentState.getEntity(entityKey);
+   const {
+     title,
+-    rawContentState
++    rawContentState,
++    image
+   } = entity.getData();
+ 
+   const onChange = ({
+     title: newTitle,
+-    rawContentState: newRawContentState
++    rawContentState: newRawContentState,
++    image: newImage
+   }) => {
+     // close `InfoBoxInput`
+     setToShowInput(false);
+@@ -58,7 +60,8 @@ function InfoBoxEditorBlock(props) {
+       entityData: {
+         title: newTitle,
+         body: _draftConverter.default.convertToHtml(newRawContentState),
+-        rawContentState: newRawContentState
++        rawContentState: newRawContentState,
++        image: newImage || null
+       }
+     });
+   };
+@@ -67,6 +70,7 @@ function InfoBoxEditorBlock(props) {
+     renderBasicEditor: renderBasicEditor,
+     title: title,
+     rawContentStateForInfoBoxEditor: rawContentState,
++    image: image,
+     onChange: onChange,
+     onCancel: () => {
+       onEditFinish({});
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..54028e6 100644
+index ceebcbb..def5ac2 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-@@ -55,8 +55,16 @@ var _video = require("../../draft-js/buttons/video");
+@@ -35,8 +35,6 @@ var _table = require("../../draft-js/buttons/table");
+ 
+ var _divider = require("../../draft-js/buttons/divider");
+ 
+-var _colorBox = require("../../draft-js/buttons/color-box");
+-
+ var _backgroundImage = require("../../draft-js/buttons/background-image");
+ 
+ var _backgroundVideo = require("../../draft-js/buttons/background-video");
+@@ -55,8 +53,16 @@ var _video = require("../../draft-js/buttons/video");
  
  var _audio = require("../../draft-js/buttons/audio");
  
@@ -431,7 +692,14 @@ index ceebcbb..54028e6 100644
  var _imageSelector = require("./selector/image-selector");
  
  var _videoSelector = require("./selector/video-selector");
-@@ -107,10 +115,11 @@ const buttonNames = {
+@@ -100,17 +106,17 @@ const buttonNames = {
+   slideshow: 'slideshow',
+   table: 'table',
+   textAlign: 'text-align',
+-  colorBox: 'color-box',
+   backgroundColor: 'background-color',
+   backgroundImage: 'background-image',
+   backgroundVideo: 'background-video',
    relatedPost: 'related-post',
    sideIndex: 'side-index',
    video: 'video',
@@ -441,11 +709,19 @@ index ceebcbb..54028e6 100644
  };
  exports.buttonNames = buttonNames;
 -const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio];
-+const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio, buttonNames.footnote];
++const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio, buttonNames.footnote];
  const buttonStyle = (0, _styledComponents.css)`
    border-radius: 6px;
    text-align: center;
-@@ -275,6 +284,7 @@ const CustomAlignCenterButton = createButtonWithoutProps(_textAlign.AlignCenterB
+@@ -266,7 +272,6 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
+ const CustomTableButton = createButtonWithoutProps(_table.TableButton);
+ const CustomInfoBoxButton = createButtonWithoutProps(_infoBox.InfoBoxButton);
+ const CustomDividerButton = createButtonWithoutProps(_divider.DividerButton);
+-const CustomColorBoxButton = createButtonWithoutProps(_colorBox.ColorBoxButton, true);
+ const CustomBGImageButton = createButtonWithoutProps(_backgroundImage.BGImageButton, true);
+ const CustomBGVideoButton = createButtonWithoutProps(_backgroundVideo.BGVideoButton, true);
+ const CustomRelatedPostButton = createButtonWithoutProps(_relatedPost.RelatedPostButton, true);
+@@ -275,6 +280,7 @@ const CustomAlignCenterButton = createButtonWithoutProps(_textAlign.AlignCenterB
  const CustomAlignLeftButton = createButtonWithoutProps(_textAlign.AlignLeftButton, true);
  const CustomVideoButton = createButtonWithoutProps(_video.VideoButton);
  const CustomAudioButton = createButtonWithoutProps(_audio.AudioButton);
@@ -453,7 +729,7 @@ index ceebcbb..54028e6 100644
  const DraftEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-root)*/
    background: #fff;
-@@ -432,7 +442,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -432,7 +438,11 @@ class RichTextEditor extends _react.default.Component {
      super(props);
      this.state = {
        isEnlarged: false,
@@ -466,7 +742,7 @@ index ceebcbb..54028e6 100644
      }; // Custom overrides for "code" style.
  
      this.customStyleMap = {
-@@ -653,6 +667,84 @@ class RichTextEditor extends _react.default.Component {
+@@ -653,6 +663,84 @@ class RichTextEditor extends _react.default.Component {
      }
    };
  
@@ -551,7 +827,7 @@ index ceebcbb..54028e6 100644
    render() {
      const {
        disabledButtons = []
-@@ -667,7 +759,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,7 +755,11 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -564,7 +840,7 @@ index ceebcbb..54028e6 100644
      } = this.state;
      const entityType = this.getEntityType(editorState);
      const customStyle = this.getCustomStyle(editorState.getCurrentInlineStyle());
-@@ -678,7 +774,122 @@ class RichTextEditor extends _react.default.Component {
+@@ -678,7 +770,122 @@ class RichTextEditor extends _react.default.Component {
        }));
      };
  
@@ -655,7 +931,7 @@ index ceebcbb..54028e6 100644
 +        fontWeight: 600,
 +        margin: '10px 0'
 +      }
-+    }, "灰框內文字內容"), renderBasicEditorForFootnote({
++    }, "文字內容"), renderBasicEditorForFootnote({
 +      editorState: (this.state.footnoteEditInputValue || (() => {
 +        const safeRawContentState = footnoteEditData.rawContentState && typeof footnoteEditData.rawContentState === 'object' && Array.isArray(footnoteEditData.rawContentState.blocks) ? footnoteEditData.rawContentState : {
 +          blocks: [],
@@ -688,7 +964,7 @@ index ceebcbb..54028e6 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -730,7 +941,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +937,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -705,7 +981,21 @@ index ceebcbb..54028e6 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -845,9 +1064,10 @@ class RichTextEditor extends _react.default.Component {
+@@ -784,13 +999,6 @@ class RichTextEditor extends _react.default.Component {
+       readOnly: readOnly,
+       editorState: editorState,
+       onChange: this.onChange
+-    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomColorBoxButton, {
+-      isDisabled: disabledButtons.includes(buttonNames.colorBox),
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange,
+-      renderBasicEditor: renderBasicEditor // decorators={decorators}
+-
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomBackgroundColorButton, {
+       isDisabled: disabledButtons.includes(buttonNames.backgroundColor),
+       isActive: Object.prototype.hasOwnProperty.call(customStyle, 'backgroundColor'),
+@@ -845,9 +1053,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
