@@ -560,19 +560,31 @@ index ac7ea11..30d109b 100644
  
    const apiData = convertBlocksToApiData(blocks, entityMap, entityTagMap);
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
-index ff465a9..945d764 100644
+index ff465a9..43c23c7 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
-@@ -9,8 +9,6 @@ var _infoBoxBlock = require("./block-renderer/info-box-block");
+@@ -9,12 +9,6 @@ var _infoBoxBlock = require("./block-renderer/info-box-block");
  
  var _tableBlock = require("./block-renderer/table-block");
  
 -var _colorBoxBlock = require("./block-renderer/color-box-block");
 -
- var _backgroundImageBlock = require("./block-renderer/background-image-block");
+-var _backgroundImageBlock = require("./block-renderer/background-image-block");
+-
+-var _backgroundVideoBlock = require("./block-renderer/background-video-block");
+-
+ var _sideIndexBlock = require("./block-renderer/side-index-block");
  
- var _backgroundVideoBlock = require("./block-renderer/background-video-block");
-@@ -81,11 +79,6 @@ const AtomicBlock = props => {
+ var _imageBlock = require("./block-renderer/image-block");
+@@ -29,7 +23,6 @@ const {
+   SlideshowBlock,
+   SlideshowBlockV2,
+   DividerBlock,
+-  RelatedPostBlock,
+   VideoBlock,
+   AudioBlock
+ } = _readr.default.blockRenderers;
+@@ -81,26 +74,6 @@ const AtomicBlock = props => {
          return (0, _tableBlock.TableEditorBlock)(props);
        }
  
@@ -581,9 +593,24 @@ index ff465a9..945d764 100644
 -        return (0, _colorBoxBlock.ColorBoxEditorBlock)(props);
 -      }
 -
-     case 'BACKGROUNDIMAGE':
+-    case 'BACKGROUNDIMAGE':
+-      {
+-        return (0, _backgroundImageBlock.BGImageEditorBlock)(props);
+-      }
+-
+-    case 'BACKGROUNDVIDEO':
+-      {
+-        return (0, _backgroundVideoBlock.BGVideoEditorBlock)(props);
+-      }
+-
+-    case 'RELATEDPOST':
+-      {
+-        return RelatedPostBlock(entity);
+-      }
+-
+     case 'SIDEINDEX':
        {
-         return (0, _backgroundImageBlock.BGImageEditorBlock)(props);
+         return (0, _sideIndexBlock.SideIndexEditorBlock)(props);
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
 index 825dc22..db4d5f3 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
@@ -663,19 +690,30 @@ index ba09096..133addf 100644
      onCancel: () => {
        onEditFinish({});
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..def5ac2 100644
+index ceebcbb..cbe3753 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-@@ -35,8 +35,6 @@ var _table = require("../../draft-js/buttons/table");
+@@ -35,28 +35,26 @@ var _table = require("../../draft-js/buttons/table");
  
  var _divider = require("../../draft-js/buttons/divider");
  
 -var _colorBox = require("../../draft-js/buttons/color-box");
 -
- var _backgroundImage = require("../../draft-js/buttons/background-image");
+-var _backgroundImage = require("../../draft-js/buttons/background-image");
+-
+-var _backgroundVideo = require("../../draft-js/buttons/background-video");
+-
+-var _relatedPost = require("../../draft-js/buttons/related-post");
+-
+ var _sideIndex = require("../../draft-js/buttons/side-index");
  
- var _backgroundVideo = require("../../draft-js/buttons/background-video");
-@@ -55,8 +53,16 @@ var _video = require("../../draft-js/buttons/video");
+ var _textAlign = require("../../draft-js/buttons/text-align");
+ 
+ var _fontColor = require("../../draft-js/buttons/font-color");
+ 
+-var _backgroundColor = require("../../draft-js/buttons/background-color");
+-
+ var _video = require("../../draft-js/buttons/video");
  
  var _audio = require("../../draft-js/buttons/audio");
  
@@ -692,15 +730,15 @@ index ceebcbb..def5ac2 100644
  var _imageSelector = require("./selector/image-selector");
  
  var _videoSelector = require("./selector/video-selector");
-@@ -100,17 +106,17 @@ const buttonNames = {
+@@ -100,17 +98,13 @@ const buttonNames = {
    slideshow: 'slideshow',
    table: 'table',
    textAlign: 'text-align',
 -  colorBox: 'color-box',
-   backgroundColor: 'background-color',
-   backgroundImage: 'background-image',
-   backgroundVideo: 'background-video',
-   relatedPost: 'related-post',
+-  backgroundColor: 'background-color',
+-  backgroundImage: 'background-image',
+-  backgroundVideo: 'background-video',
+-  relatedPost: 'related-post',
    sideIndex: 'side-index',
    video: 'video',
 -  audio: 'audio'
@@ -709,19 +747,30 @@ index ceebcbb..def5ac2 100644
  };
  exports.buttonNames = buttonNames;
 -const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio];
-+const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio, buttonNames.footnote];
++const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.sideIndex, buttonNames.video, buttonNames.audio, buttonNames.footnote];
  const buttonStyle = (0, _styledComponents.css)`
    border-radius: 6px;
    text-align: center;
-@@ -266,7 +272,6 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
+@@ -235,9 +229,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
+ const CustomFontColorButton = (0, _styledComponents.default)(_fontColor.FontColorButton)`
+   ${buttonStyle}
+ `;
+-const CustomBackgroundColorButton = (0, _styledComponents.default)(_backgroundColor.BackgroundColorButton)`
+-  ${longFormButtonStyle}
+-`;
+ const CustomButton = _styledComponents.default.div`
+   ${buttonStyle}
+ `;
+@@ -266,15 +257,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
  const CustomTableButton = createButtonWithoutProps(_table.TableButton);
  const CustomInfoBoxButton = createButtonWithoutProps(_infoBox.InfoBoxButton);
  const CustomDividerButton = createButtonWithoutProps(_divider.DividerButton);
 -const CustomColorBoxButton = createButtonWithoutProps(_colorBox.ColorBoxButton, true);
- const CustomBGImageButton = createButtonWithoutProps(_backgroundImage.BGImageButton, true);
- const CustomBGVideoButton = createButtonWithoutProps(_backgroundVideo.BGVideoButton, true);
- const CustomRelatedPostButton = createButtonWithoutProps(_relatedPost.RelatedPostButton, true);
-@@ -275,6 +280,7 @@ const CustomAlignCenterButton = createButtonWithoutProps(_textAlign.AlignCenterB
+-const CustomBGImageButton = createButtonWithoutProps(_backgroundImage.BGImageButton, true);
+-const CustomBGVideoButton = createButtonWithoutProps(_backgroundVideo.BGVideoButton, true);
+-const CustomRelatedPostButton = createButtonWithoutProps(_relatedPost.RelatedPostButton, true);
+ const CustomSideIndexButton = createButtonWithoutProps(_sideIndex.SideIndexButton, true);
+ const CustomAlignCenterButton = createButtonWithoutProps(_textAlign.AlignCenterButton, true);
  const CustomAlignLeftButton = createButtonWithoutProps(_textAlign.AlignLeftButton, true);
  const CustomVideoButton = createButtonWithoutProps(_video.VideoButton);
  const CustomAudioButton = createButtonWithoutProps(_audio.AudioButton);
@@ -729,7 +778,7 @@ index ceebcbb..def5ac2 100644
  const DraftEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-root)*/
    background: #fff;
-@@ -432,7 +438,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -432,7 +420,11 @@ class RichTextEditor extends _react.default.Component {
      super(props);
      this.state = {
        isEnlarged: false,
@@ -742,7 +791,18 @@ index ceebcbb..def5ac2 100644
      }; // Custom overrides for "code" style.
  
      this.customStyleMap = {
-@@ -653,6 +663,84 @@ class RichTextEditor extends _react.default.Component {
+@@ -532,10 +524,6 @@ class RichTextEditor extends _react.default.Component {
+         styles['color'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_FONT_COLOR)[1];
+       }
+ 
+-      if (styleName !== null && styleName !== void 0 && styleName.startsWith(_const.CUSTOM_STYLE_PREFIX_BACKGROUND_COLOR)) {
+-        styles['backgroundColor'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_BACKGROUND_COLOR)[1];
+-      }
+-
+       return styles;
+     }, {});
+   };
+@@ -653,6 +641,84 @@ class RichTextEditor extends _react.default.Component {
      }
    };
  
@@ -827,7 +887,7 @@ index ceebcbb..def5ac2 100644
    render() {
      const {
        disabledButtons = []
-@@ -667,7 +755,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,7 +733,11 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -840,7 +900,7 @@ index ceebcbb..def5ac2 100644
      } = this.state;
      const entityType = this.getEntityType(editorState);
      const customStyle = this.getCustomStyle(editorState.getCurrentInlineStyle());
-@@ -678,7 +770,122 @@ class RichTextEditor extends _react.default.Component {
+@@ -678,7 +748,122 @@ class RichTextEditor extends _react.default.Component {
        }));
      };
  
@@ -964,7 +1024,7 @@ index ceebcbb..def5ac2 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -730,7 +937,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +915,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -981,7 +1041,7 @@ index ceebcbb..def5ac2 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -784,13 +999,6 @@ class RichTextEditor extends _react.default.Component {
+@@ -784,41 +977,6 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -992,10 +1052,38 @@ index ceebcbb..def5ac2 100644
 -      onChange: this.onChange,
 -      renderBasicEditor: renderBasicEditor // decorators={decorators}
 -
-     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomBackgroundColorButton, {
-       isDisabled: disabledButtons.includes(buttonNames.backgroundColor),
-       isActive: Object.prototype.hasOwnProperty.call(customStyle, 'backgroundColor'),
-@@ -845,9 +1053,10 @@ class RichTextEditor extends _react.default.Component {
+-    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomBackgroundColorButton, {
+-      isDisabled: disabledButtons.includes(buttonNames.backgroundColor),
+-      isActive: Object.prototype.hasOwnProperty.call(customStyle, 'backgroundColor'),
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange
+-    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomBGImageButton, {
+-      isDisabled: disabledButtons.includes(buttonNames.backgroundImage),
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange,
+-      ImageSelector: _imageSelector.ImageSelector,
+-      renderBasicEditor: renderBasicEditor,
+-      decorators: _entityDecorator.default
+-    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomBGVideoButton, {
+-      isDisabled: disabledButtons.includes(buttonNames.backgroundVideo),
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange,
+-      VideoSelector: _videoSelector.VideoSelector,
+-      renderBasicEditor: renderBasicEditor,
+-      decorators: _entityDecorator.default
+-    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomRelatedPostButton, {
+-      isDisabled: disabledButtons.includes(buttonNames.relatedPost),
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange,
+-      PostSelector: _postSelector.PostSelector
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
+       isDisabled: disabledButtons.includes(buttonNames.sideIndex),
+       readOnly: readOnly,
+@@ -845,9 +1003,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
