@@ -47,6 +47,15 @@ const listConfigurations = list({
       many: true,
       label: '包含的小分類',
     }),
+    featuredPosts: relationship({
+      ref: 'Post',
+      many: true,
+      label: '精選文章',
+      ui: {
+        hideCreate: true,
+        linkToItem: false,
+      },
+    }),
   },
   ui: {
     listView: {
@@ -71,4 +80,18 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+// 使用 addManualOrderRelationshipFields 來記錄 featuredPosts 的新增順序
+const listWithManualOrder = utils.addManualOrderRelationshipFields(
+  [
+    {
+      fieldName: 'manualOrderOfFeaturedPosts',
+      fieldLabel: '精選文章（按新增順序）',
+      targetFieldName: 'featuredPosts',
+      targetListName: 'Post',
+      targetListLabelField: 'title',
+    },
+  ],
+  listConfigurations
+)
+
+export default utils.addTrackingFields(listWithManualOrder)

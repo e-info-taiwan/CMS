@@ -360,6 +360,10 @@ type Category {
   section: Section
   classifies(where: ClassifyWhereInput! = {}, orderBy: [ClassifyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ClassifyWhereUniqueInput): [Classify!]
   classifiesCount(where: ClassifyWhereInput! = {}): Int
+  featuredPosts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
+  featuredPostsCount(where: PostWhereInput! = {}): Int
+  manualOrderOfFeaturedPosts: JSON
+  featuredPostsInInputOrder: [Post]
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -383,6 +387,7 @@ input CategoryWhereInput {
   posts: PostManyRelationFilter
   section: SectionWhereInput
   classifies: ClassifyManyRelationFilter
+  featuredPosts: PostManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -425,6 +430,8 @@ input CategoryUpdateInput {
   posts: PostRelateToManyForUpdateInput
   section: SectionRelateToOneForUpdateInput
   classifies: ClassifyRelateToManyForUpdateInput
+  featuredPosts: PostRelateToManyForUpdateInput
+  manualOrderOfFeaturedPosts: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -458,6 +465,8 @@ input CategoryCreateInput {
   posts: PostRelateToManyForCreateInput
   section: SectionRelateToOneForCreateInput
   classifies: ClassifyRelateToManyForCreateInput
+  featuredPosts: PostRelateToManyForCreateInput
+  manualOrderOfFeaturedPosts: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
@@ -2734,6 +2743,7 @@ type Topic {
   tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
   isPinned: Boolean
+  sortOrder: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2756,6 +2766,7 @@ input TopicWhereInput {
   posts: PostManyRelationFilter
   tags: TagManyRelationFilter
   isPinned: BooleanFilter
+  sortOrder: IntNullableFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -2768,6 +2779,7 @@ input TopicOrderByInput {
   status: OrderDirection
   content: OrderDirection
   isPinned: OrderDirection
+  sortOrder: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -2780,6 +2792,7 @@ input TopicUpdateInput {
   posts: PostRelateToManyForUpdateInput
   tags: TagRelateToManyForUpdateInput
   isPinned: Boolean
+  sortOrder: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2799,6 +2812,7 @@ input TopicCreateInput {
   posts: PostRelateToManyForCreateInput
   tags: TagRelateToManyForCreateInput
   isPinned: Boolean
+  sortOrder: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
