@@ -90,6 +90,8 @@ model Category {
   section                    Section?       @relation("Category_section", fields: [sectionId], references: [id])
   sectionId                  Int?           @map("section")
   classifies                 Classify[]     @relation("Classify_category")
+  featuredPosts              Post[]         @relation("Category_featuredPosts")
+  manualOrderOfFeaturedPosts Json?
   createdAt                  DateTime?
   updatedAt                  DateTime?
   createdBy                  User?          @relation("Category_createdBy", fields: [createdById], references: [id])
@@ -545,6 +547,7 @@ model Post {
   createdById                  Int?             @map("createdBy")
   updatedBy                    User?            @relation("Post_updatedBy", fields: [updatedById], references: [id])
   updatedById                  Int?             @map("updatedBy")
+  from_Category_featuredPosts  Category[]       @relation("Category_featuredPosts")
   from_Favorite_post           Favorite[]       @relation("Favorite_post")
   from_HomepagePick_posts      HomepagePick[]   @relation("HomepagePick_posts")
   from_Newsletter_focusPosts   Newsletter[]     @relation("Newsletter_focusPosts")
@@ -682,6 +685,7 @@ model Topic {
   posts                    Post[]         @relation("Post_topic")
   tags                     Tag[]          @relation("Tag_topics")
   isPinned                 Boolean        @default(false)
+  sortOrder                Int?           @default(0)
   createdAt                DateTime?
   updatedAt                DateTime?
   createdBy                User?          @relation("Topic_createdBy", fields: [createdById], references: [id])
