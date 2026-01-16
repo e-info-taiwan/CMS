@@ -1,3 +1,39 @@
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js
+index 8f855fa..806d8a6 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js
+@@ -17,9 +17,6 @@ const {
+   DividerBlock,
+   TableBlock,
+   ColorBoxBlock,
+-  BGImageBlock,
+-  BGVideoBlock,
+-  RelatedPostBlock,
+   SideIndexBlock,
+   VideoBlock,
+   AudioBlock
+@@ -77,21 +74,6 @@ const AtomicBlock = props => {
+         return ColorBoxBlock(props);
+       }
+ 
+-    case 'BACKGROUNDIMAGE':
+-      {
+-        return BGImageBlock(props);
+-      }
+-
+-    case 'BACKGROUNDVIDEO':
+-      {
+-        return BGVideoBlock(props);
+-      }
+-
+-    case 'RELATEDPOST':
+-      {
+-        return RelatedPostBlock(entity);
+-      }
+-
+     case 'SIDEINDEX':
+       {
+         return SideIndexBlock(props);
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
 index d0dd133..babe29a 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
@@ -53,6 +89,46 @@ index d0dd133..babe29a 100644
      dangerouslySetInnerHTML: {
        __html: body
      }
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
+index 634dbe1..6d8bdd5 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
+@@ -5,10 +5,6 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.blockRenderers = void 0;
+ 
+-var _backgroundImageBlock = require("./background-image-block");
+-
+-var _backgroundVideoBlock = require("./background-video-block");
+-
+ var _colorBoxBlock = require("./color-box-block");
+ 
+ var _dividerBlock = require("./divider-block");
+@@ -21,8 +17,6 @@ var _infoBoxBlock = require("./info-box-block");
+ 
+ var _mediaBlock = require("./media-block");
+ 
+-var _relatedPostBlock = require("./related-post-block");
+-
+ var _sideIndexBlock = require("./side-index-block");
+ 
+ var _slideshowBlock = require("./slideshow-block");
+@@ -34,15 +28,12 @@ var _videoBlock = require("./video-block");
+ var _audioBlock = require("./audio-block");
+ 
+ const blockRenderers = {
+-  BGImageBlock: _backgroundImageBlock.BGImageBlock,
+-  BGVideoBlock: _backgroundVideoBlock.BGVideoBlock,
+   ColorBoxBlock: _colorBoxBlock.ColorBoxBlock,
+   DividerBlock: _dividerBlock.DividerBlock,
+   EmbeddedCodeBlock: _embeddedCodeBlock.EmbeddedCodeBlock,
+   ImageBlock: _imageBlock.ImageBlock,
+   InfoBoxBlock: _infoBoxBlock.InfoBoxBlock,
+   MediaBlock: _mediaBlock.MediaBlock,
+-  RelatedPostBlock: _relatedPostBlock.RelatedPostBlock,
+   SideIndexBlock: _sideIndexBlock.SideIndexBlock,
+   SlideshowBlock: _slideshowBlock.SlideshowBlock,
+   SlideshowBlockV2: _slideshowBlock.SlideshowBlockV2,
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
 index 5701e67..4beac13 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
@@ -110,3 +186,19 @@ index 5701e67..4beac13 100644
      className: "infobox-content"
    }, /*#__PURE__*/_react.default.createElement("div", {
      dangerouslySetInnerHTML: {
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
+index fc67e4f..e66062c 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
+@@ -139,11 +139,6 @@ const customStyleFn = style => {
+       styles['color'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_FONT_COLOR)[1];
+     }
+ 
+-    if (styleName !== null && styleName !== void 0 && styleName.startsWith(_const.CUSTOM_STYLE_PREFIX_BACKGROUND_COLOR)) {
+-      const highlightColor = styleName.split(_const.CUSTOM_STYLE_PREFIX_BACKGROUND_COLOR)[1];
+-      styles['background'] = `linear-gradient(to top, transparent 25%, ${highlightColor} 25% 75%, transparent 75%)`;
+-    }
+-
+     return styles;
+   }, {});
+ };
