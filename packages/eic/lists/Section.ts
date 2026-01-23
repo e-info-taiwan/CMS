@@ -38,8 +38,8 @@ const listConfigurations = list({
       ref: 'Photo',
       label: 'Photos 首圖',
     }),
-    heroImageCaption: text({
-      label: '首圖圖說',
+    description: text({
+      label: '描述',
     }),
     showInHeader: checkbox({
       label: '顯示於Header',

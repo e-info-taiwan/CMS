@@ -2381,7 +2381,7 @@ type Section {
   name: String
   style: String
   heroImage: Photo
-  heroImageCaption: String
+  description: String
   showInHeader: Boolean
   sortOrder: Int
   categories(where: CategoryWhereInput! = {}, orderBy: [CategoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CategoryWhereUniqueInput): [Category!]
@@ -2407,7 +2407,7 @@ input SectionWhereInput {
   name: StringFilter
   style: StringNullableFilter
   heroImage: PhotoWhereInput
-  heroImageCaption: StringFilter
+  description: StringFilter
   showInHeader: BooleanFilter
   sortOrder: IntNullableFilter
   categories: CategoryManyRelationFilter
@@ -2429,7 +2429,7 @@ input SectionOrderByInput {
   slug: OrderDirection
   name: OrderDirection
   style: OrderDirection
-  heroImageCaption: OrderDirection
+  description: OrderDirection
   showInHeader: OrderDirection
   sortOrder: OrderDirection
   createdAt: OrderDirection
@@ -2441,7 +2441,7 @@ input SectionUpdateInput {
   name: String
   style: String
   heroImage: PhotoRelateToOneForUpdateInput
-  heroImageCaption: String
+  description: String
   showInHeader: Boolean
   sortOrder: Int
   categories: CategoryRelateToManyForUpdateInput
@@ -2469,7 +2469,7 @@ input SectionCreateInput {
   name: String
   style: String
   heroImage: PhotoRelateToOneForCreateInput
-  heroImageCaption: String
+  description: String
   showInHeader: Boolean
   sortOrder: Int
   categories: CategoryRelateToManyForCreateInput
