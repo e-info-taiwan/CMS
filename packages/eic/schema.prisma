@@ -596,7 +596,7 @@ model Section {
   style                          String?    @default("default")
   heroImage                      Photo?     @relation("Section_heroImage", fields: [heroImageId], references: [id])
   heroImageId                    Int?       @map("heroImage")
-  heroImageCaption               String     @default("")
+  description                    String     @default("")
   showInHeader                   Boolean    @default(false)
   sortOrder                      Int?
   categories                     Category[] @relation("Category_section")
