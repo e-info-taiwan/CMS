@@ -286,26 +286,27 @@ model InfoGraph {
 }
 
 model Job {
-  id                Int       @id @default(autoincrement())
-  title             String    @default("")
-  company           String    @default("")
-  jobDescription    String    @default("")
-  requirements      String    @default("")
-  salary            String    @default("")
-  bonus             String    @default("")
-  applicationMethod String    @default("")
-  startDate         DateTime
-  endDate           DateTime
-  isApproved        Boolean   @default(false)
-  showOnHomepage    Boolean   @default(false)
-  sortOrder         Int
-  state             String    @default("draft")
-  createdAt         DateTime?
-  updatedAt         DateTime?
-  createdBy         User?     @relation("Job_createdBy", fields: [createdById], references: [id])
-  createdById       Int?      @map("createdBy")
-  updatedBy         User?     @relation("Job_updatedBy", fields: [updatedById], references: [id])
-  updatedById       Int?      @map("updatedBy")
+  id                   Int          @id @default(autoincrement())
+  title                String       @default("")
+  company              String       @default("")
+  jobDescription       String       @default("")
+  requirements         String       @default("")
+  salary               String       @default("")
+  bonus                String       @default("")
+  applicationMethod    String       @default("")
+  startDate            DateTime
+  endDate              DateTime
+  isApproved           Boolean      @default(false)
+  showOnHomepage       Boolean      @default(false)
+  sortOrder            Int
+  state                String       @default("draft")
+  createdAt            DateTime?
+  updatedAt            DateTime?
+  createdBy            User?        @relation("Job_createdBy", fields: [createdById], references: [id])
+  createdById          Int?         @map("createdBy")
+  updatedBy            User?        @relation("Job_updatedBy", fields: [updatedById], references: [id])
+  updatedById          Int?         @map("updatedBy")
+  from_Newsletter_jobs Newsletter[] @relation("Newsletter_jobs")
 
   @@index([createdById])
   @@index([updatedById])
@@ -367,6 +368,7 @@ model Newsletter {
   relatedPosts        Post[]    @relation("Newsletter_relatedPosts")
   ads                 Ad[]      @relation("Newsletter_ads")
   events              Event[]   @relation("Newsletter_events")
+  jobs                Job[]     @relation("Newsletter_jobs")
   poll                Poll?     @relation("Newsletter_poll", fields: [pollId], references: [id])
   pollId              Int?      @map("poll")
   readerResponseTitle String    @default("")
