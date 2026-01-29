@@ -40,6 +40,26 @@ const listConfigurations = list({
       ],
       defaultValue: 'draft',
       isIndexed: true,
+      access: {
+        update: ({ session }) => {
+          // contributor 不能修改 state 欄位（不能發佈文章）
+          if (session?.data?.role === 'contributor') {
+            return false
+          }
+          return true
+        },
+      },
+      ui: {
+        itemView: {
+          fieldMode: ({ session }) => {
+            // contributor 在編輯頁面看到 state 但是唯讀
+            if (session?.data?.role === 'contributor') {
+              return 'read'
+            }
+            return 'edit'
+          },
+        },
+      },
     }),
     publishTime: timestamp({
       label: '發佈時間',
@@ -224,7 +244,6 @@ const listConfigurations = list({
       pageSize: 50,
     },
   },
-  // TODO: contributor can only create draft and cannot edit post's state
   access: {
     operation: {
       query: allowRoles(admin, moderator, editor, contributor),

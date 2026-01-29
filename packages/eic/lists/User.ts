@@ -25,19 +25,19 @@ const listConfigurations = list({
       type: 'string',
       options: [
         {
-          label: 'admin',
+          label: 'Admin',
           value: 'admin',
         },
         {
-          label: 'moderator',
+          label: 'Pro editor 主編',
           value: 'moderator',
         },
         {
-          label: 'editor',
+          label: 'Editor 一般主編',
           value: 'editor',
         },
         {
-          label: 'contributor',
+          label: 'Volunteer 志工',
           value: 'contributor',
         },
       ],

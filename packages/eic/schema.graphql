@@ -1545,6 +1545,8 @@ type Newsletter {
   adsCount(where: AdWhereInput! = {}): Int
   events(where: EventWhereInput! = {}, orderBy: [EventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: EventWhereUniqueInput): [Event!]
   eventsCount(where: EventWhereInput! = {}): Int
+  jobs(where: JobWhereInput! = {}, orderBy: [JobOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: JobWhereUniqueInput): [Job!]
+  jobsCount(where: JobWhereInput! = {}): Int
   poll: Poll
   readerResponseTitle: String
   readerResponseLink: String
@@ -1576,6 +1578,7 @@ input NewsletterWhereInput {
   relatedPosts: PostManyRelationFilter
   ads: AdManyRelationFilter
   events: EventManyRelationFilter
+  jobs: JobManyRelationFilter
   poll: PollWhereInput
   readerResponseTitle: StringFilter
   readerResponseLink: StringFilter
@@ -1599,6 +1602,12 @@ input EventManyRelationFilter {
   every: EventWhereInput
   some: EventWhereInput
   none: EventWhereInput
+}
+
+input JobManyRelationFilter {
+  every: JobWhereInput
+  some: JobWhereInput
+  none: JobWhereInput
 }
 
 input NewsletterOrderByInput {
@@ -1627,6 +1636,7 @@ input NewsletterUpdateInput {
   relatedPosts: PostRelateToManyForUpdateInput
   ads: AdRelateToManyForUpdateInput
   events: EventRelateToManyForUpdateInput
+  jobs: JobRelateToManyForUpdateInput
   poll: PollRelateToOneForUpdateInput
   readerResponseTitle: String
   readerResponseLink: String
@@ -1654,6 +1664,13 @@ input EventRelateToManyForUpdateInput {
   connect: [EventWhereUniqueInput!]
 }
 
+input JobRelateToManyForUpdateInput {
+  disconnect: [JobWhereUniqueInput!]
+  set: [JobWhereUniqueInput!]
+  create: [JobCreateInput!]
+  connect: [JobWhereUniqueInput!]
+}
+
 input PollRelateToOneForUpdateInput {
   create: PollCreateInput
   connect: PollWhereUniqueInput
@@ -1675,6 +1692,7 @@ input NewsletterCreateInput {
   relatedPosts: PostRelateToManyForCreateInput
   ads: AdRelateToManyForCreateInput
   events: EventRelateToManyForCreateInput
+  jobs: JobRelateToManyForCreateInput
   poll: PollRelateToOneForCreateInput
   readerResponseTitle: String
   readerResponseLink: String
@@ -1696,6 +1714,11 @@ input AdRelateToManyForCreateInput {
 input EventRelateToManyForCreateInput {
   create: [EventCreateInput!]
   connect: [EventWhereUniqueInput!]
+}
+
+input JobRelateToManyForCreateInput {
+  create: [JobCreateInput!]
+  connect: [JobWhereUniqueInput!]
 }
 
 input PollRelateToOneForCreateInput {
