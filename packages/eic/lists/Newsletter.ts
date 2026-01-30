@@ -1,9 +1,10 @@
-import { list } from '@keystone-6/core'
+import { list, graphql } from '@keystone-6/core'
 import {
   text,
   relationship,
   checkbox,
   timestamp,
+  virtual,
 } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 import envVariables from '../environment-variables'
@@ -16,6 +17,15 @@ const WEB_URL_BASE = envVariables.webUrlBase
 // 預設圖片路徑常數
 const DEFAULT_POST_IMAGE_PATH = `${WEB_URL_BASE}/post-default.png`
 const DEFAULT_NEWS_IMAGE_PATH = `${WEB_URL_BASE}/news-default.jpg`
+
+// Poll 投票選項預設 icon（由上到下 1-5）
+const POLL_ICON_URLS = [
+  'https://storage.googleapis.com/statics-e-info-dev/images/2428db5d-403b-4ddd-9417-3be366c13f4d-w480.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/216460ea-48f7-4a5e-9f90-09b045d7d286-w480.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/9e289163-3342-46e3-9f02-21918203b1b0-w480.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/0f898612-9243-4654-b85f-0fb629d88d17-w480.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/ce523ec1-9ebc-47e3-aafd-0ba2ba4d2abf-w480.png',
+]
 
 // 格式化日期為 "YYYY年MM月DD日" 格式
 const formatDate = (dateString: string | null): string => {
@@ -409,6 +419,122 @@ const generateNewsletterHtml = async (
   return html
 }
 
+// 生成 Poll（心情互動）區塊 HTML
+const generatePollHtml = async (
+  context: any,
+  newsletterId: string | number,
+  pollId: string | number | null
+) => {
+  let html = ''
+
+  // 如果沒有關聯 poll，返回空字串
+  if (!pollId) {
+    return html
+  }
+
+  try {
+    // 查詢 poll 資料
+    const poll = await context.query.Poll.findOne({
+      where: { id: String(pollId) },
+      query: `
+        id
+        content
+        option1
+        option2
+        option3
+        option4
+        option5
+        option1Image {
+          resized {
+            w480
+          }
+        }
+        option2Image {
+          resized {
+            w480
+          }
+        }
+        option3Image {
+          resized {
+            w480
+          }
+        }
+        option4Image {
+          resized {
+            w480
+          }
+        }
+        option5Image {
+          resized {
+            w480
+          }
+        }
+      `,
+    })
+
+    if (!poll) {
+      return html
+    }
+
+    // 生成 poll HTML
+    html += '    <!-- ===== 08-Poll (心情互動) ===== -->\n'
+    html += '    <div class="poll-section">\n'
+    html += '      <div class="poll-title">心情互動</div>\n'
+
+    if (poll.content) {
+      html += `      <!-- ${poll.content} -->\n`
+      html += `      <div class="poll-subtitle">${poll.content}</div>\n`
+    } else {
+      html +=
+        '      <div class="poll-subtitle">留下今天看完電子報的心情</div>\n'
+    }
+
+    html += '\n'
+    html += '      <div class="poll-options">\n'
+
+    // 生成 5 個選項
+    const options = [
+      { num: 1, text: poll.option1, image: poll.option1Image },
+      { num: 2, text: poll.option2, image: poll.option2Image },
+      { num: 3, text: poll.option3, image: poll.option3Image },
+      { num: 4, text: poll.option4, image: poll.option4Image },
+      { num: 5, text: poll.option5, image: poll.option5Image },
+    ]
+
+    for (const option of options) {
+      if (!option.text) continue // 跳過空選項
+
+      const voteUrl = `${WEB_URL_BASE}/newsletter/${newsletterId}?vote=${option.num}&utm_source=email`
+      const imageUrl =
+        option.image?.resized?.w480 || POLL_ICON_URLS[option.num - 1]
+
+      html += `        <!-- href: ${voteUrl} -->\n`
+      html += `        <a href="${voteUrl}" class="poll-option-link">\n`
+      html += '          <div class="poll-option">\n'
+      html += '            <div class="poll-radio"></div>\n'
+      html += '            <div class="poll-bar-container">\n'
+      html += '              <div class="poll-bar" style="width: 15%;"></div>\n'
+      html +=
+        '              <div class="poll-option-content" style="left: 15%;">\n'
+      html += `                <!-- option${option.num}ImageUrl -->\n`
+      html += `                <img src="${imageUrl}" alt="" class="poll-image">\n`
+      html += `                <span class="poll-text">${option.text}</span>\n`
+      html += '              </div>\n'
+      html += '            </div>\n'
+      html += '          </div>\n'
+      html += '        </a>\n'
+      html += '\n'
+    }
+
+    html += '      </div>\n'
+    html += '    </div>\n\n'
+  } catch (error) {
+    console.error('生成 Poll HTML 時發生錯誤:', error)
+  }
+
+  return html
+}
+
 const listConfigurations = list({
   fields: {
     title: text({
@@ -484,7 +610,7 @@ const listConfigurations = list({
       ui: {
         displayMode: 'textarea',
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: { fieldMode: 'hidden' },
       },
     }),
     beautifiedHtml: text({
@@ -492,7 +618,65 @@ const listConfigurations = list({
       ui: {
         displayMode: 'textarea',
         createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
+    }),
+    // Virtual field: 標準版 HTML + Poll（僅用於 CMS 顯示，不存入資料庫）
+    standardHtmlWithPoll: virtual({
+      label: '原始碼標準版',
+      field: graphql.field({
+        type: graphql.String,
+        async resolve(item: Record<string, unknown>, args, context) {
+          try {
+            const standardHtml = (item.standardHtml as string) || ''
+            if (!item.pollId) {
+              return standardHtml
+            }
+            const pollHtml = await generatePollHtml(
+              context,
+              String(item.id),
+              item.pollId as number
+            )
+            return standardHtml + pollHtml
+          } catch (error) {
+            console.error('生成 standardHtmlWithPoll 時發生錯誤:', error)
+            return (item.standardHtml as string) || ''
+          }
+        },
+      }),
+      ui: {
+        createView: { fieldMode: 'hidden' },
         itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    // Virtual field: 美化版 HTML + Poll（僅用於 CMS 顯示，不存入資料庫）
+    beautifiedHtmlWithPoll: virtual({
+      label: '原始碼美化版',
+      field: graphql.field({
+        type: graphql.String,
+        async resolve(item: Record<string, unknown>, args, context) {
+          try {
+            const beautifiedHtml = (item.beautifiedHtml as string) || ''
+            if (!item.pollId) {
+              return beautifiedHtml
+            }
+            const pollHtml = await generatePollHtml(
+              context,
+              String(item.id),
+              item.pollId as number
+            )
+            return beautifiedHtml + pollHtml
+          } catch (error) {
+            console.error('生成 beautifiedHtmlWithPoll 時發生錯誤:', error)
+            return (item.beautifiedHtml as string) || ''
+          }
+        },
+      }),
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
       },
     }),
   },
