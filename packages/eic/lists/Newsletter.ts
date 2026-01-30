@@ -20,11 +20,11 @@ const DEFAULT_NEWS_IMAGE_PATH = `${WEB_URL_BASE}/news-default.jpg`
 
 // Poll 投票選項預設 icon（由上到下 1-5）
 const POLL_ICON_URLS = [
-  'https://storage.googleapis.com/statics-e-info-dev/images/2428db5d-403b-4ddd-9417-3be366c13f4d-w480.png',
-  'https://storage.googleapis.com/statics-e-info-dev/images/216460ea-48f7-4a5e-9f90-09b045d7d286-w480.png',
-  'https://storage.googleapis.com/statics-e-info-dev/images/9e289163-3342-46e3-9f02-21918203b1b0-w480.png',
-  'https://storage.googleapis.com/statics-e-info-dev/images/0f898612-9243-4654-b85f-0fb629d88d17-w480.png',
-  'https://storage.googleapis.com/statics-e-info-dev/images/ce523ec1-9ebc-47e3-aafd-0ba2ba4d2abf-w480.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/2428db5d-403b-4ddd-9417-3be366c13f4d.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/051b3ea6-0082-4e1a-acbb-09bd51b074dc.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/ac3ac606-6526-44ff-9346-ac0f15977e9f.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/007655a9-6cf4-4c8a-9d60-59426617a736.png',
+  'https://storage.googleapis.com/statics-e-info-dev/images/013185b7-d5ea-4de4-aeac-feca2e9cfcc7.png',
 ]
 
 // 格式化日期為 "YYYY年MM月DD日" 格式
