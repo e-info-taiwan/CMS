@@ -1554,6 +1554,8 @@ type Newsletter {
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String
+  standardHtmlWithPoll: String
+  beautifiedHtmlWithPoll: String
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
