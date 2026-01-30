@@ -17,6 +17,7 @@ const {
   INVALID_CDN_CACHE_SERVER_URL,
   GEMINI_API_KEY,
   GEMINI_MODEL,
+  WEB_URL_BASE,
 } = process.env
 
 enum DatabaseProvider {
@@ -69,4 +70,6 @@ export default {
       model: GEMINI_MODEL || 'gemini-2.5-flash',
     },
   },
+  webUrlBase:
+    WEB_URL_BASE || 'https://eic-web-dev-1090198686704.asia-east1.run.app',
 }
