@@ -6,8 +6,16 @@ import {
   timestamp,
 } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
+import envVariables from '../environment-variables'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
+
+// 網站 URL（從環境變數讀取）
+const WEB_URL_BASE = envVariables.webUrlBase
+
+// 預設圖片路徑常數
+const DEFAULT_POST_IMAGE_PATH = `${WEB_URL_BASE}/post-default.png`
+const DEFAULT_NEWS_IMAGE_PATH = `${WEB_URL_BASE}/news-default.jpg`
 
 // 格式化日期為 "YYYY年MM月DD日" 格式
 const formatDate = (dateString: string | null): string => {
@@ -17,6 +25,13 @@ const formatDate = (dateString: string | null): string => {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}年${month}月${day}日`
+}
+
+// 根據 category 決定預設圖片
+const getDefaultImage = (category: any): string => {
+  // Use different default image for "編輯直送" category
+  const isEditorCategory = category?.slug === 'editor'
+  return isEditorCategory ? DEFAULT_NEWS_IMAGE_PATH : DEFAULT_POST_IMAGE_PATH
 }
 
 // 生成電子報 HTML（只查詢 IDs，使用並行查詢優化效能）
@@ -42,6 +57,9 @@ const generateNewsletterHtml = async (
           id
           title
           brief
+          category {
+            slug
+          }
           heroImage {
             resized {
               w480
@@ -57,6 +75,9 @@ const generateNewsletterHtml = async (
           query: `
           id
           title
+          category {
+            slug
+          }
           heroImage {
             resized {
               w480
@@ -129,8 +150,7 @@ const generateNewsletterHtml = async (
     for (let i = 0; i < relatedPosts.length; i++) {
       const post = relatedPosts[i]
       const imageUrl =
-        post.heroImage?.resized?.w800 ||
-        'https://placehold.co/560x320/e8e8e8/666666?text=新聞圖片'
+        post.heroImage?.resized?.w800 || getDefaultImage(post.category)
 
       html += `    <!-- Article ${i + 1} -->\n`
       html += '    <div class="article-section">\n'
@@ -143,7 +163,7 @@ const generateNewsletterHtml = async (
         html += '      </p>\n'
       }
 
-      html += `      <div class="read-more"><a href="https://e-info.org.tw/node/${post.id}">閱讀更多</a></div>\n`
+      html += `      <div class="read-more"><a href="${WEB_URL_BASE}/node/${post.id}">閱讀更多</a></div>\n`
       html += '    </div>\n\n'
     }
   }
@@ -156,14 +176,13 @@ const generateNewsletterHtml = async (
 
     for (const post of focusPosts) {
       const imageUrl =
-        post.heroImage?.resized?.w480 ||
-        'https://placehold.co/120x120/d0d0d0/666666?text=Image'
+        post.heroImage?.resized?.w480 || getDefaultImage(post.category)
 
       html += '    <div class="highlight-item">\n'
       html += `      <img src="${imageUrl}" alt="縮圖" class="highlight-thumb">\n`
       html += '      <div class="highlight-content">\n'
       html += `        <div class="highlight-title">${post.title}</div>\n`
-      html += `        <div class="read-more"><a href="https://e-info.org.tw/node/${post.id}">閱讀更多</a></div>\n`
+      html += `        <div class="read-more"><a href="${WEB_URL_BASE}/node/${post.id}">閱讀更多</a></div>\n`
       html += '      </div>\n'
       html += '    </div>\n'
       html += '    \n'
@@ -180,10 +199,10 @@ const generateNewsletterHtml = async (
   }
 
   // ===== Ads (廣告) =====
-  html += '    <!-- Ads -->\n'
-  html += '    <div class="ads-section">\n'
 
   if (ads.length > 0) {
+    html += '    <!-- Ads -->\n'
+    html += '    <div class="ads-section">\n'
     for (const ad of ads) {
       const adImageUrl =
         ad.image?.resized?.w480 ||
@@ -194,12 +213,9 @@ const generateNewsletterHtml = async (
         ad.name || '廣告'
       }" class="ad-image"></a>\n`
     }
-  } else {
-    html += '      <div class="ad-placeholder"><span>廣告</span></div>\n'
-    html += '      <div class="ad-placeholder"><span>廣告</span></div>\n'
-  }
 
-  html += '    </div>\n\n'
+    html += '    </div>\n\n'
+  }
 
   // ===== 04-Events (近期活動) =====
   if (events.length > 0) {
@@ -283,7 +299,7 @@ const listConfigurations = list({
       validation: { isRequired: true },
     }),
     showMenu: checkbox({
-      label: '顯示相關文章',
+      label: '顯示相關文章標題',
       defaultValue: false,
     }),
     showReadingRank: checkbox({
@@ -327,6 +343,10 @@ const listConfigurations = list({
     }),
     originalUrl: text({
       label: '原始網址',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
     }),
     readerResponseText: text({
       label: '推薦讀者回應文字',
@@ -378,11 +398,7 @@ const listConfigurations = list({
         return resolvedData
       }
 
-      // 如果用戶手動設置了 standardHtml，不要覆蓋
-      if (resolvedData.standardHtml !== undefined) {
-        return resolvedData
-      }
-
+      // 自動生成 HTML（用戶無法在 UI 編輯這些欄位）
       try {
         // 取得現有資料（用於 update 操作）
         let existingData: any = null
@@ -469,6 +485,7 @@ const listConfigurations = list({
 
         // 將生成的 HTML 設置到 resolvedData
         resolvedData.standardHtml = html
+        resolvedData.beautifiedHtml = html
       } catch (error) {
         console.error('生成電子報 HTML 時發生錯誤:', error)
       }
