@@ -34,6 +34,64 @@ const getDefaultImage = (category: any): string => {
   return isEditorCategory ? DEFAULT_NEWS_IMAGE_PATH : DEFAULT_POST_IMAGE_PATH
 }
 
+// 從 contentApiData 提取純文字並截取指定字數
+const extractTextFromContent = (
+  contentApiData: any,
+  maxLength = 50
+): string => {
+  if (!contentApiData || !contentApiData.blocks) {
+    return ''
+  }
+
+  // 將所有 block 的文字串接起來
+  let text = contentApiData.blocks
+    .map((block: any) => block.text || '')
+    .join('')
+    .trim()
+
+  // 截取前 N 字
+  if (text.length > maxLength) {
+    text = text.substring(0, maxLength) + '...'
+  }
+
+  return text
+}
+
+/**
+ * 從外部 JSON 檔案獲取閱讀排名資料
+ *
+ * 預期的 JSON 格式：
+ * {
+ *   "generatedAt": "2026-01-30T10:00:00Z",
+ *   "data": [
+ *     { "rank": 1, "postId": 238538, "views": 5280 },
+ *     { "rank": 2, "postId": 238537, "views": 4520 },
+ *     { "rank": 3, "postId": 238536, "views": 3890 }
+ *   ]
+ * }
+ *
+ * @param context - Keystone context
+ * @returns Promise<number[]> - 文章 ID 陣列，若取得失敗則返回 null
+ */
+const fetchReadingRankFromJson = async (): Promise<number[] | null> => {
+  try {
+    // TODO: 實作從 cronjob 生成的 JSON 檔案讀取閱讀排名
+    // 可能的實作方式：
+    // 1. 從 GCS bucket 讀取: await fetch(`${GCS_URL}/reading-rank.json`)
+    // 2. 從本地檔案讀取: fs.readFileSync('public/reading-rank.json')
+    // 3. 從 Redis 快取讀取: await redis.get('reading-rank')
+
+    // const response = await fetch(`${WEB_URL_BASE}/reading-rank.json`)
+    // const json = await response.json()
+    // return json.data.map((item: any) => item.postId)
+
+    return null // 目前未實作，返回 null
+  } catch (error) {
+    console.error('無法從 JSON 檔案讀取閱讀排名:', error)
+    return null
+  }
+}
+
 // 生成電子報 HTML（只查詢 IDs，使用並行查詢優化效能）
 const generateNewsletterHtml = async (
   context: any,
@@ -56,7 +114,7 @@ const generateNewsletterHtml = async (
           query: `
           id
           title
-          brief
+          content
           category {
             slug
           }
@@ -157,9 +215,11 @@ const generateNewsletterHtml = async (
       html += `      <img src="${imageUrl}" alt="新聞圖片" class="article-image">\n`
       html += `      <h2 class="article-title">${post.title}</h2>\n`
 
-      if (post.brief) {
+      // 從內文提取前 50 字作為摘要
+      const excerpt = extractTextFromContent(post.content, 50)
+      if (excerpt) {
         html += '      <p class="article-content">\n'
-        html += `        ${post.brief}\n`
+        html += `        ${excerpt}\n`
         html += '      </p>\n'
       }
 
@@ -190,12 +250,77 @@ const generateNewsletterHtml = async (
   }
 
   // ===== 03-Ranking (閱讀排名) =====
-  // 注意：閱讀排名的資料需要從其他來源取得，這裡預留位置
   if (showReadingRank) {
-    html += '    <!-- ===== 03-Ranking (閱讀排名) ===== -->\n'
-    html += '    <div class="green-header">閱讀排名</div>\n'
-    html += '    \n'
-    html += '    <!-- 閱讀排名資料需要從其他來源取得 -->\n\n'
+    // 從資料庫查詢指定的 3 篇文章作為閱讀排名
+    let readingRankData: any[] = []
+
+    try {
+      // 嘗試從 JSON 檔案獲取閱讀排名文章 ID
+      let rankingPostIds = await fetchReadingRankFromJson(context)
+
+      // TODO: 移除以下暫時處置 - 當 JSON 檔案準備好後
+      // 目前使用固定的文章 ID 作為閱讀排名
+      if (!rankingPostIds) {
+        rankingPostIds = [238538, 238537, 238536]
+      }
+
+      const posts = await context.query.Post.findMany({
+        where: {
+          id: { in: rankingPostIds },
+        },
+        query: `
+          id
+          title
+          category {
+            slug
+          }
+          heroImage {
+            resized {
+              w480
+            }
+          }
+        `,
+      })
+
+      if (posts && posts.length > 0) {
+        // 按照指定的順序排列文章
+        const orderedPosts = rankingPostIds
+          .map((id) => posts.find((p: any) => Number(p.id) === Number(id)))
+          .filter((p) => p !== undefined)
+
+        readingRankData = orderedPosts.map((post: any, index: number) => ({
+          rank: index + 1,
+          title: post.title,
+          link: `${WEB_URL_BASE}/node/${post.id}`,
+          image:
+            post.heroImage?.resized?.w480 || getDefaultImage(post.category),
+        }))
+      }
+    } catch (error) {
+      console.error('查詢閱讀排名文章時發生錯誤:', error)
+      // 發生錯誤時不產生閱讀排名
+    }
+
+    // 只有在有資料時才產生閱讀排名 HTML
+    if (readingRankData.length > 0) {
+      html += '    <!-- ===== 03-Ranking (閱讀排名) ===== -->\n'
+      html += '    <div class="green-header">閱讀排名</div>\n'
+      html += '    \n'
+
+      for (const item of readingRankData) {
+        html += '    <div class="ranking-item">\n'
+        html += `      <img src="${item.image}" alt="縮圖" class="ranking-thumb">\n`
+        html += `      <div class="ranking-number">${item.rank}</div>\n`
+        html += '      <div class="ranking-content">\n'
+        html += `        <div class="ranking-title">${item.title}</div>\n`
+        html += `        <div class="read-more"><a href="${item.link}">閱讀更多</a></div>\n`
+        html += '      </div>\n'
+        html += '    </div>\n'
+        html += '    \n'
+      }
+
+      html += '\n'
+    }
   }
 
   // ===== Ads (廣告) =====
