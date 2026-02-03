@@ -186,6 +186,51 @@ index 5701e67..4beac13 100644
      className: "infobox-content"
    }, /*#__PURE__*/_react.default.createElement("div", {
      dangerouslySetInnerHTML: {
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
+index f0b401e..a663443 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
+@@ -35,12 +35,13 @@ const SlideShowBlockWrapper = _styledComponents.default.div`
+   ${({
+   theme
+ }) => theme.breakpoint.xl} {
+-    width: ${SlideShowDesktopSize}px;
++    width: 100%;
++    max-width: ${SlideShowDesktopSize}px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     flex-wrap: wrap;
+-    transform: translateX(-180px);
++    transform: none;
+     gap: ${SpacingBetweenSlideImages}px;
+     max-height: ${props => props.expandSlideShow ? 'none' : '960px'};
+     overflow: ${props => props.expandSlideShow ? 'visible' : 'hidden'};
+@@ -191,7 +192,8 @@ function SlideshowBlock(entity) {
+ 
+ function SlideshowBlockV2(entity) {
+   const {
+-    images
++    images,
++    overallCaption
+   } = entity.getData();
+   const [expandSlideShow, setExpandSlideShow] = (0, _react.useState)(false);
+   const [showLightBox, setShowLightBox] = (0, _react.useState)(false);
+@@ -243,7 +245,13 @@ function SlideshowBlockV2(entity) {
+   }, slideShowImages, shouldMaskSlideShow && /*#__PURE__*/_react.default.createElement(GradientMask, null)), shouldMaskSlideShow && /*#__PURE__*/_react.default.createElement(ExpandText, {
+     className: "slideshow-expand-text",
+     onClick: () => setExpandSlideShow(!expandSlideShow)
+-  }, "\u5C55\u958B\u6240\u6709\u5716\u7247"), showLightBox && /*#__PURE__*/_react.default.createElement(_slideshowLightbox.default, {
++    }, "\u5C55\u958B\u6240\u6709\u5716\u7247"), overallCaption && /*#__PURE__*/_react.default.createElement(FigCaption, {
++      style: {
++        marginTop: '16px',
++        textAlign: 'center',
++        display: 'block'
++      }
++    }, overallCaption), showLightBox && /*#__PURE__*/_react.default.createElement(_slideshowLightbox.default, {
+     focusImageIndex: focusImageIndex,
+     images: images,
+     setShowLightBox: setShowLightBox,
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
 index fc67e4f..e66062c 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
