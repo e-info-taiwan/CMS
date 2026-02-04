@@ -34,6 +34,12 @@ const listConfigurations = list({
         displayMode: 'textarea',
       },
     }),
+    authorInfo: text({
+      label: '專題作者資訊',
+      ui: {
+        displayMode: 'textarea',
+      },
+    }),
     heroImage: relationship({
       ref: 'Photo',
       label: '首圖',

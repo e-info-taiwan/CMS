@@ -20,6 +20,11 @@ const listConfigurations = list({
       label: '相關文章',
       many: false,
     }),
+    newsletter: relationship({
+      ref: 'Newsletter',
+      label: '相關電子報',
+      many: false,
+    }),
     result: integer({
       label: '投票結果',
       validation: { isRequired: true },
@@ -27,7 +32,7 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['member', 'result', 'post'],
+      initialColumns: ['member', 'result', 'post', 'newsletter'],
       pageSize: 50,
     },
   },

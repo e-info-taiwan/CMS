@@ -57,6 +57,11 @@ const listConfigurations = list({
       many: true,
       label: '相關文章',
     }),
+    newsletters: relationship({
+      ref: 'Newsletter.poll',
+      many: true,
+      label: '相關電子報',
+    }),
     status: select({
       label: '狀態',
       type: 'string',

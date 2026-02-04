@@ -1,0 +1,54 @@
+import { list } from '@keystone-6/core'
+import { relationship, select } from '@keystone-6/core/fields'
+import { utils } from '@mirrormedia/lilith-core'
+
+const { allowRoles, admin, moderator, editor } = utils.accessControl
+
+const listConfigurations = list({
+  fields: {
+    newsletterName: select({
+      label: '電子報名稱',
+      type: 'string',
+      options: [
+        { label: '每日報', value: 'daily' },
+        { label: '週報', value: 'weekly' },
+        { label: '未訂閱', value: 'none' },
+      ],
+      defaultValue: 'none',
+    }),
+    newsletterType: select({
+      label: '電子報類型',
+      type: 'string',
+      options: [
+        { label: '一般版', value: 'standard' },
+        { label: '美化版', value: 'beautified' },
+        { label: '未訂閱', value: 'none' },
+      ],
+      defaultValue: 'none',
+    }),
+    member: relationship({
+      ref: 'Member.subscriptions',
+      label: '訂閱會員',
+      many: false,
+    }),
+  },
+  ui: {
+    listView: {
+      initialColumns: ['member', 'newsletterName', 'newsletterType'],
+      pageSize: 50,
+    },
+  },
+  access: {
+    operation: {
+      query: allowRoles(admin, moderator, editor),
+      update: allowRoles(admin, moderator),
+      create: allowRoles(admin, moderator),
+      delete: allowRoles(admin),
+    },
+  },
+  graphql: {
+    cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
+  },
+})
+
+export default utils.addTrackingFields(listConfigurations)
