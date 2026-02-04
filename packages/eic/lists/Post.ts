@@ -23,6 +23,7 @@ type SessionUser = {
 
 type Session = {
   data?: SessionUser
+  itemId?: string | number
 }
 
 type FieldMode = 'edit' | 'read' | 'hidden'
@@ -46,7 +47,7 @@ const filterPostsForAccess = ({ session }: { session?: Session }) => {
   }
 
   const role = session?.data?.role
-  const userId = session?.data?.id
+  const userId = session?.itemId
 
   if (!role) {
     return false
@@ -71,6 +72,8 @@ const itemViewFunction: MaybeItemFunction<FieldMode> = async ({
 
   // 編輯者需要鎖定機制；權限更高者可直接編輯
   if (role === 'editor' || role === 'contributor') {
+    const userId = Number(context.session?.itemId)
+
     const now = new Date()
     const post = await context.prisma.Post.findUnique({
       where: { id: Number(item.id) },
@@ -94,28 +97,15 @@ const itemViewFunction: MaybeItemFunction<FieldMode> = async ({
         Date.now() + LOCK_DURATION_MINUTES * 60 * 1000
       ).toISOString()
 
-      const updatedPost = await context.prisma.Post.update({
+      await context.prisma.Post.update({
         where: { id: Number(item.id) },
         data: {
-          lockBy: {
-            connect: {
-              id: Number(session?.data?.id),
-            },
-          },
+          lockById: userId,
           lockExpireAt: newExpireAt,
-        },
-        select: {
-          lockBy: {
-            select: {
-              id: true,
-            },
-          },
         },
       })
 
-      return Number(updatedPost.lockBy?.id) === Number(session?.data?.id)
-        ? 'edit'
-        : 'read'
+      return 'edit'
     }
 
     // 已被自己鎖定，允許編輯
