@@ -13,6 +13,7 @@ import InfoGraph from './InfoGraph'
 import Job from './Job'
 import Location from './Location'
 import Member from './Member'
+import MemberSubscription from './MemberSubscription'
 import Newsletter from './Newsletter'
 import Photo from './Photo'
 import Poll from './Poll'
@@ -43,6 +44,7 @@ export const listDefinition = {
   Job,
   Location,
   Member,
+  MemberSubscription,
   Newsletter,
   Photo,
   Poll,

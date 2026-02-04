@@ -49,36 +49,15 @@ const listConfigurations = list({
       label: '感興趣分類',
       many: true,
     }),
-    newsletterSubscription: select({
-      label: '訂閱電子報狀態和版本',
-      type: 'string',
-      options: [
-        { label: '未訂閱', value: 'none' },
-        { label: '已訂閱 - 一般版', value: 'standard' },
-        { label: '已訂閱 - 美化版', value: 'beautified' },
-      ],
-      defaultValue: 'none',
-    }),
-    newsletterFrequency: select({
-      label: '電子報訂閱頻率',
-      type: 'string',
-      options: [
-        { label: '每個工作日', value: 'weekday' },
-        { label: '每週六', value: 'saturday' },
-        { label: '兩者都有', value: 'both' },
-      ],
-      defaultValue: 'weekday',
+    subscriptions: relationship({
+      ref: 'MemberSubscription.member',
+      label: '訂閱方案',
+      many: true,
     }),
   },
   ui: {
     listView: {
-      initialColumns: [
-        'email',
-        'lastName',
-        'firstName',
-        'state',
-        'newsletterSubscription',
-      ],
+      initialColumns: ['email', 'lastName', 'firstName', 'state'],
       pageSize: 50,
     },
   },

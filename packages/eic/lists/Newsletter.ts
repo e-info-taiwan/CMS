@@ -266,7 +266,7 @@ const generateNewsletterHtml = async (
 
     try {
       // 嘗試從 JSON 檔案獲取閱讀排名文章 ID
-      let rankingPostIds = await fetchReadingRankFromJson(context)
+      let rankingPostIds = await fetchReadingRankFromJson()
 
       // TODO: 移除以下暫時處置 - 當 JSON 檔案準備好後
       // 目前使用固定的文章 ID 作為閱讀排名
@@ -583,7 +583,7 @@ const listConfigurations = list({
       label: '相關徵才',
     }),
     poll: relationship({
-      ref: 'Poll',
+      ref: 'Poll.newsletters',
       label: '閱讀心情',
     }),
     readerResponseTitle: text({

@@ -1399,8 +1399,8 @@ type Member {
   favoritesCount(where: FavoriteWhereInput! = {}): Int
   interestedSections(where: SectionWhereInput! = {}, orderBy: [SectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SectionWhereUniqueInput): [Section!]
   interestedSectionsCount(where: SectionWhereInput! = {}): Int
-  newsletterSubscription: String
-  newsletterFrequency: String
+  subscriptions(where: MemberSubscriptionWhereInput! = {}, orderBy: [MemberSubscriptionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MemberSubscriptionWhereUniqueInput): [MemberSubscription!]
+  subscriptionsCount(where: MemberSubscriptionWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -1428,8 +1428,7 @@ input MemberWhereInput {
   state: StringNullableFilter
   favorites: FavoriteManyRelationFilter
   interestedSections: SectionManyRelationFilter
-  newsletterSubscription: StringNullableFilter
-  newsletterFrequency: StringNullableFilter
+  subscriptions: MemberSubscriptionManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -1448,6 +1447,12 @@ input SectionManyRelationFilter {
   none: SectionWhereInput
 }
 
+input MemberSubscriptionManyRelationFilter {
+  every: MemberSubscriptionWhereInput
+  some: MemberSubscriptionWhereInput
+  none: MemberSubscriptionWhereInput
+}
+
 input MemberOrderByInput {
   id: OrderDirection
   firebaseId: OrderDirection
@@ -1457,8 +1462,6 @@ input MemberOrderByInput {
   birthDate: OrderDirection
   email: OrderDirection
   state: OrderDirection
-  newsletterSubscription: OrderDirection
-  newsletterFrequency: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -1474,8 +1477,7 @@ input MemberUpdateInput {
   state: String
   favorites: FavoriteRelateToManyForUpdateInput
   interestedSections: SectionRelateToManyForUpdateInput
-  newsletterSubscription: String
-  newsletterFrequency: String
+  subscriptions: MemberSubscriptionRelateToManyForUpdateInput
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -1496,6 +1498,13 @@ input SectionRelateToManyForUpdateInput {
   connect: [SectionWhereUniqueInput!]
 }
 
+input MemberSubscriptionRelateToManyForUpdateInput {
+  disconnect: [MemberSubscriptionWhereUniqueInput!]
+  set: [MemberSubscriptionWhereUniqueInput!]
+  create: [MemberSubscriptionCreateInput!]
+  connect: [MemberSubscriptionWhereUniqueInput!]
+}
+
 input MemberUpdateArgs {
   where: MemberWhereUniqueInput!
   data: MemberUpdateInput!
@@ -1512,8 +1521,7 @@ input MemberCreateInput {
   state: String
   favorites: FavoriteRelateToManyForCreateInput
   interestedSections: SectionRelateToManyForCreateInput
-  newsletterSubscription: String
-  newsletterFrequency: String
+  subscriptions: MemberSubscriptionRelateToManyForCreateInput
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
@@ -1528,6 +1536,73 @@ input FavoriteRelateToManyForCreateInput {
 input SectionRelateToManyForCreateInput {
   create: [SectionCreateInput!]
   connect: [SectionWhereUniqueInput!]
+}
+
+input MemberSubscriptionRelateToManyForCreateInput {
+  create: [MemberSubscriptionCreateInput!]
+  connect: [MemberSubscriptionWhereUniqueInput!]
+}
+
+type MemberSubscription {
+  id: ID!
+  newsletterName: String
+  newsletterType: String
+  member: Member
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: User
+  updatedBy: User
+}
+
+input MemberSubscriptionWhereUniqueInput {
+  id: ID
+}
+
+input MemberSubscriptionWhereInput {
+  AND: [MemberSubscriptionWhereInput!]
+  OR: [MemberSubscriptionWhereInput!]
+  NOT: [MemberSubscriptionWhereInput!]
+  id: IDFilter
+  newsletterName: StringNullableFilter
+  newsletterType: StringNullableFilter
+  member: MemberWhereInput
+  createdAt: DateTimeNullableFilter
+  updatedAt: DateTimeNullableFilter
+  createdBy: UserWhereInput
+  updatedBy: UserWhereInput
+}
+
+input MemberSubscriptionOrderByInput {
+  id: OrderDirection
+  newsletterName: OrderDirection
+  newsletterType: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MemberSubscriptionUpdateInput {
+  newsletterName: String
+  newsletterType: String
+  member: MemberRelateToOneForUpdateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForUpdateInput
+  updatedBy: UserRelateToOneForUpdateInput
+}
+
+input MemberSubscriptionUpdateArgs {
+  where: MemberSubscriptionWhereUniqueInput!
+  data: MemberSubscriptionUpdateInput!
+}
+
+input MemberSubscriptionCreateInput {
+  newsletterName: String
+  newsletterType: String
+  member: MemberRelateToOneForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForCreateInput
+  updatedBy: UserRelateToOneForCreateInput
 }
 
 type Newsletter {
@@ -1853,6 +1928,8 @@ type Poll {
   option5Image: Photo
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
+  newsletters(where: NewsletterWhereInput! = {}, orderBy: [NewsletterOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: NewsletterWhereUniqueInput): [Newsletter!]
+  newslettersCount(where: NewsletterWhereInput! = {}): Int
   status: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -1882,11 +1959,18 @@ input PollWhereInput {
   option5: StringFilter
   option5Image: PhotoWhereInput
   posts: PostManyRelationFilter
+  newsletters: NewsletterManyRelationFilter
   status: StringFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
+}
+
+input NewsletterManyRelationFilter {
+  every: NewsletterWhereInput
+  some: NewsletterWhereInput
+  none: NewsletterWhereInput
 }
 
 input PollOrderByInput {
@@ -1917,11 +2001,19 @@ input PollUpdateInput {
   option5: String
   option5Image: PhotoRelateToOneForUpdateInput
   posts: PostRelateToManyForUpdateInput
+  newsletters: NewsletterRelateToManyForUpdateInput
   status: String
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
   updatedBy: UserRelateToOneForUpdateInput
+}
+
+input NewsletterRelateToManyForUpdateInput {
+  disconnect: [NewsletterWhereUniqueInput!]
+  set: [NewsletterWhereUniqueInput!]
+  create: [NewsletterCreateInput!]
+  connect: [NewsletterWhereUniqueInput!]
 }
 
 input PollUpdateArgs {
@@ -1943,6 +2035,7 @@ input PollCreateInput {
   option5: String
   option5Image: PhotoRelateToOneForCreateInput
   posts: PostRelateToManyForCreateInput
+  newsletters: NewsletterRelateToManyForCreateInput
   status: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -1950,11 +2043,17 @@ input PollCreateInput {
   updatedBy: UserRelateToOneForCreateInput
 }
 
+input NewsletterRelateToManyForCreateInput {
+  create: [NewsletterCreateInput!]
+  connect: [NewsletterWhereUniqueInput!]
+}
+
 type PollResult {
   id: ID!
   poll: Poll
   member: Member
   post: Post
+  newsletter: Newsletter
   result: Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -1974,6 +2073,7 @@ input PollResultWhereInput {
   poll: PollWhereInput
   member: MemberWhereInput
   post: PostWhereInput
+  newsletter: NewsletterWhereInput
   result: IntFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
@@ -1992,11 +2092,18 @@ input PollResultUpdateInput {
   poll: PollRelateToOneForUpdateInput
   member: MemberRelateToOneForUpdateInput
   post: PostRelateToOneForUpdateInput
+  newsletter: NewsletterRelateToOneForUpdateInput
   result: Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
   updatedBy: UserRelateToOneForUpdateInput
+}
+
+input NewsletterRelateToOneForUpdateInput {
+  create: NewsletterCreateInput
+  connect: NewsletterWhereUniqueInput
+  disconnect: Boolean
 }
 
 input PollResultUpdateArgs {
@@ -2008,6 +2115,7 @@ input PollResultCreateInput {
   poll: PollRelateToOneForCreateInput
   member: MemberRelateToOneForCreateInput
   post: PostRelateToOneForCreateInput
+  newsletter: NewsletterRelateToOneForCreateInput
   result: Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -2015,8 +2123,15 @@ input PollResultCreateInput {
   updatedBy: UserRelateToOneForCreateInput
 }
 
+input NewsletterRelateToOneForCreateInput {
+  create: NewsletterCreateInput
+  connect: NewsletterWhereUniqueInput
+}
+
 type Post {
   id: ID!
+  lockBy: User
+  lockExpireAt: DateTime
   title: String
   subtitle: String
   state: String
@@ -2051,8 +2166,7 @@ type Post {
   citations: String
   relatedPosts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   relatedPostsCount(where: PostWhereInput! = {}): Int
-  ad1: Ad
-  ad2: Ad
+  ad: Ad
   tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
   rssTargets: [String!]
@@ -2077,6 +2191,7 @@ input PostWhereInput {
   OR: [PostWhereInput!]
   NOT: [PostWhereInput!]
   id: IDFilter
+  lockExpireAt: DateTimeNullableFilter
   title: StringFilter
   subtitle: StringNullableFilter
   state: StringNullableFilter
@@ -2100,8 +2215,7 @@ input PostWhereInput {
   attachments: AttachmentManyRelationFilter
   citations: StringFilter
   relatedPosts: PostManyRelationFilter
-  ad1: AdWhereInput
-  ad2: AdWhereInput
+  ad: AdWhereInput
   tags: TagManyRelationFilter
   poll: PollWhereInput
   pollResults: PollResultManyRelationFilter
@@ -2146,6 +2260,7 @@ input PollResultManyRelationFilter {
 
 input PostOrderByInput {
   id: OrderDirection
+  lockExpireAt: OrderDirection
   title: OrderDirection
   subtitle: OrderDirection
   state: OrderDirection
@@ -2163,6 +2278,8 @@ input PostOrderByInput {
 }
 
 input PostUpdateInput {
+  lockBy: UserRelateToOneForUpdateInput
+  lockExpireAt: DateTime
   title: String
   subtitle: String
   state: String
@@ -2189,8 +2306,7 @@ input PostUpdateInput {
   attachments: AttachmentRelateToManyForUpdateInput
   citations: String
   relatedPosts: PostRelateToManyForUpdateInput
-  ad1: AdRelateToOneForUpdateInput
-  ad2: AdRelateToOneForUpdateInput
+  ad: AdRelateToOneForUpdateInput
   tags: TagRelateToManyForUpdateInput
   rssTargets: [String!]
   poll: PollRelateToOneForUpdateInput
@@ -2263,6 +2379,8 @@ input PostUpdateArgs {
 }
 
 input PostCreateInput {
+  lockBy: UserRelateToOneForCreateInput
+  lockExpireAt: DateTime
   title: String
   subtitle: String
   state: String
@@ -2289,8 +2407,7 @@ input PostCreateInput {
   attachments: AttachmentRelateToManyForCreateInput
   citations: String
   relatedPosts: PostRelateToManyForCreateInput
-  ad1: AdRelateToOneForCreateInput
-  ad2: AdRelateToOneForCreateInput
+  ad: AdRelateToOneForCreateInput
   tags: TagRelateToManyForCreateInput
   rssTargets: [String!]
   poll: PollRelateToOneForCreateInput
@@ -2762,6 +2879,7 @@ type Topic {
   title: String
   status: String
   content: String
+  authorInfo: String
   heroImage: Photo
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
@@ -2787,6 +2905,7 @@ input TopicWhereInput {
   title: StringFilter
   status: StringFilter
   content: StringFilter
+  authorInfo: StringFilter
   heroImage: PhotoWhereInput
   posts: PostManyRelationFilter
   tags: TagManyRelationFilter
@@ -2803,6 +2922,7 @@ input TopicOrderByInput {
   title: OrderDirection
   status: OrderDirection
   content: OrderDirection
+  authorInfo: OrderDirection
   isPinned: OrderDirection
   sortOrder: OrderDirection
   createdAt: OrderDirection
@@ -2813,6 +2933,7 @@ input TopicUpdateInput {
   title: String
   status: String
   content: String
+  authorInfo: String
   heroImage: PhotoRelateToOneForUpdateInput
   posts: PostRelateToManyForUpdateInput
   tags: TagRelateToManyForUpdateInput
@@ -2833,6 +2954,7 @@ input TopicCreateInput {
   title: String
   status: String
   content: String
+  authorInfo: String
   heroImage: PhotoRelateToOneForCreateInput
   posts: PostRelateToManyForCreateInput
   tags: TagRelateToManyForCreateInput
@@ -3097,6 +3219,12 @@ type Mutation {
   updateMembers(data: [MemberUpdateArgs!]!): [Member]
   deleteMember(where: MemberWhereUniqueInput!): Member
   deleteMembers(where: [MemberWhereUniqueInput!]!): [Member]
+  createMemberSubscription(data: MemberSubscriptionCreateInput!): MemberSubscription
+  createMemberSubscriptions(data: [MemberSubscriptionCreateInput!]!): [MemberSubscription]
+  updateMemberSubscription(where: MemberSubscriptionWhereUniqueInput!, data: MemberSubscriptionUpdateInput!): MemberSubscription
+  updateMemberSubscriptions(data: [MemberSubscriptionUpdateArgs!]!): [MemberSubscription]
+  deleteMemberSubscription(where: MemberSubscriptionWhereUniqueInput!): MemberSubscription
+  deleteMemberSubscriptions(where: [MemberSubscriptionWhereUniqueInput!]!): [MemberSubscription]
   createNewsletter(data: NewsletterCreateInput!): Newsletter
   createNewsletters(data: [NewsletterCreateInput!]!): [Newsletter]
   updateNewsletter(where: NewsletterWhereUniqueInput!, data: NewsletterUpdateInput!): Newsletter
@@ -3244,6 +3372,9 @@ type Query {
   members(where: MemberWhereInput! = {}, orderBy: [MemberOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MemberWhereUniqueInput): [Member!]
   member(where: MemberWhereUniqueInput!): Member
   membersCount(where: MemberWhereInput! = {}): Int
+  memberSubscriptions(where: MemberSubscriptionWhereInput! = {}, orderBy: [MemberSubscriptionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MemberSubscriptionWhereUniqueInput): [MemberSubscription!]
+  memberSubscription(where: MemberSubscriptionWhereUniqueInput!): MemberSubscription
+  memberSubscriptionsCount(where: MemberSubscriptionWhereInput! = {}): Int
   newsletters(where: NewsletterWhereInput! = {}, orderBy: [NewsletterOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: NewsletterWhereUniqueInput): [Newsletter!]
   newsletter(where: NewsletterWhereUniqueInput!): Newsletter
   newslettersCount(where: NewsletterWhereInput! = {}): Int

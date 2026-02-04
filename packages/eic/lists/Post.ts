@@ -16,8 +16,135 @@ import { aiPollHelperService } from '../services/ai-poll-helper'
 const { allowRoles, admin, moderator, editor, contributor } =
   utils.accessControl
 
+type SessionUser = {
+  id?: string | number
+  role?: string
+}
+
+type Session = {
+  data?: SessionUser
+  itemId?: string | number
+}
+
+type FieldMode = 'edit' | 'read' | 'hidden'
+
+type ListItemContext = {
+  session?: Session
+  context: any
+  item: Record<string, unknown>
+}
+
+type MaybeItemFunction<T extends FieldMode> =
+  | T
+  | ((args: ListItemContext) => Promise<T>)
+
+const LOCK_DURATION_MINUTES = 30
+
+// 在 CMS 模式下，限制 contributor 只能看到 / 編輯自己建立的文章
+const filterPostsForAccess = ({ session }: { session?: Session }) => {
+  if (envVar.accessControlStrategy !== 'cms') {
+    return true
+  }
+
+  const role = session?.data?.role
+  const userId = session?.itemId
+
+  if (!role) {
+    return false
+  }
+
+  if (role === 'contributor') {
+    if (!userId) return false
+    return {
+      createdBy: { id: { equals: userId } },
+    }
+  }
+
+  return true
+}
+
+const itemViewFunction: MaybeItemFunction<FieldMode> = async ({
+  session,
+  context,
+  item,
+}) => {
+  const role = session?.data?.role
+
+  // 編輯者需要鎖定機制；權限更高者可直接編輯
+  if (role === 'editor' || role === 'contributor') {
+    const userId = Number(context.session?.itemId)
+
+    const now = new Date()
+    const post = await context.prisma.Post.findUnique({
+      where: { id: Number(item.id) },
+      select: {
+        lockBy: {
+          select: {
+            id: true,
+          },
+        },
+        lockExpireAt: true,
+      },
+    })
+
+    const lockBy = post?.lockBy as { id?: number } | null
+    const lockExpireAt = post?.lockExpireAt as string | Date | null | undefined
+    const isExpired = !lockExpireAt || new Date(lockExpireAt as string) <= now
+
+    // 無人鎖定或鎖已過期：嘗試取得鎖
+    if (!lockBy || isExpired) {
+      const newExpireAt = new Date(
+        Date.now() + LOCK_DURATION_MINUTES * 60 * 1000
+      ).toISOString()
+
+      await context.prisma.Post.update({
+        where: { id: Number(item.id) },
+        data: {
+          lockById: userId,
+          lockExpireAt: newExpireAt,
+        },
+      })
+
+      return 'edit'
+    }
+
+    // 已被自己鎖定，允許編輯
+    if (lockBy?.id && Number(lockBy.id) === Number(session?.data?.id)) {
+      return 'edit'
+    }
+
+    // 被他人鎖定且未過期，僅可唯讀
+    return 'read'
+  }
+
+  // admin / moderator 直接可編輯
+  return 'edit'
+}
+
 const listConfigurations = list({
   fields: {
+    lockBy: relationship({
+      ref: 'User',
+      label: '誰正在編輯',
+      isFilterable: false,
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        displayMode: 'cards',
+        cardFields: ['name'],
+      },
+    }),
+    lockExpireAt: timestamp({
+      isIndexed: true,
+      db: {
+        isNullable: true,
+      },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
     title: text({
       label: '標題',
       validation: { isRequired: true },
@@ -185,13 +312,9 @@ const listConfigurations = list({
       label: '相關文章',
       many: true,
     }),
-    ad1: relationship({
+    ad: relationship({
       ref: 'Ad',
-      label: '廣告位置1',
-    }),
-    ad2: relationship({
-      ref: 'Ad',
-      label: '廣告位置2',
+      label: '廣告',
     }),
     // TODO: Implement tag count limit: <=10
     tags: relationship({
@@ -243,6 +366,9 @@ const listConfigurations = list({
       initialSort: { field: 'publishTime', direction: 'DESC' },
       pageSize: 50,
     },
+    itemView: {
+      defaultFieldMode: itemViewFunction,
+    },
   },
   access: {
     operation: {
@@ -250,6 +376,10 @@ const listConfigurations = list({
       update: allowRoles(admin, moderator, editor, contributor),
       create: allowRoles(admin, moderator, editor, contributor),
       delete: allowRoles(admin),
+    },
+    filter: {
+      query: filterPostsForAccess,
+      update: filterPostsForAccess,
     },
   },
   graphql: {
@@ -319,7 +449,47 @@ const listConfigurations = list({
       item,
       resolvedData,
       addValidationError,
+      context,
     }) => {
+      // 編輯鎖檢查：相同權限的使用者不可覆寫他人鎖；較高權限可略過
+      if (operation === 'update' && envVar.accessControlStrategy !== 'gql') {
+        const role = context.session?.data?.role
+        if (role === 'editor' || role === 'contributor') {
+          const now = new Date()
+          const post = await context.prisma.Post.findUnique({
+            where: { id: Number(item.id) },
+            select: {
+              lockBy: {
+                select: {
+                  id: true,
+                },
+              },
+              lockExpireAt: true,
+            },
+          })
+
+          const lockBy = post?.lockBy as { id?: number } | null
+          const lockExpireAt = post?.lockExpireAt as
+            | string
+            | Date
+            | null
+            | undefined
+
+          if (
+            lockBy?.id &&
+            Number(lockBy.id) !== Number(context.session?.data?.id)
+          ) {
+            const isExpired =
+              !lockExpireAt || new Date(lockExpireAt as string) <= now
+
+            if (!isExpired) {
+              addValidationError('可能有其他人正在編輯，請重新整理頁面。')
+              return
+            }
+          }
+        }
+      }
+
       // publishTime is must while state is not `draft`
       if (operation == 'create') {
         const { state } = resolvedData
