@@ -36,6 +36,11 @@ const listConfigurations = list({
       ref: 'Post.category',
       many: true,
       label: '相關文章',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
     }),
     section: relationship({
       ref: 'Section.categories',
