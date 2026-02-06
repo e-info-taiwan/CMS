@@ -344,6 +344,27 @@ const listConfigurations = list({
       label: '投票結果',
       many: true,
     }),
+    preview: virtual({                                                                                                                                                                    
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve(item: Record<string, unknown>): Record<string, string> {
+          return {
+            href: `${envVar.previewServer.path}/node/${item?.id}`,
+            label: 'Preview', 
+          }
+        },
+      }), 
+      ui: {
+        // A module path that is resolved from where `keystone start` is run
+        views: './lists/views/link-button',
+        createView: {
+          fieldMode: 'hidden',
+        },
+        listView: {
+          fieldMode: 'hidden',
+        },
+      },
+    }), 
     aiPollHelper: checkbox({
       label: 'AI 投票小幫手',
       defaultValue: false,

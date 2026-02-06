@@ -2,6 +2,7 @@ import { config } from '@keystone-6/core'
 import { listDefinition as lists } from './lists'
 import appConfig from './config'
 import { createProxyMiddleware } from 'http-proxy-middleware'
+import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import express, { Request, Response, NextFunction } from 'express'
 import { createAuth } from '@keystone-6/auth'
@@ -97,17 +98,17 @@ export default withAuth(
         })
 
         // Proxy requests with `/post/id` url path to preview nuxt server
-        app.get('/post/:id', authenticationMw, previewProxyMiddleware)
+        app.get('/node/:id', authenticationMw, previewProxyMiddleware)
 
         // Proxy requests with `/event/:slug` url path to preview nuxt server
-        // app.get('/event/:slug', authenticationMw, previewProxyMiddleware)
+        app.get('/event/:slug', authenticationMw, previewProxyMiddleware)
 
         // Proxy requests with `/news/:id` url path to preview nuxt server
         // app.get('/news/:id', authenticationMw, previewProxyMiddleware)
 
         // Proxy requests with `/_nuxt/*` url path to preview nuxt server
         app.use(
-          '/_nuxt/*',
+          '/_next/*',
           createProxyMiddleware({
             target: envVar.previewServerOrigin,
             changeOrigin: true,
