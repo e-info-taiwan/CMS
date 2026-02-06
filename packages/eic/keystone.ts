@@ -7,6 +7,7 @@ import envVar from './environment-variables'
 import express, { Request, Response, NextFunction } from 'express'
 import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
+import { ACL } from './type'
 
 const { withAuth } = createAuth({
   listKey: 'User',
