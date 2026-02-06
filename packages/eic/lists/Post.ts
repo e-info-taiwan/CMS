@@ -8,6 +8,7 @@ import {
   timestamp,
   text,
   select,
+  virtual,
   json,
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
