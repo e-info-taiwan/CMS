@@ -1,6 +1,6 @@
 // @ts-ignore: no definition
 import { customFields, utils } from '@mirrormedia/lilith-core'
-import { list } from '@keystone-6/core'
+import { graphql, list } from '@keystone-6/core'
 import {
   checkbox,
   multiselect,
