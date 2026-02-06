@@ -1545,13 +1545,23 @@ input MemberSubscriptionRelateToManyForCreateInput {
 
 type MemberSubscription {
   id: ID!
-  newsletterName: String
-  newsletterType: String
+  newsletterName: MemberSubscriptionNewsletterNameType
+  newsletterType: MemberSubscriptionNewsletterTypeType
   member: Member
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
   updatedBy: User
+}
+
+enum MemberSubscriptionNewsletterNameType {
+  daily
+  weekly
+}
+
+enum MemberSubscriptionNewsletterTypeType {
+  standard
+  styled
 }
 
 input MemberSubscriptionWhereUniqueInput {
@@ -1563,13 +1573,27 @@ input MemberSubscriptionWhereInput {
   OR: [MemberSubscriptionWhereInput!]
   NOT: [MemberSubscriptionWhereInput!]
   id: IDFilter
-  newsletterName: StringNullableFilter
-  newsletterType: StringNullableFilter
+  newsletterName: MemberSubscriptionNewsletterNameTypeNullableFilter
+  newsletterType: MemberSubscriptionNewsletterTypeTypeNullableFilter
   member: MemberWhereInput
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
+}
+
+input MemberSubscriptionNewsletterNameTypeNullableFilter {
+  equals: MemberSubscriptionNewsletterNameType
+  in: [MemberSubscriptionNewsletterNameType!]
+  notIn: [MemberSubscriptionNewsletterNameType!]
+  not: MemberSubscriptionNewsletterNameTypeNullableFilter
+}
+
+input MemberSubscriptionNewsletterTypeTypeNullableFilter {
+  equals: MemberSubscriptionNewsletterTypeType
+  in: [MemberSubscriptionNewsletterTypeType!]
+  notIn: [MemberSubscriptionNewsletterTypeType!]
+  not: MemberSubscriptionNewsletterTypeTypeNullableFilter
 }
 
 input MemberSubscriptionOrderByInput {
@@ -1581,8 +1605,8 @@ input MemberSubscriptionOrderByInput {
 }
 
 input MemberSubscriptionUpdateInput {
-  newsletterName: String
-  newsletterType: String
+  newsletterName: MemberSubscriptionNewsletterNameType
+  newsletterType: MemberSubscriptionNewsletterTypeType
   member: MemberRelateToOneForUpdateInput
   createdAt: DateTime
   updatedAt: DateTime
@@ -1596,8 +1620,8 @@ input MemberSubscriptionUpdateArgs {
 }
 
 input MemberSubscriptionCreateInput {
-  newsletterName: String
-  newsletterType: String
+  newsletterName: MemberSubscriptionNewsletterNameType
+  newsletterType: MemberSubscriptionNewsletterTypeType
   member: MemberRelateToOneForCreateInput
   createdAt: DateTime
   updatedAt: DateTime
@@ -2880,6 +2904,7 @@ type Topic {
   status: String
   content: String
   authorInfo: String
+  redirectUrl: String
   heroImage: Photo
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
@@ -2906,6 +2931,7 @@ input TopicWhereInput {
   status: StringFilter
   content: StringFilter
   authorInfo: StringFilter
+  redirectUrl: StringFilter
   heroImage: PhotoWhereInput
   posts: PostManyRelationFilter
   tags: TagManyRelationFilter
@@ -2923,6 +2949,7 @@ input TopicOrderByInput {
   status: OrderDirection
   content: OrderDirection
   authorInfo: OrderDirection
+  redirectUrl: OrderDirection
   isPinned: OrderDirection
   sortOrder: OrderDirection
   createdAt: OrderDirection
@@ -2934,6 +2961,7 @@ input TopicUpdateInput {
   status: String
   content: String
   authorInfo: String
+  redirectUrl: String
   heroImage: PhotoRelateToOneForUpdateInput
   posts: PostRelateToManyForUpdateInput
   tags: TagRelateToManyForUpdateInput
@@ -2955,6 +2983,7 @@ input TopicCreateInput {
   status: String
   content: String
   authorInfo: String
+  redirectUrl: String
   heroImage: PhotoRelateToOneForCreateInput
   posts: PostRelateToManyForCreateInput
   tags: TagRelateToManyForCreateInput

@@ -40,6 +40,14 @@ const listConfigurations = list({
         displayMode: 'textarea',
       },
     }),
+    redirectUrl: text({
+      label: '轉址網址',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
     heroImage: relationship({
       ref: 'Photo',
       label: '首圖',
