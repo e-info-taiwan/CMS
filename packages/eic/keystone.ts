@@ -108,7 +108,7 @@ export default withAuth(
 
         // Proxy requests with `/_nuxt/*` url path to preview nuxt server
         app.use(
-          '/_next/*',
+          '/_nuxt/*',
           createProxyMiddleware({
             target: envVar.previewServerOrigin,
             changeOrigin: true,
