@@ -2,6 +2,7 @@ const {
   IS_UI_DISABLED,
   ACCESS_CONTROL_STRATEGY,
   PREVIEW_SERVER_ORIGIN,
+  PREVIEW_SERVER_PATH,
   DATABASE_PROVIDER,
   DATABASE_URL,
   SESSION_SECRET,
@@ -34,7 +35,10 @@ export default {
     ? 300
     : Number(MEMORY_CACHE_SIZE),
   accessControlStrategy: ACCESS_CONTROL_STRATEGY || 'cms', // the value could be one of 'cms', 'gql' or 'preview'
-  previewServerOrigin: PREVIEW_SERVER_ORIGIN || 'http://localhost:3001',
+  previewServer: {
+    origin: PREVIEW_SERVER_ORIGIN || 'http://localhost:3001',
+    path: PREVIEW_SERVER_PATH || '/preview-server',
+  },
   database: {
     provider:
       DATABASE_PROVIDER === 'sqlite'

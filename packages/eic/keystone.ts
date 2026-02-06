@@ -71,49 +71,21 @@ export default withAuth(
         app.use(jsonBodyParser)
 
         // Check if the request is sent by an authenticated user
-        const authenticationMw = async (
-          req: Request,
-          res: Response,
-          next: NextFunction
-        ) => {
-          const context = await commonContext.withRequest(req, res)
-          // User has been logged in
-          if (context?.session?.data?.role) {
-            return next()
-          }
-
-          // Otherwise, redirect them to login page
-          res.redirect('/signin')
-        }
-
-        const previewProxyMiddleware = createProxyMiddleware({
-          target: envVar.previewServerOrigin,
-          changeOrigin: true,
-          onProxyRes: (proxyRes) => {
-            // The response from preview nuxt server might be with Cache-Control header.
-            // However, we don't want to get cached responses for `draft` posts.
-            // Therefore, we do not cache html response intentionlly by overwritting the Cache-Control header.
-            proxyRes.headers['cache-control'] = 'no-store'
-          },
-        })
-
-        // Proxy requests with `/post/id` url path to preview nuxt server
-        app.get('/node/:id', authenticationMw, previewProxyMiddleware)
-
-        // Proxy requests with `/event/:slug` url path to preview nuxt server
-        app.get('/event/:slug', authenticationMw, previewProxyMiddleware)
-
-        // Proxy requests with `/news/:id` url path to preview nuxt server
-        // app.get('/news/:id', authenticationMw, previewProxyMiddleware)
-
-        // Proxy requests with `/_nuxt/*` url path to preview nuxt server
-        app.use(
-          '/_nuxt/*',
-          createProxyMiddleware({
-            target: envVar.previewServerOrigin,
-            changeOrigin: true,
+        if (envVar.accessControlStrategy === ACL.CMS) {
+          // Serve robots.txt only in CMS domain to block all crawlers.
+          app.get('/robots.txt', (_, res) => {
+            res.type('text/plain')
+            res.send(`User-agent: *
+Disallow: /`)
           })
-        )
+
+          app.use(
+            createPreviewMiniApp({
+              previewServer: envVar.previewServer,
+              keystoneContext: context,
+            })
+          )
+
       },
     },
   })
