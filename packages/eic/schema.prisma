@@ -355,17 +355,17 @@ model Member {
 }
 
 model MemberSubscription {
-  id             Int       @id @default(autoincrement())
-  newsletterName String?   @default("none")
-  newsletterType String?   @default("none")
-  member         Member?   @relation("MemberSubscription_member", fields: [memberId], references: [id])
-  memberId       Int?      @map("member")
+  id             Int                                   @id @default(autoincrement())
+  newsletterName MemberSubscriptionNewsletterNameType? @default(daily)
+  newsletterType MemberSubscriptionNewsletterTypeType? @default(standard)
+  member         Member?                               @relation("MemberSubscription_member", fields: [memberId], references: [id])
+  memberId       Int?                                  @map("member")
   createdAt      DateTime?
   updatedAt      DateTime?
-  createdBy      User?     @relation("MemberSubscription_createdBy", fields: [createdById], references: [id])
-  createdById    Int?      @map("createdBy")
-  updatedBy      User?     @relation("MemberSubscription_updatedBy", fields: [updatedById], references: [id])
-  updatedById    Int?      @map("updatedBy")
+  createdBy      User?                                 @relation("MemberSubscription_createdBy", fields: [createdById], references: [id])
+  createdById    Int?                                  @map("createdBy")
+  updatedBy      User?                                 @relation("MemberSubscription_updatedBy", fields: [updatedById], references: [id])
+  updatedById    Int?                                  @map("updatedBy")
 
   @@index([memberId])
   @@index([createdById])
@@ -705,6 +705,7 @@ model Topic {
   status                   String         @default("draft")
   content                  String         @default("")
   authorInfo               String         @default("")
+  redirectUrl              String         @default("")
   heroImage                Photo?         @relation("Topic_heroImage", fields: [heroImageId], references: [id])
   heroImageId              Int?           @map("heroImage")
   posts                    Post[]         @relation("Post_topic")
@@ -822,4 +823,14 @@ model Video {
   @@index([coverPhotoId])
   @@index([createdById])
   @@index([updatedById])
+}
+
+enum MemberSubscriptionNewsletterNameType {
+  daily
+  weekly
+}
+
+enum MemberSubscriptionNewsletterTypeType {
+  standard
+  styled
 }

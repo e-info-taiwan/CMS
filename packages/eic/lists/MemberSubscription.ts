@@ -8,23 +8,21 @@ const listConfigurations = list({
   fields: {
     newsletterName: select({
       label: '電子報名稱',
-      type: 'string',
+      type: 'enum',
       options: [
         { label: '每日報', value: 'daily' },
-        { label: '週報', value: 'weekly' },
-        { label: '未訂閱', value: 'none' },
+        { label: '一週回顧', value: 'weekly' },
       ],
-      defaultValue: 'none',
+      defaultValue: 'daily',
     }),
     newsletterType: select({
       label: '電子報類型',
-      type: 'string',
+      type: 'enum',
       options: [
         { label: '一般版', value: 'standard' },
-        { label: '美化版', value: 'beautified' },
-        { label: '未訂閱', value: 'none' },
+        { label: '美化版', value: 'styled' },
       ],
-      defaultValue: 'none',
+      defaultValue: 'standard',
     }),
     member: relationship({
       ref: 'Member.subscriptions',
