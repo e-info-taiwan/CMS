@@ -37,6 +37,10 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
   const previewProxyMiddleware = createProxyMiddleware({
     target: previewServer.origin,
     changeOrigin: true,
+    pathRewrite: (path) => {
+      if (!previewServer?.path) return path
+      return path.replace(new RegExp(`^${previewServer.path}`), '')
+    },
     onProxyRes: (proxyRes) => {
       // The response from preview nuxt server might be with Cache-Control header.
       // However, we don't want to get cached responses for `draft` posts.
@@ -65,6 +69,10 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
     createProxyMiddleware({
       target: previewServer.origin,
       changeOrigin: true,
+      pathRewrite: (path) => {
+        if (!previewServer?.path) return path
+        return path.replace(new RegExp(`^${previewServer.path}`), '')
+      },
     })
   )
 
