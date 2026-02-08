@@ -49,6 +49,11 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
     },
   })
 
+  const previewAssetProxyMiddleware = createProxyMiddleware({
+    target: previewServer.origin,
+    changeOrigin: true,
+  })
+
   // proxy preview server traffic to subdirectory to prevent path collision between CMS and preview server
   router.get(
     '/images-next/*',
@@ -57,6 +62,24 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
       changeOrigin: true,
     })
   )
+
+  // Only proxy preview assets when the request comes from preview pages.
+  // This avoids breaking CMS Admin UI assets under /_next.
+  router.use('/_next', (req, res, next) => {
+    const referer = req.headers.referer || ''
+    if (referer.includes(previewServer.path)) {
+      return previewAssetProxyMiddleware(req, res, next)
+    }
+    return next()
+  })
+
+  router.use('/lib/public', (req, res, next) => {
+    const referer = req.headers.referer || ''
+    if (referer.includes(previewServer.path)) {
+      return previewAssetProxyMiddleware(req, res, next)
+    }
+    return next()
+  })
 
   router.get(
     `${previewServer.path}/images-next/*`,
