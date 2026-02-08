@@ -59,6 +59,18 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
   )
 
   router.get(
+    `${previewServer.path}/images-next/*`,
+    createProxyMiddleware({
+      target: previewServer.origin,
+      changeOrigin: true,
+      pathRewrite: (path) => {
+        if (!previewServer?.path) return path
+        return path.replace(new RegExp(`^${previewServer.path}`), '')
+      },
+    })
+  )
+
+  router.get(
     `${previewServer.path}/*`,
     authenticationMw,
     previewProxyMiddleware
