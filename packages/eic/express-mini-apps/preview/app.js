@@ -73,13 +73,7 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
     return next()
   })
 
-  router.use('/lib/public', (req, res, next) => {
-    const referer = req.headers.referer || ''
-    if (referer.includes(previewServer.path)) {
-      return previewAssetProxyMiddleware(req, res, next)
-    }
-    return next()
-  })
+  router.use('/lib/public', previewAssetProxyMiddleware)
 
   router.get(
     `${previewServer.path}/images-next/*`,
