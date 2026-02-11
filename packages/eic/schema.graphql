@@ -2197,6 +2197,7 @@ type Post {
   poll: Poll
   pollResults(where: PollResultWhereInput! = {}, orderBy: [PollResultOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PollResultWhereUniqueInput): [PollResult!]
   pollResultsCount(where: PollResultWhereInput! = {}): Int
+  preview: JSON
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean

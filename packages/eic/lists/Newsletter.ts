@@ -217,23 +217,20 @@ const generateNewsletterHtml = async (
   if (relatedPosts.length > 0) {
     for (let i = 0; i < relatedPosts.length; i++) {
       const post = relatedPosts[i]
+      const postUrl = `${WEB_URL_BASE}/node/${post.id}`
       const imageUrl =
         post.heroImage?.resized?.w800 || getDefaultImage(post.category)
 
       html += `    <!-- Article ${i + 1} -->\n`
       html += '    <div class="article-section">\n'
-      html += `      <img src="${imageUrl}" alt="新聞圖片" class="article-image">\n`
-      html += `      <h2 class="article-title">${post.title}</h2>\n`
+      html += `      <a href="${postUrl}"><img src="${imageUrl}" alt="新聞圖片" class="article-image"></a>\n`
+      html += `      <h2 class="article-title"><a href="${postUrl}">${post.title}</a></h2>\n`
 
-      // 從內文提取前 50 字作為摘要
-      const excerpt = extractTextFromContent(post.content, 50)
-      if (excerpt) {
-        html += '      <p class="article-content">\n'
-        html += `        ${excerpt}\n`
-        html += '      </p>\n'
-      }
-
-      html += `      <div class="read-more"><a href="${WEB_URL_BASE}/node/${post.id}">閱讀更多</a></div>\n`
+      // 從內文提取前 150 字作為摘要
+      const excerpt = extractTextFromContent(post.content, 150)
+      html += '      <p class="article-content">\n'
+      html += `        ${excerpt}<a href="${postUrl}" class="read-more">閱讀更多</a>\n`
+      html += '      </p>\n'
       html += '    </div>\n\n'
     }
   }
@@ -243,20 +240,24 @@ const generateNewsletterHtml = async (
     html += '    <!-- ===== 02-Highlight (焦點話題) ===== -->\n'
     html += '    <div class="green-header">焦點話題</div>\n'
     html += '    \n'
+    html += '    <div class="highlight-list">\n'
 
     for (const post of focusPosts) {
+      const postUrl = `${WEB_URL_BASE}/node/${post.id}`
       const imageUrl =
         post.heroImage?.resized?.w480 || getDefaultImage(post.category)
 
-      html += '    <div class="highlight-item">\n'
-      html += `      <img src="${imageUrl}" alt="縮圖" class="highlight-thumb">\n`
-      html += '      <div class="highlight-content">\n'
-      html += `        <div class="highlight-title">${post.title}</div>\n`
-      html += `        <div class="read-more"><a href="${WEB_URL_BASE}/node/${post.id}">閱讀更多</a></div>\n`
+      html += '      <div class="highlight-item">\n'
+      html += `        <a href="${postUrl}"><img src="${imageUrl}" alt="縮圖" class="highlight-thumb"></a>\n`
+      html += '        <div class="highlight-content">\n'
+      html += `          <div class="highlight-title"><a href="${postUrl}">${post.title}</a></div>\n`
+      html += `          <div class="read-more"><a href="${postUrl}">閱讀更多</a></div>\n`
+      html += '        </div>\n'
       html += '      </div>\n'
-      html += '    </div>\n'
       html += '    \n'
     }
+
+    html += '    </div>\n\n'
   }
 
   // ===== 03-Ranking (閱讀排名) =====
@@ -316,20 +317,21 @@ const generateNewsletterHtml = async (
       html += '    <!-- ===== 03-Ranking (閱讀排名) ===== -->\n'
       html += '    <div class="green-header">閱讀排名</div>\n'
       html += '    \n'
+      html += '    <div class="ranking-list">\n'
 
       for (const item of readingRankData) {
-        html += '    <div class="ranking-item">\n'
-        html += `      <img src="${item.image}" alt="縮圖" class="ranking-thumb">\n`
-        html += `      <div class="ranking-number">${item.rank}</div>\n`
-        html += '      <div class="ranking-content">\n'
-        html += `        <div class="ranking-title">${item.title}</div>\n`
-        html += `        <div class="read-more"><a href="${item.link}">閱讀更多</a></div>\n`
+        html += '      <div class="ranking-item">\n'
+        html += `        <a href="${item.link}"><img src="${item.image}" alt="縮圖" class="ranking-thumb"></a>\n`
+        html += `        <div class="ranking-number">${item.rank}</div>\n`
+        html += '        <div class="ranking-content">\n'
+        html += `          <div class="ranking-title"><a href="${item.link}">${item.title}</a></div>\n`
+        html += `          <div class="read-more"><a href="${item.link}">閱讀更多</a></div>\n`
+        html += '        </div>\n'
         html += '      </div>\n'
-        html += '    </div>\n'
         html += '    \n'
       }
 
-      html += '\n'
+      html += '    </div>\n\n'
     }
   }
 
@@ -339,9 +341,7 @@ const generateNewsletterHtml = async (
     html += '    <!-- Ads -->\n'
     html += '    <div class="ads-section">\n'
     for (const ad of ads) {
-      const adImageUrl =
-        ad.image?.resized?.w480 ||
-        'https://placehold.co/280x280/e8e8e8/666666?text=廣告'
+      const adImageUrl = ad.image?.resized?.w480 || getDefaultImage(null)
       const adUrl = ad.imageUrl || '#'
 
       html += `      <a href="${adUrl}" class="ad-link"><img src="${adImageUrl}" alt="${
@@ -357,17 +357,21 @@ const generateNewsletterHtml = async (
     html += '    <!-- ===== 04-Events (近期活動) ===== -->\n'
     html += '    <div class="green-header">近期活動</div>\n'
     html += '    \n'
+    html += '    <div class="event-list">\n'
 
     for (const event of events) {
       const eventDate = formatDate(event.startDate)
+      const eventUrl = `${WEB_URL_BASE}/event/${event.id}`
 
-      html += '    <div class="event-item">\n'
-      html += `      <div class="event-date">${eventDate}</div>\n`
-      html += `      <div class="event-title">${event.name}</div>\n`
-      html += `      <div class="event-org">${event.organizer || ''}</div>\n`
-      html += '    </div>\n'
+      html += '      <div class="event-item">\n'
+      html += `        <div class="event-date">${eventDate}</div>\n`
+      html += `        <div class="event-title"><a href="${eventUrl}">${event.name}</a></div>\n`
+      html += `        <div class="event-org">${event.organizer || ''}</div>\n`
+      html += '      </div>\n'
       html += '    \n'
     }
+
+    html += '    </div>\n\n'
   }
 
   // ===== 05-Jobs (環境徵才) =====
@@ -375,17 +379,21 @@ const generateNewsletterHtml = async (
     html += '    <!-- ===== 05-Jobs (環境徵才) ===== -->\n'
     html += '    <div class="green-header">環境徵才</div>\n'
     html += '    \n'
+    html += '    <div class="job-list">\n'
 
     for (const job of jobs) {
       const jobDate = formatDate(job.startDate)
+      const jobUrl = `${WEB_URL_BASE}/job/${job.id}`
 
-      html += '    <div class="job-item">\n'
-      html += `      <div class="job-date">${jobDate}</div>\n`
-      html += `      <div class="job-title">${job.title}</div>\n`
-      html += `      <div class="job-org">${job.company || ''}</div>\n`
-      html += '    </div>\n'
+      html += '      <div class="job-item">\n'
+      html += `        <div class="job-date">${jobDate}</div>\n`
+      html += `        <div class="job-title"><a href="${jobUrl}">${job.title}</a></div>\n`
+      html += `        <div class="job-org">${job.company || ''}</div>\n`
+      html += '      </div>\n'
       html += '    \n'
     }
+
+    html += '    </div>\n\n'
   }
 
   // ===== 06-Comment (推薦讀者回應) =====
@@ -777,7 +785,7 @@ const listConfigurations = list({
         const eventIds = getIds(resolvedData, existingData?.events, 'events')
         const jobIds = getIds(resolvedData, existingData?.jobs, 'jobs')
 
-        // 生成 HTML
+        // 生成電子報 HTML（一般版與大字版內容結構相同，共用同一份 HTML）
         const html = await generateNewsletterHtml(
           context,
           showMenu,
