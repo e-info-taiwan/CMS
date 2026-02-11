@@ -195,7 +195,7 @@ model Event {
   contactInfo            String       @default("")
   eventType              String
   startDate              DateTime
-  endDate                DateTime
+  endDate                DateTime?
   location               String       @default("")
   fee                    String       @default("")
   registrationUrl        String       @default("")
@@ -294,7 +294,7 @@ model Job {
   bonus                String       @default("")
   applicationMethod    String       @default("")
   startDate            DateTime
-  endDate              DateTime
+  endDate              DateTime?
   isApproved           Boolean      @default(false)
   showOnHomepage       Boolean      @default(false)
   sortOrder            Int

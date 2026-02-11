@@ -31,8 +31,13 @@ const listConfigurations = list({
       label: '活動類型',
       type: 'string',
       options: [
-        { label: '實體活動', value: 'physical' },
-        { label: '線上活動', value: 'online' },
+        { label: '課程/營隊/工作坊', value: 'course_camp_workshop' },
+        { label: '演講/座談會', value: 'lecture_forum' },
+        { label: '研討會', value: 'seminar' },
+        { label: '展覽/節目預告', value: 'exhibition_preview' },
+        { label: '行動參與', value: 'action_participation' },
+        { label: '徵件', value: 'call_for_entries' },
+        { label: '其他', value: 'other' },
       ],
       validation: { isRequired: true },
     }),
@@ -42,7 +47,6 @@ const listConfigurations = list({
     }),
     endDate: timestamp({
       label: '活動結束日期',
-      validation: { isRequired: true },
     }),
     location: text({
       label: '活動地點',

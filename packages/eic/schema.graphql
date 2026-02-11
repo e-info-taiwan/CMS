@@ -877,7 +877,7 @@ input EventWhereInput {
   contactInfo: StringFilter
   eventType: StringFilter
   startDate: DateTimeFilter
-  endDate: DateTimeFilter
+  endDate: DateTimeNullableFilter
   location: StringFilter
   fee: StringFilter
   registrationUrl: StringFilter
@@ -1257,7 +1257,7 @@ input JobWhereInput {
   bonus: StringFilter
   applicationMethod: StringFilter
   startDate: DateTimeFilter
-  endDate: DateTimeFilter
+  endDate: DateTimeNullableFilter
   isApproved: BooleanFilter
   showOnHomepage: BooleanFilter
   sortOrder: IntFilter

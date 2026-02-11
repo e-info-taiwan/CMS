@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Event" ALTER COLUMN "endDate" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Job" ALTER COLUMN "endDate" DROP NOT NULL;

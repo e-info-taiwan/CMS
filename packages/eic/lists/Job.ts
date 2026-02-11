@@ -57,7 +57,6 @@ const listConfigurations = list({
     }),
     endDate: timestamp({
       label: '徵才截止日期',
-      validation: { isRequired: true },
     }),
     isApproved: checkbox({
       label: '審核通過',
