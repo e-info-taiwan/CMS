@@ -67,35 +67,55 @@ const extractTextFromContent = (
   return text
 }
 
+const READING_RANKING_JSON_URL = `${envVariables.images.gcsBaseUrl}/ga/reading_ranking.json`
+
 /**
- * 從外部 JSON 檔案獲取閱讀排名資料
+ * 從 GCS JSON 檔案獲取閱讀排名資料
  *
- * 預期的 JSON 格式：
+ * 預期的 JSON 格式（由 GA cronjob 產生）：
  * {
- *   "generatedAt": "2026-01-30T10:00:00Z",
- *   "data": [
- *     { "rank": 1, "postId": 238538, "views": 5280 },
- *     { "rank": 2, "postId": 238537, "views": 4520 },
- *     { "rank": 3, "postId": 238536, "views": 3890 }
+ *   "generated_at": "2026-02-12T00:10:15.507596",
+ *   "period": {"start_date": "2026-02-05", "end_date": "2026-02-12"},
+ *   "top_articles": [
+ *     { "rank": 1, "post_id": "242946", "page_views": 1000, "article": {...} },
+ *     { "rank": 2, "post_id": "242943", "page_views": 800, "article": {...} },
+ *     { "rank": 3, "post_id": "242937", "page_views": 600, "article": {...} }
  *   ]
  * }
  *
- * @param context - Keystone context
- * @returns Promise<number[]> - 文章 ID 陣列，若取得失敗則返回 null
+ * @returns Promise<string[] | null> - 文章 ID 陣列（依 rank 排序），若取得失敗則返回 null
  */
-const fetchReadingRankFromJson = async (): Promise<number[] | null> => {
+const fetchReadingRankFromJson = async (): Promise<string[] | null> => {
   try {
-    // TODO: 實作從 cronjob 生成的 JSON 檔案讀取閱讀排名
-    // 可能的實作方式：
-    // 1. 從 GCS bucket 讀取: await fetch(`${GCS_URL}/reading-rank.json`)
-    // 2. 從本地檔案讀取: fs.readFileSync('public/reading-rank.json')
-    // 3. 從 Redis 快取讀取: await redis.get('reading-rank')
+    const response = await fetch(READING_RANKING_JSON_URL)
 
-    // const response = await fetch(`${WEB_URL_BASE}/reading-rank.json`)
-    // const json = await response.json()
-    // return json.data.map((item: any) => item.postId)
+    if (!response.ok) {
+      console.error(
+        '無法從 JSON 檔案讀取閱讀排名: HTTP',
+        response.status,
+        response.statusText
+      )
+      return null
+    }
 
-    return null // 目前未實作，返回 null
+    const json = await response.json()
+
+    const topArticles = json?.top_articles
+    if (!Array.isArray(topArticles)) {
+      return null
+    }
+    if (topArticles.length === 0) {
+      return []
+    }
+
+    const sorted = [...topArticles].sort(
+      (a: { rank?: number }, b: { rank?: number }) =>
+        (a.rank ?? 0) - (b.rank ?? 0)
+    )
+
+    return sorted
+      .map((item: { post_id?: string }) => item.post_id)
+      .filter((id: unknown): id is string => typeof id === 'string')
   } catch (error) {
     console.error('無法從 JSON 檔案讀取閱讀排名:', error)
     return null
@@ -266,20 +286,14 @@ const generateNewsletterHtml = async (
     let readingRankData: any[] = []
 
     try {
-      // 嘗試從 JSON 檔案獲取閱讀排名文章 ID
-      let rankingPostIds = await fetchReadingRankFromJson()
+      const rankingPostIds = await fetchReadingRankFromJson()
 
-      // TODO: 移除以下暫時處置 - 當 JSON 檔案準備好後
-      // 目前使用固定的文章 ID 作為閱讀排名
-      if (!rankingPostIds) {
-        rankingPostIds = [238538, 238537, 238536]
-      }
-
-      const posts = await context.query.Post.findMany({
-        where: {
-          id: { in: rankingPostIds },
-        },
-        query: `
+      if (rankingPostIds && rankingPostIds.length > 0) {
+        const posts = await context.query.Post.findMany({
+          where: {
+            id: { in: rankingPostIds },
+          },
+          query: `
           id
           title
           category {
@@ -291,21 +305,21 @@ const generateNewsletterHtml = async (
             }
           }
         `,
-      })
+        })
 
-      if (posts && posts.length > 0) {
-        // 按照指定的順序排列文章
-        const orderedPosts = rankingPostIds
-          .map((id) => posts.find((p: any) => Number(p.id) === Number(id)))
-          .filter((p) => p !== undefined)
+        if (posts && posts.length > 0) {
+          const orderedPosts = rankingPostIds
+            .map((id) => posts.find((p: any) => Number(p.id) === Number(id)))
+            .filter((p) => p !== undefined)
 
-        readingRankData = orderedPosts.map((post: any, index: number) => ({
-          rank: index + 1,
-          title: post.title,
-          link: `${WEB_URL_BASE}/node/${post.id}`,
-          image:
-            post.heroImage?.resized?.w480 || getDefaultImage(post.category),
-        }))
+          readingRankData = orderedPosts.map((post: any, index: number) => ({
+            rank: index + 1,
+            title: post.title,
+            link: `${WEB_URL_BASE}/node/${post.id}`,
+            image:
+              post.heroImage?.resized?.w480 || getDefaultImage(post.category),
+          }))
+        }
       }
     } catch (error) {
       console.error('查詢閱讀排名文章時發生錯誤:', error)
