@@ -74,7 +74,7 @@ const fetchSubscriberCount = async (): Promise<string> => {
 // 根據 category 決定預設圖片
 const getDefaultImage = (category: any): string => {
   // Use different default image for "編輯直送" category
-  const isEditorCategory = category?.slug === 'editor'
+  const isEditorCategory = category?.slug === 'editorpick'
   return isEditorCategory ? DEFAULT_NEWS_IMAGE_PATH : DEFAULT_POST_IMAGE_PATH
 }
 
