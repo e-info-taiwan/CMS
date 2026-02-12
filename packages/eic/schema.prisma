@@ -175,6 +175,7 @@ model DonationPV {
   id          Int       @id @default(autoincrement())
   pageUrl     String    @default("")
   clickTime   DateTime
+  clickFrom   String    @default("")
   createdAt   DateTime?
   updatedAt   DateTime?
   createdBy   User?     @relation("DonationPV_createdBy", fields: [createdById], references: [id])

@@ -773,6 +773,7 @@ type DonationPV {
   id: ID!
   pageUrl: String
   clickTime: DateTime
+  clickFrom: String
   clickTimeString: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -791,6 +792,7 @@ input DonationPVWhereInput {
   id: IDFilter
   pageUrl: StringFilter
   clickTime: DateTimeFilter
+  clickFrom: StringFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -812,6 +814,7 @@ input DonationPVOrderByInput {
   id: OrderDirection
   pageUrl: OrderDirection
   clickTime: OrderDirection
+  clickFrom: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -819,6 +822,7 @@ input DonationPVOrderByInput {
 input DonationPVUpdateInput {
   pageUrl: String
   clickTime: DateTime
+  clickFrom: String
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -833,6 +837,7 @@ input DonationPVUpdateArgs {
 input DonationPVCreateInput {
   pageUrl: String
   clickTime: DateTime
+  clickFrom: String
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput

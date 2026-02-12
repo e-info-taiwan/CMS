@@ -14,6 +14,9 @@ const listConfigurations = list({
       label: '點擊日期',
       validation: { isRequired: true },
     }),
+    clickFrom: text({
+      label: '連結所在頁面位置',
+    }),
     // TODO: Check the format of clickTimeString
     clickTimeString: virtual({
       field: graphql.field({
@@ -25,12 +28,14 @@ const listConfigurations = list({
       label: '點擊日期的字串格式',
       ui: {
         createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
       },
     }),
   },
   ui: {
     listView: {
-      initialColumns: ['pageUrl', 'clickTime', 'clickTimeString'],
+      initialColumns: ['pageUrl', 'clickTime', 'clickFrom', 'clickTimeString'],
       pageSize: 50,
     },
   },
