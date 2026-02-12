@@ -1553,6 +1553,7 @@ type MemberSubscription {
   newsletterName: MemberSubscriptionNewsletterNameType
   newsletterType: MemberSubscriptionNewsletterTypeType
   member: Member
+  status: MemberSubscriptionStatusType
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -1569,6 +1570,11 @@ enum MemberSubscriptionNewsletterTypeType {
   styled
 }
 
+enum MemberSubscriptionStatusType {
+  active
+  disable
+}
+
 input MemberSubscriptionWhereUniqueInput {
   id: ID
 }
@@ -1581,6 +1587,7 @@ input MemberSubscriptionWhereInput {
   newsletterName: MemberSubscriptionNewsletterNameTypeNullableFilter
   newsletterType: MemberSubscriptionNewsletterTypeTypeNullableFilter
   member: MemberWhereInput
+  status: MemberSubscriptionStatusTypeNullableFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -1601,10 +1608,18 @@ input MemberSubscriptionNewsletterTypeTypeNullableFilter {
   not: MemberSubscriptionNewsletterTypeTypeNullableFilter
 }
 
+input MemberSubscriptionStatusTypeNullableFilter {
+  equals: MemberSubscriptionStatusType
+  in: [MemberSubscriptionStatusType!]
+  notIn: [MemberSubscriptionStatusType!]
+  not: MemberSubscriptionStatusTypeNullableFilter
+}
+
 input MemberSubscriptionOrderByInput {
   id: OrderDirection
   newsletterName: OrderDirection
   newsletterType: OrderDirection
+  status: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -1613,6 +1628,7 @@ input MemberSubscriptionUpdateInput {
   newsletterName: MemberSubscriptionNewsletterNameType
   newsletterType: MemberSubscriptionNewsletterTypeType
   member: MemberRelateToOneForUpdateInput
+  status: MemberSubscriptionStatusType
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -1628,6 +1644,7 @@ input MemberSubscriptionCreateInput {
   newsletterName: MemberSubscriptionNewsletterNameType
   newsletterType: MemberSubscriptionNewsletterTypeType
   member: MemberRelateToOneForCreateInput
+  status: MemberSubscriptionStatusType
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput

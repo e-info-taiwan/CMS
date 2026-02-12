@@ -379,8 +379,6 @@ const listConfigurations = list({
       type: 'string',
       options: [
         { label: 'Yahoo!自然環境新聞', value: 'yahoo' },
-        { label: 'HiNet政治新聞', value: 'hinet_politics' },
-        { label: 'HiNet國際新聞', value: 'hinet_international' },
         { label: 'LineToday國際國內新聞', value: 'line' },
         { label: 'Mesh', value: 'mesh' },
         { label: 'twitter X串接', value: 'twitter' },

@@ -29,10 +29,19 @@ const listConfigurations = list({
       label: '訂閱會員',
       many: false,
     }),
+    status: select({
+      label: '狀態',
+      type: 'enum',
+      options: [
+        { label: '訂閱', value: 'active' },
+        { label: '退訂', value: 'disable' },
+      ],
+      defaultValue: 'active',
+    }),
   },
   ui: {
     listView: {
-      initialColumns: ['member', 'newsletterName', 'newsletterType'],
+      initialColumns: ['member', 'newsletterName', 'newsletterType', 'status'],
       pageSize: 50,
     },
   },
