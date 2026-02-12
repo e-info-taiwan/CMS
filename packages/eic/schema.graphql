@@ -3473,6 +3473,7 @@ type Query {
   videosCount(where: VideoWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
+  postsForRssTarget(rssTarget: String!): [Post]!
 }
 
 union AuthenticatedItem = User

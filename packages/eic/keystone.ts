@@ -1,10 +1,9 @@
-import { config } from '@keystone-6/core'
+import { config, graphql } from '@keystone-6/core'
 import { listDefinition as lists } from './lists'
 import appConfig from './config'
-import { createProxyMiddleware } from 'http-proxy-middleware'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
-import express, { Request, Response, NextFunction } from 'express'
+import express from 'express'
 import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
 import { ACL } from './type'
@@ -40,6 +39,36 @@ export default withAuth(
     },
     lists,
     session,
+    // For RSS feed generation for querying posts by rssTarget with where clause
+    extendGraphqlSchema: graphql.extend((base) => ({
+      query: {
+        postsForRssTarget: graphql.field({
+          type: graphql.nonNull(graphql.list(base.object('Post'))),
+          args: {
+            rssTarget: graphql.arg({
+              type: graphql.nonNull(graphql.String),
+            }),
+          },
+          resolve: async (_source, { rssTarget }, context) => {
+            // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb
+            const targetsJson = JSON.stringify([rssTarget])
+            const rows = (await context.prisma.$queryRaw`
+              SELECT id FROM "Post"
+              WHERE "rssTargets"::jsonb @> ${targetsJson}::jsonb
+            `) as { id: number }[]
+            const ids = rows.map((r) => r.id)
+            if (ids.length === 0) {
+              return []
+            }
+            const posts = await context.db.Post.findMany({
+              where: { id: { in: ids } },
+              orderBy: { publishTime: 'desc' },
+            })
+            return posts
+          },
+        }),
+      },
+    })),
     storage: {
       files: {
         kind: 'local',
