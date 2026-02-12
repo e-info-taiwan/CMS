@@ -27,7 +27,7 @@ const POLL_ICON_URLS = [
   'https://storage.googleapis.com/statics-e-info-dev/images/013185b7-d5ea-4de4-aeac-feca2e9cfcc7.png',
 ]
 
-// 格式化日期為 "YYYY年MM月DD日" 格式
+// 格式化日期為 "YYYY年MM月DD日" 格式（活動、徵才用）
 const formatDate = (dateString: string | null): string => {
   if (!dateString) return ''
   const date = new Date(dateString)
@@ -35,6 +35,40 @@ const formatDate = (dateString: string | null): string => {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}年${month}月${day}日`
+}
+
+// 格式化日期為 "YYYY/MM/DD" 格式（電子報 header 用）
+const formatDateHeader = (dateString: string | null): string => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}/${month}/${day}`
+}
+
+const CONFIGS_JSON_URL = `${envVariables.images.gcsBaseUrl}/json/configs.json`
+
+/**
+ * 從 configs.json 獲取電子報訂閱人數
+ * 尋找 id 為 2、name 為 "電子報訂閱人數" 的 content 欄位
+ */
+const fetchSubscriberCount = async (): Promise<string> => {
+  try {
+    const response = await fetch(CONFIGS_JSON_URL)
+    if (!response.ok) return '—'
+    const json = await response.json()
+    const items = json?.items
+    if (!Array.isArray(items)) return '—'
+    const item = items.find(
+      (i: { id?: number | string; name?: string }) =>
+        String(i?.id) === '2' && i?.name === '電子報訂閱人數'
+    )
+    return typeof item?.content === 'string' ? item.content : '—'
+  } catch (error) {
+    console.error('無法讀取電子報訂閱人數:', error)
+    return '—'
+  }
 }
 
 // 根據 category 決定預設圖片
@@ -125,6 +159,8 @@ const fetchReadingRankFromJson = async (): Promise<string[] | null> => {
 // 生成電子報 HTML（只查詢 IDs，使用並行查詢優化效能）
 const generateNewsletterHtml = async (
   context: any,
+  title: string,
+  sendDate: string | null,
   showMenu: boolean,
   showReadingRank: boolean,
   readerResponseText: string,
@@ -136,6 +172,8 @@ const generateNewsletterHtml = async (
   eventIds: string[],
   jobIds: string[]
 ) => {
+  const subscriberCount = await fetchSubscriberCount()
+
   // 使用 Promise.all 並行查詢所有資料，提升效能
   const [relatedPosts, focusPosts, ads, events, jobs] = await Promise.all([
     relatedPostIds.length > 0
@@ -214,23 +252,51 @@ const generateNewsletterHtml = async (
       : [],
   ])
 
+  const headerDate = formatDateHeader(sendDate)
   let html = ''
 
+  // ===== 00-Header =====
+  html += '        <!-- ===== 00-Header ===== -->\n'
+  html += '        <tr>\n'
+  html += '          <td class="subscriber-count" align="center">\n'
+  html += `            你現在正與 ${subscriberCount} 人一起閱讀環境新聞\n`
+  html += '          </td>\n'
+  html += '        </tr>\n'
+  html += '        <tr>\n'
+  html += '          <td class="header-date" align="center">\n'
+  html += `            ${headerDate}\n`
+  html += '          </td>\n'
+  html += '        </tr>\n'
+  html += '        <tr>\n'
+  html += '          <td class="header-title-td">\n'
+  html += `            <h1 class="header-title">${title}</h1>\n`
+  html += '          </td>\n'
+  html += '        </tr>\n'
+  html += '\n'
+
   // ===== 01-Content (本期內容) =====
-  // 只要有相關文章就顯示本期內容（不受 showMenu 限制）
   if (relatedPosts.length > 0) {
-    html += '    <!-- ===== 01-Content ===== -->\n'
-    html += '    <div class="section-header">\n'
-    html += '      本期內容\n'
-    html += '    </div>\n'
-    html += '    \n'
-    html += '    <div class="toc-list">\n'
+    html += '        <!-- ===== 01-Content ===== -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="toc-title" align="center">\n'
+    html += '            本期內容\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '        <tr>\n'
+    html += '          <td class="toc-container">\n'
+    html +=
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
 
-    for (const post of relatedPosts) {
-      html += `      <div class="toc-item">${post.title}</div>\n`
-    }
+    relatedPosts.forEach((post: any, idx: number) => {
+      const tocClass =
+        idx === relatedPosts.length - 1 ? 'toc-item-last' : 'toc-item'
+      html += `              <tr>\n                <td class="${tocClass}">\n                  &middot;&nbsp; ${post.title}\n                </td>\n              </tr>\n`
+    })
 
-    html += '    </div>\n\n'
+    html += '            </table>\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   }
 
   // ===== Article sections (相關文章) =====
@@ -240,78 +306,89 @@ const generateNewsletterHtml = async (
       const postUrl = `${WEB_URL_BASE}/node/${post.id}`
       const imageUrl =
         post.heroImage?.resized?.w800 || getDefaultImage(post.category)
-
-      html += `    <!-- Article ${i + 1} -->\n`
-      html += '    <div class="article-section">\n'
-      html += `      <a href="${postUrl}"><img src="${imageUrl}" alt="新聞圖片" class="article-image"></a>\n`
-      html += `      <h2 class="article-title"><a href="${postUrl}">${post.title}</a></h2>\n`
-
-      // 從內文提取前 150 字作為摘要
       const excerpt = extractTextFromContent(post.content, 150)
-      html += '      <p class="article-content">\n'
-      html += `        ${excerpt}<a href="${postUrl}" class="read-more">閱讀更多</a>\n`
-      html += '      </p>\n'
-      html += '    </div>\n\n'
+
+      html += `        <!-- Article ${i + 1} -->\n`
+      html += '        <tr>\n'
+      html += '          <td class="article-cell">\n'
+      html += `            <a href="${postUrl}"><img class="article-img" src="${imageUrl}" alt="新聞圖片" width="560"></a>\n`
+      html += `            <h2 class="article-title"><a class="dark-link" href="${postUrl}">${post.title}</a></h2>\n`
+      html += '            <p class="article-excerpt">\n'
+      html += `              ${excerpt}<a href="${postUrl}" class="read-more-inline">閱讀更多</a>\n`
+      html += '            </p>\n'
+      html += '          </td>\n'
+      html += '        </tr>\n'
+      html += '\n'
     }
   }
 
   // ===== 02-Highlight (焦點話題) =====
   if (focusPosts.length > 0) {
-    html += '    <!-- ===== 02-Highlight (焦點話題) ===== -->\n'
-    html += '    <div class="green-header">焦點話題</div>\n'
-    html += '    \n'
-    html += '    <div class="highlight-list">\n'
+    html += '        <!-- ===== 02-Highlight (焦點話題) ===== -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="section-header" align="center">\n'
+    html += '            焦點話題\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '        <tr>\n'
+    html += '          <td class="card-section">\n'
 
-    for (const post of focusPosts) {
+    focusPosts.forEach((post: any, idx: number) => {
       const postUrl = `${WEB_URL_BASE}/node/${post.id}`
       const imageUrl =
         post.heroImage?.resized?.w480 || getDefaultImage(post.category)
+      const borderClass = idx < focusPosts.length - 1 ? 'card-row-border' : ''
+      html += `            <!-- Highlight ${idx + 1} -->\n`
+      html += `            <table class="${borderClass}" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n`
+      html += '              <tr>\n'
+      html +=
+        '                <td class="card-thumb-td" width="120" valign="top">\n'
+      html += `                  <a href="${postUrl}"><img class="card-thumb" src="${imageUrl}" alt="縮圖" width="120" height="120"></a>\n`
+      html += '                </td>\n'
+      html += '                <td class="card-content-td" valign="top">\n'
+      html +=
+        '                  <table class="card-content-table" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
+      html += '                    <tr>\n'
+      html += '                      <td class="card-title" valign="top">\n'
+      html += `                        <a class="dark-link" href="${postUrl}">${post.title}</a>\n`
+      html += '                      </td>\n'
+      html += '                    </tr>\n'
+      html += '                    <tr>\n'
+      html +=
+        '                      <td class="card-read-more" valign="bottom" align="right">\n'
+      html += `                        <a class="read-more-link" href="${postUrl}">閱讀更多</a>\n`
+      html += '                      </td>\n'
+      html += '                    </tr>\n'
+      html += '                  </table>\n'
+      html += '                </td>\n'
+      html += '              </tr>\n'
+      html += '            </table>\n'
+    })
 
-      html += '      <div class="highlight-item">\n'
-      html += `        <a href="${postUrl}"><img src="${imageUrl}" alt="縮圖" class="highlight-thumb"></a>\n`
-      html += '        <div class="highlight-content">\n'
-      html += `          <div class="highlight-title"><a href="${postUrl}">${post.title}</a></div>\n`
-      html += `          <div class="read-more"><a href="${postUrl}">閱讀更多</a></div>\n`
-      html += '        </div>\n'
-      html += '      </div>\n'
-      html += '    \n'
-    }
-
-    html += '    </div>\n\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   }
 
   // ===== 03-Ranking (閱讀排名) =====
   if (showReadingRank) {
-    // 從資料庫查詢指定的 3 篇文章作為閱讀排名
     let readingRankData: any[] = []
-
     try {
       const rankingPostIds = await fetchReadingRankFromJson()
-
       if (rankingPostIds && rankingPostIds.length > 0) {
         const posts = await context.query.Post.findMany({
-          where: {
-            id: { in: rankingPostIds },
-          },
+          where: { id: { in: rankingPostIds } },
           query: `
           id
           title
-          category {
-            slug
-          }
-          heroImage {
-            resized {
-              w480
-            }
-          }
+          category { slug }
+          heroImage { resized { w480 } }
         `,
         })
-
         if (posts && posts.length > 0) {
           const orderedPosts = rankingPostIds
             .map((id) => posts.find((p: any) => Number(p.id) === Number(id)))
             .filter((p) => p !== undefined)
-
           readingRankData = orderedPosts.map((post: any, index: number) => ({
             rank: index + 1,
             title: post.title,
@@ -323,119 +400,176 @@ const generateNewsletterHtml = async (
       }
     } catch (error) {
       console.error('查詢閱讀排名文章時發生錯誤:', error)
-      // 發生錯誤時不產生閱讀排名
     }
 
-    // 只有在有資料時才產生閱讀排名 HTML
     if (readingRankData.length > 0) {
-      html += '    <!-- ===== 03-Ranking (閱讀排名) ===== -->\n'
-      html += '    <div class="green-header">閱讀排名</div>\n'
-      html += '    \n'
-      html += '    <div class="ranking-list">\n'
+      html += '        <!-- ===== 03-Ranking (閱讀排名) ===== -->\n'
+      html += '        <tr>\n'
+      html += '          <td class="section-header" align="center">\n'
+      html += '            閱讀排名\n'
+      html += '          </td>\n'
+      html += '        </tr>\n'
+      html += '        <tr>\n'
+      html += '          <td class="card-section">\n'
 
-      for (const item of readingRankData) {
-        html += '      <div class="ranking-item">\n'
-        html += `        <a href="${item.link}"><img src="${item.image}" alt="縮圖" class="ranking-thumb"></a>\n`
-        html += `        <div class="ranking-number">${item.rank}</div>\n`
-        html += '        <div class="ranking-content">\n'
-        html += `          <div class="ranking-title"><a href="${item.link}">${item.title}</a></div>\n`
-        html += `          <div class="read-more"><a href="${item.link}">閱讀更多</a></div>\n`
-        html += '        </div>\n'
-        html += '      </div>\n'
-        html += '    \n'
-      }
+      readingRankData.forEach((item: any, idx: number) => {
+        html += `            <!-- Ranking ${idx + 1} -->\n`
+        html +=
+          '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
+        html += '              <tr>\n'
+        html +=
+          '                <td class="ranking-thumb-td" width="120" valign="top">\n'
+        html += `                  <a href="${item.link}"><img class="card-thumb" src="${item.image}" alt="縮圖" width="120" height="120"></a>\n`
+        html += '                </td>\n'
+        html += `                <td class="ranking-number" width="50" valign="top" align="center">\n                  ${item.rank}\n                </td>\n`
+        html += '                <td class="ranking-content-td" valign="top">\n'
+        html +=
+          '                  <table class="card-content-table" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
+        html += '                    <tr>\n'
+        html += '                      <td class="card-title" valign="top">\n'
+        html += `                        <a class="dark-link" href="${item.link}">${item.title}</a>\n`
+        html += '                      </td>\n'
+        html += '                    </tr>\n'
+        html += '                    <tr>\n'
+        html +=
+          '                      <td class="card-read-more" valign="bottom" align="right">\n'
+        html += `                        <a class="read-more-link" href="${item.link}">閱讀更多</a>\n`
+        html += '                      </td>\n'
+        html += '                    </tr>\n'
+        html += '                  </table>\n'
+        html += '                </td>\n'
+        html += '              </tr>\n'
+        html += '            </table>\n'
+      })
 
-      html += '    </div>\n\n'
+      html += '          </td>\n'
+      html += '        </tr>\n'
+      html += '\n'
     }
   }
 
   // ===== Ads (廣告) =====
+  const adsWithImage = ads.filter((ad: any) => ad.image?.resized?.w480)
+  if (adsWithImage.length > 0) {
+    html += '        <!-- Ads -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="ads-cell" align="center">\n'
+    html +=
+      '            <table role="presentation" cellpadding="0" cellspacing="0" border="0">\n'
 
-  if (ads.length > 0) {
-    html += '    <!-- Ads -->\n'
-    html += '    <div class="ads-section">\n'
-    for (const ad of ads) {
-      const adImageUrl = ad.image?.resized?.w480 || getDefaultImage(null)
+    adsWithImage.forEach((ad: any, idx: number) => {
+      const adImageUrl = ad.image.resized.w480
       const adUrl = ad.imageUrl || '#'
-
-      html += `      <a href="${adUrl}" class="ad-link"><img src="${adImageUrl}" alt="${
+      const tdClass = idx === 0 ? 'ad-spacer' : ''
+      html += `              <tr>\n                <td class="${tdClass}" align="center">\n`
+      html += `                  <a href="${adUrl}"><img class="ad-img" src="${adImageUrl}" alt="${
         ad.name || '廣告'
-      }" class="ad-image"></a>\n`
-    }
+      }" width="480"></a>\n`
+      html += '                </td>\n              </tr>\n'
+    })
 
-    html += '    </div>\n\n'
+    html += '            </table>\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   }
 
   // ===== 04-Events (近期活動) =====
   if (events.length > 0) {
-    html += '    <!-- ===== 04-Events (近期活動) ===== -->\n'
-    html += '    <div class="green-header">近期活動</div>\n'
-    html += '    \n'
-    html += '    <div class="event-list">\n'
+    html += '        <!-- ===== 04-Events (近期活動) ===== -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="section-header" align="center">\n'
+    html += '            近期活動\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '        <tr>\n'
+    html += '          <td class="card-section">\n'
+    html +=
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
 
-    for (const event of events) {
+    events.forEach((event: any, idx: number) => {
       const eventDate = formatDate(event.startDate)
       const eventUrl = `${WEB_URL_BASE}/event/${event.id}`
+      const listClass =
+        idx === events.length - 1 ? 'list-item-last' : 'list-item'
+      html += `              <tr>\n                <td class="${listClass}">\n`
+      html += `                  <div class="list-date">${eventDate}</div>\n`
+      html += `                  <div class="list-title"><a class="muted-link" href="${eventUrl}">${event.name}</a></div>\n`
+      html += `                  <div class="list-org">${
+        event.organizer || ''
+      }</div>\n`
+      html += '                </td>\n              </tr>\n'
+    })
 
-      html += '      <div class="event-item">\n'
-      html += `        <div class="event-date">${eventDate}</div>\n`
-      html += `        <div class="event-title"><a href="${eventUrl}">${event.name}</a></div>\n`
-      html += `        <div class="event-org">${event.organizer || ''}</div>\n`
-      html += '      </div>\n'
-      html += '    \n'
-    }
-
-    html += '    </div>\n\n'
+    html += '            </table>\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   }
 
   // ===== 05-Jobs (環境徵才) =====
   if (jobs.length > 0) {
-    html += '    <!-- ===== 05-Jobs (環境徵才) ===== -->\n'
-    html += '    <div class="green-header">環境徵才</div>\n'
-    html += '    \n'
-    html += '    <div class="job-list">\n'
+    html += '        <!-- ===== 05-Jobs (環境徵才) ===== -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="section-header" align="center">\n'
+    html += '            環境徵才\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '        <tr>\n'
+    html += '          <td class="card-section">\n'
+    html +=
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
 
-    for (const job of jobs) {
+    jobs.forEach((job: any, idx: number) => {
       const jobDate = formatDate(job.startDate)
       const jobUrl = `${WEB_URL_BASE}/job/${job.id}`
+      const listClass =
+        idx === jobs.length - 1 ? 'list-item-last' : 'list-item-dark'
+      html += `              <tr>\n                <td class="${listClass}">\n`
+      html += `                  <div class="list-date">${jobDate}</div>\n`
+      html += `                  <div class="list-title"><a class="muted-link" href="${jobUrl}">${job.title}</a></div>\n`
+      html += `                  <div class="list-org">${
+        job.company || ''
+      }</div>\n`
+      html += '                </td>\n              </tr>\n'
+    })
 
-      html += '      <div class="job-item">\n'
-      html += `        <div class="job-date">${jobDate}</div>\n`
-      html += `        <div class="job-title"><a href="${jobUrl}">${job.title}</a></div>\n`
-      html += `        <div class="job-org">${job.company || ''}</div>\n`
-      html += '      </div>\n'
-      html += '    \n'
-    }
-
-    html += '    </div>\n\n'
+    html += '            </table>\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   }
 
   // ===== 06-Comment (推薦讀者回應) =====
   if (readerResponseText || readerResponseTitle) {
-    html += '    <!-- ===== 06-Comment (推薦讀者回應) ===== -->\n'
-    html += '    <div class="green-header">推薦讀者回應</div>\n'
-    html += '    \n'
-    html += '    <div class="comment-section">\n'
+    html += '        <!-- ===== 06-Comment (推薦讀者回應) ===== -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="section-header" align="center">\n'
+    html += '            推薦讀者回應\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '        <tr>\n'
+    html += '          <td class="comment-cell">\n'
 
     if (readerResponseText) {
-      html += '      <p class="comment-quote">\n'
-      html += `        ${readerResponseText}\n`
-      html += '      </p>\n'
+      html += '            <p class="comment-quote">\n'
+      html += `              ${readerResponseText}\n`
+      html += '            </p>\n'
     }
-
     if (readerResponseTitle) {
-      html += '      <p class="comment-source">\n'
-      html += `        ${readerResponseTitle}\n`
-      html += '      </p>\n'
+      html += '            <p class="comment-source">\n'
+      html += `              ${readerResponseTitle}\n`
+      html += '            </p>\n'
     }
-
     if (readerResponseLink) {
-      html += '      <div class="comment-link">\n'
-      html += `        <a href="${readerResponseLink}">閱讀全文</a>\n`
-      html += '      </div>\n'
+      html += '            <p class="comment-read-more">\n'
+      html += `              <a href="${readerResponseLink}">閱讀全文</a>\n`
+      html += '            </p>\n'
     }
 
-    html += '    </div>\n\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   }
 
   return html
@@ -449,13 +583,9 @@ const generatePollHtml = async (
 ) => {
   let html = ''
 
-  // 如果沒有關聯 poll，返回空字串
-  if (!pollId) {
-    return html
-  }
+  if (!pollId) return html
 
   try {
-    // 查詢 poll 資料
     const poll = await context.query.Poll.findOne({
       where: { id: String(pollId) },
       query: `
@@ -466,55 +596,29 @@ const generatePollHtml = async (
         option3
         option4
         option5
-        option1Image {
-          resized {
-            w480
-          }
-        }
-        option2Image {
-          resized {
-            w480
-          }
-        }
-        option3Image {
-          resized {
-            w480
-          }
-        }
-        option4Image {
-          resized {
-            w480
-          }
-        }
-        option5Image {
-          resized {
-            w480
-          }
-        }
+        option1Image { resized { w480 } }
+        option2Image { resized { w480 } }
+        option3Image { resized { w480 } }
+        option4Image { resized { w480 } }
+        option5Image { resized { w480 } }
       `,
     })
 
-    if (!poll) {
-      return html
-    }
+    if (!poll) return html
 
-    // 生成 poll HTML
-    html += '    <!-- ===== 08-Poll (心情互動) ===== -->\n'
-    html += '    <div class="poll-section">\n'
-    html += '      <div class="poll-title">心情互動</div>\n'
-
+    const pollDesc = poll.content || '留下今天看完電子報的心情'
+    html += '        <!-- ===== 07-Poll (心情互動) ===== -->\n'
+    html += '        <tr>\n'
+    html += '          <td class="poll-cell">\n'
+    html += '            <div class="poll-title">心情互動</div>\n'
     if (poll.content) {
-      html += `      <!-- ${poll.content} -->\n`
-      html += `      <div class="poll-subtitle">${poll.content}</div>\n`
-    } else {
-      html +=
-        '      <div class="poll-subtitle">留下今天看完電子報的心情</div>\n'
+      html += `            <!-- ${poll.content} -->\n`
     }
-
+    html += `            <div class="poll-desc">${pollDesc}</div>\n`
     html += '\n'
-    html += '      <div class="poll-options">\n'
+    html +=
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
 
-    // 生成 5 個選項
     const options = [
       { num: 1, text: poll.option1, image: poll.option1Image },
       { num: 2, text: poll.option2, image: poll.option2Image },
@@ -524,32 +628,57 @@ const generatePollHtml = async (
     ]
 
     for (const option of options) {
-      if (!option.text) continue // 跳過空選項
+      if (!option.text) continue
 
       const voteUrl = `${WEB_URL_BASE}/newsletter/${newsletterId}?vote=${option.num}&utm_source=email`
       const imageUrl =
         option.image?.resized?.w480 || POLL_ICON_URLS[option.num - 1]
+      const tdClass = option.num < 5 ? 'poll-option' : ''
 
-      html += `        <!-- href: ${voteUrl} -->\n`
-      html += `        <a href="${voteUrl}" class="poll-option-link">\n`
-      html += '          <div class="poll-option">\n'
-      html += '            <div class="poll-radio"></div>\n'
-      html += '            <div class="poll-bar-container">\n'
-      html += '              <div class="poll-bar" style="width: 15%;"></div>\n'
+      html += `              <!-- Option ${option.num} -->\n`
+      html += `              <tr>\n                <td class="${tdClass}">\n`
+      html += `                  <a class="poll-vote-link" href="${voteUrl}">\n`
       html +=
-        '              <div class="poll-option-content" style="left: 15%;">\n'
-      html += `                <!-- option${option.num}ImageUrl -->\n`
-      html += `                <img src="${imageUrl}" alt="" class="poll-image">\n`
-      html += `                <span class="poll-text">${option.text}</span>\n`
-      html += '              </div>\n'
-      html += '            </div>\n'
-      html += '          </div>\n'
-      html += '        </a>\n'
-      html += '\n'
+        '                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
+      html += '                      <tr>\n'
+      html +=
+        '                        <td class="poll-radio-td" width="32" valign="middle">\n'
+      if (option.num === 1) {
+        html += '                          <!--[if mso]>\n'
+        html +=
+          '                          <v:oval style="width:20px;height:20px" strokecolor="#A0A0A2" strokeweight="2pt" fillcolor="#ffffff">\n'
+        html += '                            <v:fill color="#ffffff"/>\n'
+        html += '                          </v:oval>\n'
+        html += '                          <![endif]-->\n'
+      }
+      html += '                          <!--[if !mso]><!-->\n'
+      html += '                          <div class="poll-radio"></div>\n'
+      html += '                          <!--<![endif]-->\n'
+      html += '                        </td>\n'
+      html += '                        <td valign="middle">\n'
+      html +=
+        '                          <table class="poll-bar-bg" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
+      html += '                            <tr>\n'
+      html +=
+        '                              <td class="poll-bar-fill" width="15%">&nbsp;</td>\n'
+      html += '                              <td class="poll-bar-label">\n'
+      html += `                                <img class="poll-emoji" src="${imageUrl}" alt="" width="20" height="20">\n`
+      html += `                                <span class="poll-text">${option.text}</span>\n`
+      html += '                              </td>\n'
+      html += '                            </tr>\n'
+      html += '                          </table>\n'
+      html += '                        </td>\n'
+      html += '                      </tr>\n'
+      html += '                    </table>\n'
+      html += '                  </a>\n'
+      html += '                </td>\n'
+      html += '              </tr>\n'
     }
 
-    html += '      </div>\n'
-    html += '    </div>\n\n'
+    html += '            </table>\n'
+    html += '          </td>\n'
+    html += '        </tr>\n'
+    html += '\n'
   } catch (error) {
     console.error('生成 Poll HTML 時發生錯誤:', error)
   }
@@ -737,6 +866,8 @@ const listConfigurations = list({
           existingData = await context.query.Newsletter.findOne({
             where: { id: String(item.id) },
             query: `
+              title
+              sendDate
               showMenu
               showReadingRank
               readerResponseText
@@ -750,6 +881,9 @@ const listConfigurations = list({
             `,
           })
         }
+
+        const title = resolvedData.title ?? existingData?.title ?? '電子報'
+        const sendDate = resolvedData.sendDate ?? existingData?.sendDate ?? null
 
         // 合併 resolvedData 和 existingData
         const showMenu =
@@ -802,6 +936,8 @@ const listConfigurations = list({
         // 生成電子報 HTML（一般版與大字版內容結構相同，共用同一份 HTML）
         const html = await generateNewsletterHtml(
           context,
+          title,
+          sendDate ?? null,
           showMenu,
           showReadingRank,
           readerResponseText,
