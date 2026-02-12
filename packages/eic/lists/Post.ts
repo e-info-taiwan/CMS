@@ -40,6 +40,46 @@ type MaybeItemFunction<T extends FieldMode> =
   | ((args: ListItemContext) => Promise<T>)
 
 const LOCK_DURATION_MINUTES = 30
+const CONTENT_PREVIEW_LENGTH = 100
+
+const extractContentPreview = (
+  contentApiData: unknown,
+  length: number = CONTENT_PREVIEW_LENGTH
+): string | null => {
+  if (!Array.isArray(contentApiData)) {
+    return null
+  }
+
+  const texts: string[] = []
+
+  for (const block of contentApiData) {
+    if (!block || typeof block !== 'object') {
+      continue
+    }
+    const contents = (block as { content?: unknown }).content
+    if (!Array.isArray(contents)) {
+      continue
+    }
+    for (const c of contents) {
+      if (typeof c === 'string') {
+        texts.push(c)
+      }
+    }
+    if (texts.join('').length >= length) {
+      break
+    }
+  }
+
+  if (texts.length === 0) {
+    return null
+  }
+
+  const fullText = texts.join('').replace(/<[^>]+>/g, '')
+  if (fullText.length <= length) {
+    return fullText
+  }
+  return fullText.slice(0, length)
+}
 
 // 在 CMS 模式下，限制 contributor 只能看到 / 編輯自己建立的文章
 const filterPostsForAccess = ({ session }: { session?: Session }) => {
@@ -297,6 +337,17 @@ const listConfigurations = list({
         itemView: { fieldMode: 'hidden' },
       },
     }),
+    contentPreview: text({
+      label: '預覽內容',
+      db: {
+        isNullable: true,
+      },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
+    }),
     attachments: relationship({
       ref: 'Attachment.posts',
       label: '附加檔案',
@@ -345,16 +396,16 @@ const listConfigurations = list({
       label: '投票結果',
       many: true,
     }),
-    preview: virtual({                                                                                                                                                                    
+    preview: virtual({
       field: graphql.field({
         type: graphql.JSON,
         resolve(item: Record<string, unknown>): Record<string, string> {
           return {
             href: `${envVar.previewServer.path}/node/${item?.id}`,
-            label: 'Preview', 
+            label: 'Preview',
           }
         },
-      }), 
+      }),
       ui: {
         // A module path that is resolved from where `keystone start` is run
         views: './lists/views/link-button',
@@ -365,7 +416,7 @@ const listConfigurations = list({
           fieldMode: 'hidden',
         },
       },
-    }), 
+    }),
     aiPollHelper: checkbox({
       label: 'AI 投票小幫手',
       defaultValue: false,
@@ -414,6 +465,8 @@ const listConfigurations = list({
         resolvedData.contentApiData = customFields.draftConverter
           .convertToApiData(content)
           .toJS()
+        const preview = extractContentPreview(resolvedData.contentApiData)
+        resolvedData.contentPreview = preview ?? null
       }
 
       // AI 投票小幫手處理

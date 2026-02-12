@@ -552,6 +552,7 @@ model Post {
   briefApiData                 Json?
   content                      Json?
   contentApiData               Json?
+  contentPreview               String?
   attachments                  Attachment[]     @relation("Attachment_posts")
   citations                    String           @default("")
   relatedPosts                 Post[]           @relation("Post_relatedPosts")

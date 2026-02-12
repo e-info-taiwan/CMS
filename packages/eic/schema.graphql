@@ -2190,6 +2190,7 @@ type Post {
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
+  contentPreview: String
   attachments(where: AttachmentWhereInput! = {}, orderBy: [AttachmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AttachmentWhereUniqueInput): [Attachment!]
   attachmentsCount(where: AttachmentWhereInput! = {}): Int
   citations: String
@@ -2242,6 +2243,7 @@ input PostWhereInput {
   heroImage: PhotoWhereInput
   heroCaption: StringFilter
   brief: StringFilter
+  contentPreview: StringNullableFilter
   attachments: AttachmentManyRelationFilter
   citations: StringFilter
   relatedPosts: PostManyRelationFilter
@@ -2299,6 +2301,7 @@ input PostOrderByInput {
   style: OrderDirection
   heroCaption: OrderDirection
   brief: OrderDirection
+  contentPreview: OrderDirection
   citations: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
@@ -2333,6 +2336,7 @@ input PostUpdateInput {
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
+  contentPreview: String
   attachments: AttachmentRelateToManyForUpdateInput
   citations: String
   relatedPosts: PostRelateToManyForUpdateInput
@@ -2434,6 +2438,7 @@ input PostCreateInput {
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
+  contentPreview: String
   attachments: AttachmentRelateToManyForCreateInput
   citations: String
   relatedPosts: PostRelateToManyForCreateInput
