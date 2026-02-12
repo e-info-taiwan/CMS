@@ -50,11 +50,14 @@ export default withAuth(
             }),
           },
           resolve: async (_source, { rssTarget }, context) => {
-            // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb
+            // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb，最多 25 篇以降低 DB 負載
             const targetsJson = JSON.stringify([rssTarget])
+            const RSS_TARGET_LIMIT = 25
             const rows = (await context.prisma.$queryRaw`
               SELECT id FROM "Post"
               WHERE "rssTargets"::jsonb @> ${targetsJson}::jsonb
+              ORDER BY "publishTime" DESC
+              LIMIT ${RSS_TARGET_LIMIT}
             `) as { id: number }[]
             const ids = rows.map((r) => r.id)
             if (ids.length === 0) {
