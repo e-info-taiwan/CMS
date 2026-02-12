@@ -660,7 +660,7 @@ const generatePollHtml = async (
         '                          <table class="poll-bar-bg" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
       html += '                            <tr>\n'
       html +=
-        '                              <td class="poll-bar-fill" width="15%">&nbsp;</td>\n'
+        '                              <td class="poll-bar-fill" width="0%">&nbsp;</td>\n'
       html += '                              <td class="poll-bar-label">\n'
       html += `                                <img class="poll-emoji" src="${imageUrl}" alt="" width="20" height="20">\n`
       html += `                                <span class="poll-text">${option.text}</span>\n`
