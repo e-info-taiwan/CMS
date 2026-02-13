@@ -1,6 +1,11 @@
 import { list } from '@keystone-6/core'
 import { text, relationship, select, timestamp } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
+import envVar from '../environment-variables'
+import {
+  invalidateByRoutes,
+  type RoutePrefixConfig,
+} from '../services/invalidate-cdn-cache'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
@@ -61,4 +66,60 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+const extendedListConfigurations = utils.addTrackingFields(listConfigurations)
+
+if (
+  envVar.invalidateCDNCache.projectId &&
+  envVar.invalidateCDNCache.urlMapName &&
+  envVar.invalidateCDNCache.routePrefixConfig?.timeline
+) {
+  const originalAfterOperation =
+    extendedListConfigurations.hooks?.afterOperation
+
+  extendedListConfigurations.hooks = {
+    ...extendedListConfigurations.hooks,
+    afterOperation: async ({ item, originalItem, context }) => {
+      const itemId = (originalItem?.id ?? item?.id) as
+        | string
+        | number
+        | undefined
+      if (!itemId) {
+        await originalAfterOperation?.({
+          item,
+          originalItem,
+          context,
+        } as Parameters<NonNullable<typeof originalAfterOperation>>[0])
+        return
+      }
+
+      const timelineIds = await context.prisma.Timeline.findMany({
+        where: { items: { some: { id: { equals: Number(itemId) } } } },
+        select: { id: true },
+      })
+
+      const config = {
+        projectId: envVar.invalidateCDNCache.projectId,
+        urlMapName: envVar.invalidateCDNCache.urlMapName,
+        routePrefixConfig: envVar.invalidateCDNCache
+          .routePrefixConfig as RoutePrefixConfig,
+      }
+
+      const tasks = timelineIds.map((timeline) =>
+        invalidateByRoutes(
+          config,
+          [config.routePrefixConfig.timeline],
+          timeline.id
+        )
+      )
+
+      await Promise.allSettled([
+        originalAfterOperation?.({ item, originalItem, context } as Parameters<
+          NonNullable<typeof originalAfterOperation>
+        >[0]),
+        ...tasks,
+      ])
+    },
+  }
+}
+
+export default extendedListConfigurations

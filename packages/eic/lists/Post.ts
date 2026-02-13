@@ -13,6 +13,11 @@ import {
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 import { aiPollHelperService } from '../services/ai-poll-helper'
+import {
+  invalidateByRoutes,
+  invalidatePostCdnCache,
+  type RoutePrefixConfig,
+} from '../services/invalidate-cdn-cache'
 
 const { allowRoles, admin, moderator, editor, contributor } =
   utils.accessControl
@@ -630,6 +635,61 @@ if (
       slug: originalItem?.id ?? item?.id,
     })
   )
+} else if (
+  envVar.invalidateCDNCache.projectId &&
+  envVar.invalidateCDNCache.urlMapName &&
+  envVar.invalidateCDNCache.routePrefixConfig?.post
+) {
+  const originalAfterOperation =
+    extendedListConfigurations.hooks?.afterOperation
+
+  extendedListConfigurations.hooks = {
+    ...extendedListConfigurations.hooks,
+    afterOperation: async ({ item, originalItem }) => {
+      const itemId = (originalItem?.id ?? item?.id) as
+        | string
+        | number
+        | undefined
+      const topicId = (originalItem?.topicId ?? item?.topicId) as
+        | string
+        | number
+        | undefined
+
+      const tasks: Promise<unknown>[] = [
+        invalidatePostCdnCache(
+          {
+            projectId: envVar.invalidateCDNCache.projectId,
+            urlMapName: envVar.invalidateCDNCache.urlMapName,
+            routePrefixConfig: envVar.invalidateCDNCache
+              .routePrefixConfig as RoutePrefixConfig,
+          },
+          itemId
+        ),
+      ]
+
+      if (topicId && envVar.invalidateCDNCache.routePrefixConfig?.topic) {
+        tasks.push(
+          invalidateByRoutes(
+            {
+              projectId: envVar.invalidateCDNCache.projectId,
+              urlMapName: envVar.invalidateCDNCache.urlMapName,
+              routePrefixConfig: envVar.invalidateCDNCache
+                .routePrefixConfig as RoutePrefixConfig,
+            },
+            [envVar.invalidateCDNCache.routePrefixConfig.topic],
+            topicId
+          )
+        )
+      }
+
+      await Promise.allSettled([
+        originalAfterOperation?.({ item, originalItem } as Parameters<
+          NonNullable<typeof originalAfterOperation>
+        >[0]),
+        ...tasks,
+      ])
+    },
+  }
 }
 
 export default extendedListConfigurations

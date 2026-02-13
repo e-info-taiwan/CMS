@@ -7,6 +7,11 @@ import {
   integer,
 } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
+import envVar from '../environment-variables'
+import {
+  invalidateByRoutes,
+  type RoutePrefixConfig,
+} from '../services/invalidate-cdn-cache'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
@@ -90,4 +95,40 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+const extendedListConfigurations = utils.addTrackingFields(listConfigurations)
+
+if (
+  envVar.invalidateCDNCache.projectId &&
+  envVar.invalidateCDNCache.urlMapName &&
+  envVar.invalidateCDNCache.routePrefixConfig?.topic
+) {
+  const originalAfterOperation =
+    extendedListConfigurations.hooks?.afterOperation
+
+  extendedListConfigurations.hooks = {
+    ...extendedListConfigurations.hooks,
+    afterOperation: async ({ item, originalItem }) => {
+      const itemId = (originalItem?.id ?? item?.id) as
+        | string
+        | number
+        | undefined
+      await Promise.allSettled([
+        originalAfterOperation?.({ item, originalItem } as Parameters<
+          NonNullable<typeof originalAfterOperation>
+        >[0]),
+        invalidateByRoutes(
+          {
+            projectId: envVar.invalidateCDNCache.projectId,
+            urlMapName: envVar.invalidateCDNCache.urlMapName,
+            routePrefixConfig: envVar.invalidateCDNCache
+              .routePrefixConfig as RoutePrefixConfig,
+          },
+          [envVar.invalidateCDNCache.routePrefixConfig.topic],
+          itemId
+        ),
+      ])
+    },
+  }
+}
+
+export default extendedListConfigurations

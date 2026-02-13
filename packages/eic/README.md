@@ -14,6 +14,24 @@ cloud runs:
 ## Environment Variables
 關於 lilith-readr 中使用到哪些環境變數，可以至 [`environment-variables.ts`](https://github.com/mirror-media/Lilith/blob/main/packages/readr/environment-variables.ts) 查看。
 
+### CDN cache invalidation
+本專案支援兩種 CDN 失效方式，擇一設定即可：
+
+1) **HTTP invalidation server**（既有方式）
+- `INVALID_CDN_CACHE_SERVER_URL`：例如 `https://invalidate-cdn.example.com`
+- 由 CMS 在寫入後呼叫 `${INVALID_CDN_CACHE_SERVER_URL}/post` 等路由
+
+2) **直接呼叫 GCP URL map invalidation**（新增）
+- `INVALIDATE_CDN_PROJECT_ID`：GCP project id
+- `INVALIDATE_CDN_URL_MAP_NAME`：URL map 名稱（例如 `eic-web-url-map`）
+- `INVALIDATE_CDN_ROUTE_PREFIX_CONFIG`：JSON 字串，路由前綴設定，例如：
+```
+{"post":"/post","ampPost":"/amp/post","event":"/event","infoGraph":"/infographic","poll":"/poll","timeline":"/timeline","newsletter":"/newsletter","topic":"/topic"}
+```
+- 需確保執行環境已具備 `@google-cloud/compute` 需要的授權（例如 Cloud Run service account 權限）
+
+> 若 `INVALID_CDN_CACHE_SERVER_URL` 有設定，會優先使用 HTTP invalidation；否則改用 GCP URL map invalidation。
+
 ## Getting started on local environment
 ### Start postgres instance
 在起 lilith-readr 服務前，需要在 local 端先起 postgres database。

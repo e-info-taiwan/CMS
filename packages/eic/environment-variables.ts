@@ -16,10 +16,28 @@ const {
   MEMORY_CACHE_SIZE,
   GCS_BASE_URL,
   INVALID_CDN_CACHE_SERVER_URL,
+  INVALIDATE_CDN_PROJECT_ID,
+  INVALIDATE_CDN_URL_MAP_NAME,
+  INVALIDATE_CDN_ROUTE_PREFIX_CONFIG,
   GEMINI_API_KEY,
   GEMINI_MODEL,
   WEB_URL_BASE,
 } = process.env
+
+const parseRoutePrefixConfig = () => {
+  if (!INVALIDATE_CDN_ROUTE_PREFIX_CONFIG) {
+    return undefined
+  }
+  try {
+    return JSON.parse(INVALIDATE_CDN_ROUTE_PREFIX_CONFIG)
+  } catch (error) {
+    console.error(
+      '[invalidate-cdn-cache] invalid INVALIDATE_CDN_ROUTE_PREFIX_CONFIG',
+      error
+    )
+    return undefined
+  }
+}
 
 enum DatabaseProvider {
   Sqlite = 'sqlite',
@@ -68,6 +86,11 @@ export default {
     storagePath: IMAGES_STORAGE_PATH || 'public/images',
   },
   invalidateCDNCacheServerURL: INVALID_CDN_CACHE_SERVER_URL,
+  invalidateCDNCache: {
+    projectId: INVALIDATE_CDN_PROJECT_ID || '',
+    urlMapName: INVALIDATE_CDN_URL_MAP_NAME || '',
+    routePrefixConfig: parseRoutePrefixConfig(),
+  },
   ai: {
     gemini: {
       apiKey: GEMINI_API_KEY || '',
