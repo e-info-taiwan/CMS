@@ -43,7 +43,7 @@ const listConfigurations = list({
               id
               sortOrder
               items {
-                idid
+                id
                 title
                 content
                 eventTime
