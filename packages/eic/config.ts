@@ -1,8 +1,22 @@
 import envVar from './environment-variables'
 
+const withPreviewPoolTimeout = (url: string) => {
+  try {
+    const parsed = new URL(url)
+    parsed.searchParams.set('pool_timeout', '20')
+    return parsed.toString()
+  } catch (error) {
+    return url
+  }
+}
+
 const database: { provider: 'postgresql' | 'sqlite'; url: string } = {
   provider: envVar.database.provider,
-  url: envVar.database.url,
+  url:
+    envVar.accessControlStrategy === 'preview' &&
+    envVar.database.provider === 'postgresql'
+      ? withPreviewPoolTimeout(envVar.database.url)
+      : envVar.database.url,
 }
 
 const session: { secret: string; maxAge: number } = {

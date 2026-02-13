@@ -31,7 +31,21 @@ type FieldMode = 'edit' | 'read' | 'hidden'
 
 type ListItemContext = {
   session?: Session
-  context: any
+  context: {
+    prisma: {
+      Post: {
+        findUnique: (args: {
+          where: { id: number }
+          select: Record<string, unknown>
+        }) => Promise<Record<string, unknown> | null>
+        update: (args: {
+          where: { id: number }
+          data: Record<string, unknown>
+        }) => Promise<unknown>
+      }
+    }
+    session?: Session
+  }
   item: Record<string, unknown>
 }
 
@@ -465,6 +479,16 @@ const listConfigurations = list({
           .toJS()
         const preview = extractContentPreview(resolvedData.contentApiData)
         resolvedData.contentPreview = preview ?? null
+      } else {
+        const shouldFillPreview =
+          typeof resolvedData.contentPreview === 'undefined' &&
+          (item?.contentPreview == null || item?.contentPreview === '')
+        if (shouldFillPreview) {
+          const sourceApiData =
+            resolvedData.contentApiData ?? item?.contentApiData
+          const preview = extractContentPreview(sourceApiData)
+          resolvedData.contentPreview = preview ?? null
+        }
       }
 
       // AI 投票小幫手處理
