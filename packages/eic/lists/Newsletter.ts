@@ -71,11 +71,10 @@ const fetchSubscriberCount = async (): Promise<string> => {
   }
 }
 
-// 根據 category 決定預設圖片
-const getDefaultImage = (category: any): string => {
-  // Use different default image for "編輯直送" category
-  const isEditorCategory = category?.slug === 'editorpick'
-  return isEditorCategory ? DEFAULT_NEWS_IMAGE_PATH : DEFAULT_POST_IMAGE_PATH
+// 根據 post style 決定預設圖片（編輯直送使用 news-default.jpg）
+const getDefaultImage = (post: { style?: string }): string => {
+  const isEditorStyle = post?.style === 'editor'
+  return isEditorStyle ? DEFAULT_NEWS_IMAGE_PATH : DEFAULT_POST_IMAGE_PATH
 }
 
 // 從 contentApiData 提取純文字並截取指定字數
@@ -183,9 +182,7 @@ const generateNewsletterHtml = async (
           id
           title
           content
-          category {
-            slug
-          }
+          style
           heroImage {
             resized {
               w480
@@ -201,9 +198,7 @@ const generateNewsletterHtml = async (
           query: `
           id
           title
-          category {
-            slug
-          }
+          style
           heroImage {
             resized {
               w480
@@ -304,8 +299,7 @@ const generateNewsletterHtml = async (
     for (let i = 0; i < relatedPosts.length; i++) {
       const post = relatedPosts[i]
       const postUrl = `${WEB_URL_BASE}/node/${post.id}`
-      const imageUrl =
-        post.heroImage?.resized?.w800 || getDefaultImage(post.category)
+      const imageUrl = post.heroImage?.resized?.w800 || getDefaultImage(post)
       const excerpt = extractTextFromContent(post.content, 150)
 
       html += `        <!-- Article ${i + 1} -->\n`
@@ -335,8 +329,7 @@ const generateNewsletterHtml = async (
 
     focusPosts.forEach((post: any, idx: number) => {
       const postUrl = `${WEB_URL_BASE}/node/${post.id}`
-      const imageUrl =
-        post.heroImage?.resized?.w480 || getDefaultImage(post.category)
+      const imageUrl = post.heroImage?.resized?.w480 || getDefaultImage(post)
       const borderClass = idx < focusPosts.length - 1 ? 'card-row-border' : ''
       html += `            <!-- Highlight ${idx + 1} -->\n`
       html += `            <table class="${borderClass}" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n`
@@ -381,7 +374,7 @@ const generateNewsletterHtml = async (
           query: `
           id
           title
-          category { slug }
+          style
           heroImage { resized { w480 } }
         `,
         })
@@ -393,8 +386,7 @@ const generateNewsletterHtml = async (
             rank: index + 1,
             title: post.title,
             link: `${WEB_URL_BASE}/node/${post.id}`,
-            image:
-              post.heroImage?.resized?.w480 || getDefaultImage(post.category),
+            image: post.heroImage?.resized?.w480 || getDefaultImage(post),
           }))
         }
       }
