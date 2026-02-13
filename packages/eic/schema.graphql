@@ -844,6 +844,74 @@ input DonationPVCreateInput {
   updatedBy: UserRelateToOneForCreateInput
 }
 
+type DonationPVReport {
+  id: ID!
+  startDate: DateTime
+  endDate: DateTime
+  clickFrom: String
+  clickCount: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: User
+  updatedBy: User
+}
+
+input DonationPVReportWhereUniqueInput {
+  id: ID
+}
+
+input DonationPVReportWhereInput {
+  AND: [DonationPVReportWhereInput!]
+  OR: [DonationPVReportWhereInput!]
+  NOT: [DonationPVReportWhereInput!]
+  id: IDFilter
+  startDate: DateTimeFilter
+  endDate: DateTimeFilter
+  clickFrom: StringFilter
+  clickCount: IntFilter
+  createdAt: DateTimeNullableFilter
+  updatedAt: DateTimeNullableFilter
+  createdBy: UserWhereInput
+  updatedBy: UserWhereInput
+}
+
+input DonationPVReportOrderByInput {
+  id: OrderDirection
+  startDate: OrderDirection
+  endDate: OrderDirection
+  clickFrom: OrderDirection
+  clickCount: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input DonationPVReportUpdateInput {
+  startDate: DateTime
+  endDate: DateTime
+  clickFrom: String
+  clickCount: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForUpdateInput
+  updatedBy: UserRelateToOneForUpdateInput
+}
+
+input DonationPVReportUpdateArgs {
+  where: DonationPVReportWhereUniqueInput!
+  data: DonationPVReportUpdateInput!
+}
+
+input DonationPVReportCreateInput {
+  startDate: DateTime
+  endDate: DateTime
+  clickFrom: String
+  clickCount: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForCreateInput
+  updatedBy: UserRelateToOneForCreateInput
+}
+
 type Event {
   id: ID!
   name: String
@@ -3234,6 +3302,12 @@ type Mutation {
   updateDonationPVS(data: [DonationPVUpdateArgs!]!): [DonationPV]
   deleteDonationPV(where: DonationPVWhereUniqueInput!): DonationPV
   deleteDonationPVS(where: [DonationPVWhereUniqueInput!]!): [DonationPV]
+  createDonationPVReport(data: DonationPVReportCreateInput!): DonationPVReport
+  createDonationPVReports(data: [DonationPVReportCreateInput!]!): [DonationPVReport]
+  updateDonationPVReport(where: DonationPVReportWhereUniqueInput!, data: DonationPVReportUpdateInput!): DonationPVReport
+  updateDonationPVReports(data: [DonationPVReportUpdateArgs!]!): [DonationPVReport]
+  deleteDonationPVReport(where: DonationPVReportWhereUniqueInput!): DonationPVReport
+  deleteDonationPVReports(where: [DonationPVReportWhereUniqueInput!]!): [DonationPVReport]
   createEvent(data: EventCreateInput!): Event
   createEvents(data: [EventCreateInput!]!): [Event]
   updateEvent(where: EventWhereUniqueInput!, data: EventUpdateInput!): Event
@@ -3408,6 +3482,9 @@ type Query {
   donationPVS(where: DonationPVWhereInput! = {}, orderBy: [DonationPVOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DonationPVWhereUniqueInput): [DonationPV!]
   donationPV(where: DonationPVWhereUniqueInput!): DonationPV
   donationPVSCount(where: DonationPVWhereInput! = {}): Int
+  donationPVReports(where: DonationPVReportWhereInput! = {}, orderBy: [DonationPVReportOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DonationPVReportWhereUniqueInput): [DonationPVReport!]
+  donationPVReport(where: DonationPVReportWhereUniqueInput!): DonationPVReport
+  donationPVReportsCount(where: DonationPVReportWhereInput! = {}): Int
   events(where: EventWhereInput! = {}, orderBy: [EventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: EventWhereUniqueInput): [Event!]
   event(where: EventWhereUniqueInput!): Event
   eventsCount(where: EventWhereInput! = {}): Int

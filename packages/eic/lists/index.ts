@@ -6,6 +6,7 @@ import Classify from './Classify'
 import Config from './Config'
 import Donation from './Donation'
 import DonationPV from './DonationPV'
+import DonationPVReport from './DonationPVReport'
 import Event from './Event'
 import Favorite from './Favorite'
 import HomepagePick from './HomepagePick'
@@ -37,6 +38,7 @@ export const listDefinition = {
   Config,
   Donation,
   DonationPV,
+  DonationPVReport,
   Event,
   Favorite,
   HomepagePick,

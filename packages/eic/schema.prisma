@@ -187,6 +187,23 @@ model DonationPV {
   @@index([updatedById])
 }
 
+model DonationPVReport {
+  id          Int       @id @default(autoincrement())
+  startDate   DateTime
+  endDate     DateTime
+  clickFrom   String    @default("")
+  clickCount  Int       @default(0)
+  createdAt   DateTime?
+  updatedAt   DateTime?
+  createdBy   User?     @relation("DonationPVReport_createdBy", fields: [createdById], references: [id])
+  createdById Int?      @map("createdBy")
+  updatedBy   User?     @relation("DonationPVReport_updatedBy", fields: [updatedById], references: [id])
+  updatedById Int?      @map("updatedBy")
+
+  @@index([createdById])
+  @@index([updatedById])
+}
+
 model Event {
   id                     Int          @id @default(autoincrement())
   name                   String       @default("")
@@ -756,6 +773,8 @@ model User {
   from_Donation_updatedBy           Donation[]           @relation("Donation_updatedBy")
   from_DonationPV_createdBy         DonationPV[]         @relation("DonationPV_createdBy")
   from_DonationPV_updatedBy         DonationPV[]         @relation("DonationPV_updatedBy")
+  from_DonationPVReport_createdBy   DonationPVReport[]   @relation("DonationPVReport_createdBy")
+  from_DonationPVReport_updatedBy   DonationPVReport[]   @relation("DonationPVReport_updatedBy")
   from_Event_createdBy              Event[]              @relation("Event_createdBy")
   from_Event_updatedBy              Event[]              @relation("Event_updatedBy")
   from_Favorite_createdBy           Favorite[]           @relation("Favorite_createdBy")
