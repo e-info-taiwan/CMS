@@ -1,5 +1,5 @@
 import { list } from '@keystone-6/core'
-import { text, relationship, select, timestamp } from '@keystone-6/core/fields'
+import { text, relationship, select } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 import envVar from '../environment-variables'
 import {
@@ -15,9 +15,18 @@ const listConfigurations = list({
       label: '事件標題',
       validation: { isRequired: true },
     }),
-    eventTime: timestamp({
+    eventTime: text({
       label: '事件時間',
-      validation: { isRequired: true },
+      validation: {
+        isRequired: true,
+        match: {
+          regex: /^\d{4}\/\d{1,2}\/\d{1,2}$/,
+          explanation: '請輸入 yyyy/mm/dd 格式，例如：2024/01/15',
+        },
+      },
+      ui: {
+        description: '格式：yyyy/mm/dd，例如 2024/01/15',
+      },
     }),
     timeFormat: select({
       label: '前端時間字串',
@@ -59,6 +68,22 @@ const listConfigurations = list({
       update: allowRoles(admin, moderator),
       create: allowRoles(admin, moderator),
       delete: allowRoles(admin),
+    },
+  },
+  hooks: {
+    validateInput: async ({ resolvedData, addValidationError }) => {
+      const eventTime = resolvedData.eventTime
+      if (eventTime && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(eventTime)) {
+        const [y, m, d] = eventTime.split('/').map(Number)
+        const date = new Date(y, m - 1, d)
+        if (
+          date.getFullYear() !== y ||
+          date.getMonth() !== m - 1 ||
+          date.getDate() !== d
+        ) {
+          addValidationError('請輸入有效的日期')
+        }
+      }
     },
   },
   graphql: {

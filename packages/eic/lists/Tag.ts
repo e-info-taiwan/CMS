@@ -30,11 +30,6 @@ const listConfigurations = list({
       many: true,
       label: '相關文章',
     }),
-    topics: relationship({
-      ref: 'Topic.tags',
-      many: true,
-      label: '相關專題',
-    }),
   },
   access: {
     operation: {

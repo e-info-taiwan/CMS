@@ -219,7 +219,6 @@ model Event {
   registrationUrl        String       @default("")
   content                String       @default("")
   isApproved             Boolean      @default(false)
-  showOnHomepage         Boolean      @default(false)
   sortOrder              Int
   state                  String       @default("draft")
   createdAt              DateTime?
@@ -314,7 +313,6 @@ model Job {
   startDate            DateTime
   endDate              DateTime?
   isApproved           Boolean      @default(false)
-  showOnHomepage       Boolean      @default(false)
   sortOrder            Int
   state                String       @default("draft")
   createdAt            DateTime?
@@ -408,10 +406,14 @@ model Newsletter {
   pollId                     Int?         @map("poll")
   readerResponseTitle        String       @default("")
   readerResponseLink         String       @default("")
+  readerResponsePost         Post?        @relation("Newsletter_readerResponsePost", fields: [readerResponsePostId], references: [id])
+  readerResponsePostId       Int?         @map("readerResponsePost")
   originalUrl                String       @default("")
   readerResponseText         String       @default("")
   standardHtml               String       @default("")
   beautifiedHtml             String       @default("")
+  manualOrderOfFocusPosts    Json?
+  manualOrderOfRelatedPosts  Json?
   createdAt                  DateTime?
   updatedAt                  DateTime?
   createdBy                  User?        @relation("Newsletter_createdBy", fields: [createdById], references: [id])
@@ -422,6 +424,7 @@ model Newsletter {
 
   @@index([heroImageId])
   @@index([pollId])
+  @@index([readerResponsePostId])
   @@index([createdById])
   @@index([updatedById])
 }
@@ -537,67 +540,68 @@ model PollResult {
 }
 
 model Post {
-  id                           Int              @id @default(autoincrement())
-  lockBy                       User?            @relation("Post_lockBy", fields: [lockById], references: [id])
-  lockById                     Int?             @map("lockBy")
-  lockExpireAt                 DateTime?
-  title                        String           @default("")
-  subtitle                     String?
-  state                        String?          @default("draft")
-  publishTime                  DateTime
-  ogImage                      Photo?           @relation("Post_ogImage", fields: [ogImageId], references: [id])
-  ogImageId                    Int?             @map("ogImage")
-  reporters                    Author[]         @relation("Post_reporters")
-  translators                  Author[]         @relation("Post_translators")
-  reviewers                    Author[]         @relation("Post_reviewers")
-  writers                      Author[]         @relation("Post_writers")
-  sources                      Author[]         @relation("Post_sources")
-  otherByline                  String           @default("")
-  locations                    Location[]       @relation("Post_locations")
-  section                      Section?         @relation("Post_section", fields: [sectionId], references: [id])
-  sectionId                    Int?             @map("section")
-  category                     Category?        @relation("Post_category", fields: [categoryId], references: [id])
-  categoryId                   Int?             @map("category")
-  classify                     Classify?        @relation("Post_classify", fields: [classifyId], references: [id])
-  classifyId                   Int?             @map("classify")
-  topic                        Topic?           @relation("Post_topic", fields: [topicId], references: [id])
-  topicId                      Int?             @map("topic")
-  style                        String?          @default("default")
-  heroImage                    Photo?           @relation("Post_heroImage", fields: [heroImageId], references: [id])
-  heroImageId                  Int?             @map("heroImage")
-  heroCaption                  String           @default("")
-  brief                        String           @default("")
-  briefApiData                 Json?
-  content                      Json?
-  contentApiData               Json?
-  contentPreview               String?
-  attachments                  Attachment[]     @relation("Attachment_posts")
-  citations                    String           @default("")
-  relatedPosts                 Post[]           @relation("Post_relatedPosts")
-  ad                           Ad?              @relation("Post_ad", fields: [adId], references: [id])
-  adId                         Int?             @map("ad")
-  tags                         Tag[]            @relation("Post_tags")
-  rssTargets                   Json             @default("[]")
-  poll                         Poll?            @relation("Post_poll", fields: [pollId], references: [id])
-  pollId                       Int?             @map("poll")
-  pollResults                  PollResult[]     @relation("PollResult_post")
-  aiPollHelper                 Boolean          @default(false)
-  aiPollHelperResult           String           @default("")
-  isNewsletter                 Boolean          @default(false)
-  createdAt                    DateTime?
-  updatedAt                    DateTime?
-  createdBy                    User?            @relation("Post_createdBy", fields: [createdById], references: [id])
-  createdById                  Int?             @map("createdBy")
-  updatedBy                    User?            @relation("Post_updatedBy", fields: [updatedById], references: [id])
-  updatedById                  Int?             @map("updatedBy")
-  from_Category_featuredPosts  Category[]       @relation("Category_featuredPosts")
-  from_Favorite_post           Favorite[]       @relation("Favorite_post")
-  from_HomepagePick_posts      HomepagePick[]   @relation("HomepagePick_posts")
-  from_Newsletter_focusPosts   Newsletter[]     @relation("Newsletter_focusPosts")
-  from_Newsletter_relatedPosts Newsletter[]     @relation("Newsletter_relatedPosts")
-  from_Photo_posts             Photo[]          @relation("Photo_posts")
-  from_Post_relatedPosts       Post[]           @relation("Post_relatedPosts")
-  from_ReadingHistory_post     ReadingHistory[] @relation("ReadingHistory_post")
+  id                                 Int              @id @default(autoincrement())
+  lockBy                             User?            @relation("Post_lockBy", fields: [lockById], references: [id])
+  lockById                           Int?             @map("lockBy")
+  lockExpireAt                       DateTime?
+  title                              String           @default("")
+  subtitle                           String?
+  state                              String?          @default("draft")
+  publishTime                        DateTime
+  ogImage                            Photo?           @relation("Post_ogImage", fields: [ogImageId], references: [id])
+  ogImageId                          Int?             @map("ogImage")
+  reporters                          Author[]         @relation("Post_reporters")
+  translators                        Author[]         @relation("Post_translators")
+  reviewers                          Author[]         @relation("Post_reviewers")
+  writers                            Author[]         @relation("Post_writers")
+  sources                            Author[]         @relation("Post_sources")
+  otherByline                        String           @default("")
+  locations                          Location[]       @relation("Post_locations")
+  section                            Section?         @relation("Post_section", fields: [sectionId], references: [id])
+  sectionId                          Int?             @map("section")
+  category                           Category?        @relation("Post_category", fields: [categoryId], references: [id])
+  categoryId                         Int?             @map("category")
+  classify                           Classify?        @relation("Post_classify", fields: [classifyId], references: [id])
+  classifyId                         Int?             @map("classify")
+  topic                              Topic?           @relation("Post_topic", fields: [topicId], references: [id])
+  topicId                            Int?             @map("topic")
+  style                              String?          @default("default")
+  heroImage                          Photo?           @relation("Post_heroImage", fields: [heroImageId], references: [id])
+  heroImageId                        Int?             @map("heroImage")
+  heroCaption                        String           @default("")
+  brief                              String           @default("")
+  briefApiData                       Json?
+  content                            Json?
+  contentApiData                     Json?
+  contentPreview                     String?
+  attachments                        Attachment[]     @relation("Attachment_posts")
+  citations                          String           @default("")
+  relatedPosts                       Post[]           @relation("Post_relatedPosts")
+  ad                                 Ad?              @relation("Post_ad", fields: [adId], references: [id])
+  adId                               Int?             @map("ad")
+  tags                               Tag[]            @relation("Post_tags")
+  rssTargets                         Json             @default("[]")
+  poll                               Poll?            @relation("Post_poll", fields: [pollId], references: [id])
+  pollId                             Int?             @map("poll")
+  pollResults                        PollResult[]     @relation("PollResult_post")
+  aiPollHelper                       Boolean          @default(false)
+  aiPollHelperResult                 String           @default("")
+  isNewsletter                       Boolean          @default(false)
+  createdAt                          DateTime?
+  updatedAt                          DateTime?
+  createdBy                          User?            @relation("Post_createdBy", fields: [createdById], references: [id])
+  createdById                        Int?             @map("createdBy")
+  updatedBy                          User?            @relation("Post_updatedBy", fields: [updatedById], references: [id])
+  updatedById                        Int?             @map("updatedBy")
+  from_Category_featuredPosts        Category[]       @relation("Category_featuredPosts")
+  from_Favorite_post                 Favorite[]       @relation("Favorite_post")
+  from_HomepagePick_posts            HomepagePick[]   @relation("HomepagePick_posts")
+  from_Newsletter_focusPosts         Newsletter[]     @relation("Newsletter_focusPosts")
+  from_Newsletter_relatedPosts       Newsletter[]     @relation("Newsletter_relatedPosts")
+  from_Newsletter_readerResponsePost Newsletter[]     @relation("Newsletter_readerResponsePost")
+  from_Photo_posts                   Photo[]          @relation("Photo_posts")
+  from_Post_relatedPosts             Post[]           @relation("Post_relatedPosts")
+  from_ReadingHistory_post           ReadingHistory[] @relation("ReadingHistory_post")
 
   @@index([lockById])
   @@index([lockExpireAt])
@@ -667,7 +671,6 @@ model Tag {
   isFeatured  Boolean   @default(false)
   sortOrder   Int?
   posts       Post[]    @relation("Post_tags")
-  topics      Topic[]   @relation("Tag_topics")
   createdAt   DateTime?
   updatedAt   DateTime?
   createdBy   User?     @relation("Tag_createdBy", fields: [createdById], references: [id])
@@ -700,7 +703,7 @@ model Timeline {
 model TimelineItem {
   id                  Int        @id @default(autoincrement())
   title               String     @default("")
-  eventTime           DateTime
+  eventTime           String     @default("")
   timeFormat          String     @default("day")
   content             String     @default("")
   image               Photo?     @relation("TimelineItem_image", fields: [imageId], references: [id])
@@ -729,7 +732,6 @@ model Topic {
   heroImage                Photo?         @relation("Topic_heroImage", fields: [heroImageId], references: [id])
   heroImageId              Int?           @map("heroImage")
   posts                    Post[]         @relation("Post_topic")
-  tags                     Tag[]          @relation("Tag_topics")
   isPinned                 Boolean        @default(false)
   sortOrder                Int?           @default(0)
   createdAt                DateTime?

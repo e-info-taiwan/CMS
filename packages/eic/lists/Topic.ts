@@ -48,8 +48,6 @@ const listConfigurations = list({
     redirectUrl: text({
       label: '轉址網址',
       ui: {
-        createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -60,11 +58,6 @@ const listConfigurations = list({
     posts: relationship({
       ref: 'Post.topic',
       label: '專題關聯的文章',
-      many: true,
-    }),
-    tags: relationship({
-      ref: 'Tag.topics',
-      label: '標籤',
       many: true,
     }),
     isPinned: checkbox({

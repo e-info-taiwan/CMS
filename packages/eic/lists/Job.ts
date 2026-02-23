@@ -62,10 +62,6 @@ const listConfigurations = list({
       label: '審核通過',
       defaultValue: false,
     }),
-    showOnHomepage: checkbox({
-      label: '是否顯示於首頁',
-      defaultValue: false,
-    }),
     sortOrder: integer({
       label: '排序',
       validation: { isRequired: true },
@@ -85,14 +81,7 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: [
-        'title',
-        'company',
-        'state',
-        'isApproved',
-        'showOnHomepage',
-        'sortOrder',
-      ],
+      initialColumns: ['title', 'company', 'state', 'isApproved', 'sortOrder'],
       pageSize: 50,
     },
   },

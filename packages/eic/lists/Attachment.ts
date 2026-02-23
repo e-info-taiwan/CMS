@@ -19,6 +19,14 @@ const listConfigurations = list({
     file: file({
       label: '上傳檔案',
       storage: 'files',
+      ui: {
+        createView: {
+          fieldMode: 'hidden',
+        },
+        itemView: {
+          fieldMode: 'hidden',
+        },
+      },
     }),
     embedCode: text({
       label: '嵌入碼',

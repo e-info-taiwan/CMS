@@ -165,6 +165,7 @@ const generateNewsletterHtml = async (
   readerResponseText: string,
   readerResponseTitle: string,
   readerResponseLink: string,
+  readerResponsePostId: string | null,
   relatedPostIds: string[],
   focusPostIds: string[],
   adIds: string[],
@@ -174,11 +175,12 @@ const generateNewsletterHtml = async (
   const subscriberCount = await fetchSubscriberCount()
 
   // 使用 Promise.all 並行查詢所有資料，提升效能
-  const [relatedPosts, focusPosts, ads, events, jobs] = await Promise.all([
-    relatedPostIds.length > 0
-      ? context.query.Post.findMany({
-          where: { id: { in: relatedPostIds } },
-          query: `
+  const [relatedPostsRaw, focusPostsRaw, ads, events, jobs] = await Promise.all(
+    [
+      relatedPostIds.length > 0
+        ? context.query.Post.findMany({
+            where: { id: { in: relatedPostIds } },
+            query: `
           id
           title
           content
@@ -190,12 +192,12 @@ const generateNewsletterHtml = async (
             }
           }
         `,
-        })
-      : [],
-    focusPostIds.length > 0
-      ? context.query.Post.findMany({
-          where: { id: { in: focusPostIds } },
-          query: `
+          })
+        : [],
+      focusPostIds.length > 0
+        ? context.query.Post.findMany({
+            where: { id: { in: focusPostIds } },
+            query: `
           id
           title
           style
@@ -206,12 +208,12 @@ const generateNewsletterHtml = async (
             }
           }
         `,
-        })
-      : [],
-    adIds.length > 0
-      ? context.query.Ad.findMany({
-          where: { id: { in: adIds } },
-          query: `
+          })
+        : [],
+      adIds.length > 0
+        ? context.query.Ad.findMany({
+            where: { id: { in: adIds } },
+            query: `
           id
           name
           image {
@@ -221,31 +223,44 @@ const generateNewsletterHtml = async (
           }
           imageUrl
         `,
-        })
-      : [],
-    eventIds.length > 0
-      ? context.query.Event.findMany({
-          where: { id: { in: eventIds } },
-          query: `
+          })
+        : [],
+      eventIds.length > 0
+        ? context.query.Event.findMany({
+            where: { id: { in: eventIds } },
+            query: `
           id
           name
           organizer
           startDate
         `,
-        })
-      : [],
-    jobIds.length > 0
-      ? context.query.Job.findMany({
-          where: { id: { in: jobIds } },
-          query: `
+          })
+        : [],
+      jobIds.length > 0
+        ? context.query.Job.findMany({
+            where: { id: { in: jobIds } },
+            query: `
           id
           title
           company
           startDate
         `,
-        })
-      : [],
-  ])
+          })
+        : [],
+    ]
+  )
+
+  // 依 ID 陣列順序重新排列（findMany 回傳順序不保證與輸入一致）
+  const orderByIds = <T extends { id: string | number }>(
+    items: T[],
+    ids: string[]
+  ): T[] =>
+    ids
+      .map((id) => items.find((item) => String(item.id) === String(id)))
+      .filter((x): x is T => x != null)
+
+  const relatedPosts = orderByIds(relatedPostsRaw as any[], relatedPostIds)
+  const focusPosts = orderByIds(focusPostsRaw as any[], focusPostIds)
 
   const headerDate = formatDateHeader(sendDate)
   let html = ''
@@ -550,12 +565,19 @@ const generateNewsletterHtml = async (
     }
     if (readerResponseTitle) {
       html += '            <p class="comment-source">\n'
-      html += `              ${readerResponseTitle}\n`
+      if (readerResponseLink) {
+        html += `              <a href="${readerResponseLink}">${readerResponseTitle}</a>\n`
+      } else {
+        html += `              ${readerResponseTitle}\n`
+      }
       html += '            </p>\n'
     }
-    if (readerResponseLink) {
+    const readMoreUrl = readerResponsePostId
+      ? `${WEB_URL_BASE}/node/${readerResponsePostId}`
+      : readerResponseLink || '#'
+    if (readerResponseLink || readerResponsePostId) {
       html += '            <p class="comment-read-more">\n'
-      html += `              <a href="${readerResponseLink}">閱讀全文</a>\n`
+      html += `              <a href="${readMoreUrl}">閱讀全文</a>\n`
       html += '            </p>\n'
     }
 
@@ -735,6 +757,11 @@ const listConfigurations = list({
     readerResponseLink: text({
       label: '推薦讀者回應連結',
     }),
+    readerResponsePost: relationship({
+      ref: 'Post',
+      many: false,
+      label: '讀者回應文章',
+    }),
     originalUrl: text({
       label: '原始網址',
       ui: {
@@ -865,6 +892,9 @@ const listConfigurations = list({
               readerResponseText
               readerResponseTitle
               readerResponseLink
+              readerResponsePost { id }
+              manualOrderOfFocusPosts
+              manualOrderOfRelatedPosts
               relatedPosts { id }
               focusPosts { id }
               ads { id }
@@ -895,35 +925,115 @@ const listConfigurations = list({
           existingData?.readerResponseLink ??
           ''
 
+        const getSingleRelationshipId = (
+          resolved: any,
+          existing: any,
+          key: string
+        ): string | null => {
+          const rp = resolved?.[key]
+          if (rp?.disconnect) return null
+          if (rp?.connect?.id) return String(rp.connect.id)
+          if (existing?.[key]?.id) return String(existing[key].id)
+          return null
+        }
+
+        const readerResponsePostId = getSingleRelationshipId(
+          resolvedData,
+          existingData,
+          'readerResponsePost'
+        )
+
         // 處理 relationship 的 connect/disconnect
         const getIds = (
           resolved: any,
-          existing: any[],
-          key: string
+          existing: any,
+          key: string,
+          manualOrderKey: string
         ): string[] => {
-          if (resolved?.[key]?.connect) {
-            return resolved[key].connect.map((item: any) => item.id)
-          } else if (resolved?.[key]?.set) {
-            return resolved[key].set.map((item: any) => item.id)
-          } else if (existing) {
-            return existing.map((item: any) => item.id)
+          // 優先使用 resolved 的 manualOrder（addManualOrderRelationshipFields 會先執行時才有）
+          const resolvedManualOrder = resolved?.[manualOrderKey]
+          if (
+            Array.isArray(resolvedManualOrder) &&
+            resolvedManualOrder.length > 0
+          ) {
+            return resolvedManualOrder.map((x: { id: string }) => String(x.id))
+          }
+          // 本次操作有修改 relationship（connect/set/disconnect）時，需合併計算，不可只用 existing
+          const hasConnect =
+            Array.isArray(resolved?.[key]?.connect) &&
+            resolved[key].connect.length > 0
+          const hasSet =
+            Array.isArray(resolved?.[key]?.set) && resolved[key].set.length > 0
+          const hasDisconnect =
+            Array.isArray(resolved?.[key]?.disconnect) &&
+            resolved[key].disconnect.length > 0
+          if (hasSet) {
+            return resolved[key].set.map((item: any) => String(item.id))
+          }
+          if (hasConnect || hasDisconnect) {
+            const base = (existing?.[manualOrderKey] ||
+              existing?.[key] ||
+              []) as { id: string }[]
+            const baseIds = Array.isArray(base)
+              ? base.map((x) => String(x?.id)).filter(Boolean)
+              : []
+            const disconnectIds = (resolved[key].disconnect || []).map(
+              (item: any) => String(item.id)
+            )
+            const connectIds = (resolved[key].connect || []).map((item: any) =>
+              String(item.id)
+            )
+            const afterDisconnect = baseIds.filter(
+              (id) => !disconnectIds.includes(id)
+            )
+            const merged = [...afterDisconnect, ...connectIds]
+            return merged
+          }
+          // 未修改 relationship：使用 existing 的 manualOrder 或原始陣列
+          const existingManualOrder = existing?.[manualOrderKey]
+          if (
+            Array.isArray(existingManualOrder) &&
+            existingManualOrder.length > 0
+          ) {
+            return existingManualOrder.map((x: { id: string }) => String(x.id))
+          }
+          if (existing?.[key]) {
+            return existing[key].map((item: any) => String(item.id))
           }
           return []
         }
 
         const relatedPostIds = getIds(
           resolvedData,
-          existingData?.relatedPosts,
-          'relatedPosts'
+          existingData,
+          'relatedPosts',
+          'manualOrderOfRelatedPosts'
         )
         const focusPostIds = getIds(
           resolvedData,
-          existingData?.focusPosts,
-          'focusPosts'
+          existingData,
+          'focusPosts',
+          'manualOrderOfFocusPosts'
         )
-        const adIds = getIds(resolvedData, existingData?.ads, 'ads')
-        const eventIds = getIds(resolvedData, existingData?.events, 'events')
-        const jobIds = getIds(resolvedData, existingData?.jobs, 'jobs')
+
+        const adIds = getIds(
+          resolvedData,
+          existingData,
+          'ads',
+          'manualOrderOfAds'
+        )
+        const eventIds = getIds(
+          resolvedData,
+          existingData,
+          'events',
+          'manualOrderOfEvents'
+        )
+        const jobIds = getIds(
+          resolvedData,
+          existingData,
+          'jobs',
+          'manualOrderOfJobs'
+        )
 
         // 生成電子報 HTML（一般版與大字版內容結構相同，共用同一份 HTML）
         const html = await generateNewsletterHtml(
@@ -935,6 +1045,7 @@ const listConfigurations = list({
           readerResponseText,
           readerResponseTitle,
           readerResponseLink,
+          readerResponsePostId,
           relatedPostIds,
           focusPostIds,
           adIds,
@@ -954,4 +1065,25 @@ const listConfigurations = list({
   },
 })
 
-export default utils.addTrackingFields(listConfigurations)
+// 使用 addManualOrderRelationshipFields 來記錄焦點話題、相關文章的新增順序
+const listWithManualOrder = utils.addManualOrderRelationshipFields(
+  [
+    {
+      fieldName: 'manualOrderOfFocusPosts',
+      fieldLabel: '焦點話題（按新增順序）',
+      targetFieldName: 'focusPosts',
+      targetListName: 'Post',
+      targetListLabelField: 'title',
+    },
+    {
+      fieldName: 'manualOrderOfRelatedPosts',
+      fieldLabel: '相關文章（按新增順序）',
+      targetFieldName: 'relatedPosts',
+      targetListName: 'Post',
+      targetListLabelField: 'title',
+    },
+  ],
+  listConfigurations
+)
+
+export default utils.addTrackingFields(listWithManualOrder)

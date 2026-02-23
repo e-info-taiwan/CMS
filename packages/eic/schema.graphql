@@ -926,7 +926,6 @@ type Event {
   registrationUrl: String
   content: String
   isApproved: Boolean
-  showOnHomepage: Boolean
   sortOrder: Int
   state: String
   createdAt: DateTime
@@ -956,7 +955,6 @@ input EventWhereInput {
   registrationUrl: StringFilter
   content: StringFilter
   isApproved: BooleanFilter
-  showOnHomepage: BooleanFilter
   sortOrder: IntFilter
   state: StringFilter
   createdAt: DateTimeNullableFilter
@@ -978,7 +976,6 @@ input EventOrderByInput {
   registrationUrl: OrderDirection
   content: OrderDirection
   isApproved: OrderDirection
-  showOnHomepage: OrderDirection
   sortOrder: OrderDirection
   state: OrderDirection
   createdAt: OrderDirection
@@ -998,7 +995,6 @@ input EventUpdateInput {
   registrationUrl: String
   content: String
   isApproved: Boolean
-  showOnHomepage: Boolean
   sortOrder: Int
   state: String
   createdAt: DateTime
@@ -1025,7 +1021,6 @@ input EventCreateInput {
   registrationUrl: String
   content: String
   isApproved: Boolean
-  showOnHomepage: Boolean
   sortOrder: Int
   state: String
   createdAt: DateTime
@@ -1304,7 +1299,6 @@ type Job {
   startDate: DateTime
   endDate: DateTime
   isApproved: Boolean
-  showOnHomepage: Boolean
   sortOrder: Int
   state: String
   createdAt: DateTime
@@ -1332,7 +1326,6 @@ input JobWhereInput {
   startDate: DateTimeFilter
   endDate: DateTimeNullableFilter
   isApproved: BooleanFilter
-  showOnHomepage: BooleanFilter
   sortOrder: IntFilter
   state: StringFilter
   createdAt: DateTimeNullableFilter
@@ -1353,7 +1346,6 @@ input JobOrderByInput {
   startDate: OrderDirection
   endDate: OrderDirection
   isApproved: OrderDirection
-  showOnHomepage: OrderDirection
   sortOrder: OrderDirection
   state: OrderDirection
   createdAt: OrderDirection
@@ -1371,7 +1363,6 @@ input JobUpdateInput {
   startDate: DateTime
   endDate: DateTime
   isApproved: Boolean
-  showOnHomepage: Boolean
   sortOrder: Int
   state: String
   createdAt: DateTime
@@ -1396,7 +1387,6 @@ input JobCreateInput {
   startDate: DateTime
   endDate: DateTime
   isApproved: Boolean
-  showOnHomepage: Boolean
   sortOrder: Int
   state: String
   createdAt: DateTime
@@ -1739,12 +1729,17 @@ type Newsletter {
   poll: Poll
   readerResponseTitle: String
   readerResponseLink: String
+  readerResponsePost: Post
   originalUrl: String
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String
   standardHtmlWithPoll: String
   beautifiedHtmlWithPoll: String
+  manualOrderOfFocusPosts: JSON
+  focusPostsInInputOrder: [Post]
+  manualOrderOfRelatedPosts: JSON
+  relatedPostsInInputOrder: [Post]
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -1773,6 +1768,7 @@ input NewsletterWhereInput {
   poll: PollWhereInput
   readerResponseTitle: StringFilter
   readerResponseLink: StringFilter
+  readerResponsePost: PostWhereInput
   originalUrl: StringFilter
   readerResponseText: StringFilter
   standardHtml: StringFilter
@@ -1831,10 +1827,13 @@ input NewsletterUpdateInput {
   poll: PollRelateToOneForUpdateInput
   readerResponseTitle: String
   readerResponseLink: String
+  readerResponsePost: PostRelateToOneForUpdateInput
   originalUrl: String
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String
+  manualOrderOfFocusPosts: JSON
+  manualOrderOfRelatedPosts: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -1887,10 +1886,13 @@ input NewsletterCreateInput {
   poll: PollRelateToOneForCreateInput
   readerResponseTitle: String
   readerResponseLink: String
+  readerResponsePost: PostRelateToOneForCreateInput
   originalUrl: String
   readerResponseText: String
   standardHtml: String
   beautifiedHtml: String
+  manualOrderOfFocusPosts: JSON
+  manualOrderOfRelatedPosts: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
@@ -2756,8 +2758,6 @@ type Tag {
   sortOrder: Int
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
-  topics(where: TopicWhereInput! = {}, orderBy: [TopicOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TopicWhereUniqueInput): [Topic!]
-  topicsCount(where: TopicWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2780,7 +2780,6 @@ input TagWhereInput {
   isFeatured: BooleanFilter
   sortOrder: IntNullableFilter
   posts: PostManyRelationFilter
-  topics: TopicManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -2804,7 +2803,6 @@ input TagUpdateInput {
   isFeatured: Boolean
   sortOrder: Int
   posts: PostRelateToManyForUpdateInput
-  topics: TopicRelateToManyForUpdateInput
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2823,7 +2821,6 @@ input TagCreateInput {
   isFeatured: Boolean
   sortOrder: Int
   posts: PostRelateToManyForCreateInput
-  topics: TopicRelateToManyForCreateInput
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
@@ -2920,7 +2917,7 @@ input TimelineItemRelateToManyForCreateInput {
 type TimelineItem {
   id: ID!
   title: String
-  eventTime: DateTime
+  eventTime: String
   timeFormat: String
   content: String
   image: Photo
@@ -2941,7 +2938,7 @@ input TimelineItemWhereInput {
   NOT: [TimelineItemWhereInput!]
   id: IDFilter
   title: StringFilter
-  eventTime: DateTimeFilter
+  eventTime: StringFilter
   timeFormat: StringFilter
   content: StringFilter
   image: PhotoWhereInput
@@ -2965,7 +2962,7 @@ input TimelineItemOrderByInput {
 
 input TimelineItemUpdateInput {
   title: String
-  eventTime: DateTime
+  eventTime: String
   timeFormat: String
   content: String
   image: PhotoRelateToOneForUpdateInput
@@ -2983,7 +2980,7 @@ input TimelineItemUpdateArgs {
 
 input TimelineItemCreateInput {
   title: String
-  eventTime: DateTime
+  eventTime: String
   timeFormat: String
   content: String
   image: PhotoRelateToOneForCreateInput
@@ -3004,8 +3001,6 @@ type Topic {
   heroImage: Photo
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
-  tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
-  tagsCount(where: TagWhereInput! = {}): Int
   isPinned: Boolean
   sortOrder: Int
   createdAt: DateTime
@@ -3030,7 +3025,6 @@ input TopicWhereInput {
   redirectUrl: StringFilter
   heroImage: PhotoWhereInput
   posts: PostManyRelationFilter
-  tags: TagManyRelationFilter
   isPinned: BooleanFilter
   sortOrder: IntNullableFilter
   createdAt: DateTimeNullableFilter
@@ -3060,7 +3054,6 @@ input TopicUpdateInput {
   redirectUrl: String
   heroImage: PhotoRelateToOneForUpdateInput
   posts: PostRelateToManyForUpdateInput
-  tags: TagRelateToManyForUpdateInput
   isPinned: Boolean
   sortOrder: Int
   createdAt: DateTime
@@ -3082,7 +3075,6 @@ input TopicCreateInput {
   redirectUrl: String
   heroImage: PhotoRelateToOneForCreateInput
   posts: PostRelateToManyForCreateInput
-  tags: TagRelateToManyForCreateInput
   isPinned: Boolean
   sortOrder: Int
   createdAt: DateTime
