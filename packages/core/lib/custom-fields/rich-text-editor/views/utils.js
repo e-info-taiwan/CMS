@@ -15,11 +15,12 @@ var _draftJs = require("draft-js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 function createController(decorators) {
   return config => {
-    var _config$fieldMeta, _config$fieldMeta2, _config$fieldMeta3;
+    var _config$fieldMeta, _config$fieldMeta2, _config$fieldMeta3, _config$fieldMeta4;
     return {
       disabledButtons: ((_config$fieldMeta = config.fieldMeta) === null || _config$fieldMeta === void 0 ? void 0 : _config$fieldMeta.disabledButtons) ?? [],
       hideOnMobileButtons: ((_config$fieldMeta2 = config.fieldMeta) === null || _config$fieldMeta2 === void 0 ? void 0 : _config$fieldMeta2.hideOnMobileButtons) ?? [],
       presetColors: ((_config$fieldMeta3 = config.fieldMeta) === null || _config$fieldMeta3 === void 0 ? void 0 : _config$fieldMeta3.presetColors) ?? [],
+      compact: ((_config$fieldMeta4 = config.fieldMeta) === null || _config$fieldMeta4 === void 0 ? void 0 : _config$fieldMeta4.compact) ?? false,
       path: config.path,
       label: config.label,
       description: config.description,
@@ -72,6 +73,7 @@ function createField(RichTextEditor) {
       disabledButtons: field.disabledButtons,
       hideOnMobileButtons: field.hideOnMobileButtons,
       presetColors: field.presetColors,
+      compact: field.compact,
       editorState: value,
       onChange:
       // @ts-ignore: any

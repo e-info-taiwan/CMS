@@ -8,6 +8,7 @@ var accessControl = _interopRequireWildcard(require("./utils/accessControl"));
 var _manualOrderRelationship = _interopRequireDefault(require("./utils/manual-order-relationship"));
 var _trackingHandler = require("./utils/trackingHandler");
 var _invalidateCacheAfterOperation = require("./utils/invalidate-cache-after-operation");
+var _loginLogging = require("./utils/login-logging");
 var _lilithDraftEditor = require("@mirrormedia/lilith-draft-editor");
 var _richTextEditor = require("./custom-fields/rich-text-editor");
 var _selectWithColor = require("./custom-fields/select-with-color");
@@ -24,7 +25,8 @@ const utils = exports.utils = {
   accessControl,
   addManualOrderRelationshipFields: _manualOrderRelationship.default,
   addTrackingFields: _trackingHandler.addTrackingFields,
-  invalidateCacheAfterOperation: _invalidateCacheAfterOperation.invalidateCacheAfterOperation
+  invalidateCacheAfterOperation: _invalidateCacheAfterOperation.invalidateCacheAfterOperation,
+  createLoginLoggingPlugin: _loginLogging.createLoginLoggingPlugin
 };
 var _default = exports.default = {
   customFields,

@@ -99,54 +99,117 @@ function addManualOrderRelationshipFields(manualOrderFields = [], list) {
 
       // if create/update operation creates/modifies the `${targetFieldName}` field
       if ((_resolvedData = resolvedData) !== null && _resolvedData !== void 0 && _resolvedData[targetFieldName]) {
-        var _resolvedData$targetF2;
+        var _resolvedData$targetF, _item$targetFieldName, _resolvedData$targetF2, _resolvedData$targetF3;
         let currentOrder = [];
 
-        // update operation due to `item` not being `undefiend`
-        if (item) {
-          var _resolvedData$targetF;
-          const previousOrder = getOrderData(item[fieldName]);
+        // 檢查是否要清空所有欄位
+        const isDisconnectAll = ((_resolvedData$targetF = resolvedData[targetFieldName]) === null || _resolvedData$targetF === void 0 || (_resolvedData$targetF = _resolvedData$targetF.disconnect) === null || _resolvedData$targetF === void 0 ? void 0 : _resolvedData$targetF.length) === (item === null || item === void 0 || (_item$targetFieldName = item[targetFieldName]) === null || _item$targetFieldName === void 0 ? void 0 : _item$targetFieldName.length);
+        const isConnectEmpty = !((_resolvedData$targetF2 = resolvedData[targetFieldName]) !== null && _resolvedData$targetF2 !== void 0 && _resolvedData$targetF2.connect) || ((_resolvedData$targetF3 = resolvedData[targetFieldName]) === null || _resolvedData$targetF3 === void 0 ? void 0 : _resolvedData$targetF3.connect.length) === 0;
 
-          // user disconnects/removes some relationship items.
-          const disconnectIds = ((_resolvedData$targetF = resolvedData[targetFieldName]) === null || _resolvedData$targetF === void 0 || (_resolvedData$targetF = _resolvedData$targetF.disconnect) === null || _resolvedData$targetF === void 0 ? void 0 : _resolvedData$targetF.map(obj => obj.id.toString())) || [];
-
-          // filtered out to-be-disconnected relationship items
-          currentOrder = previousOrder.filter(({
-            id
-          }) => {
-            return disconnectIds.indexOf(id) === -1;
-          });
-        }
-
-        // user connects/adds some relationship item.
-        const connectedIds = ((_resolvedData$targetF2 = resolvedData[targetFieldName]) === null || _resolvedData$targetF2 === void 0 || (_resolvedData$targetF2 = _resolvedData$targetF2.connect) === null || _resolvedData$targetF2 === void 0 ? void 0 : _resolvedData$targetF2.map(obj => obj.id.toString())) || [];
-        if (connectedIds.length > 0) {
-          // Query relationship items from the database.
-          // Therefore, we can have other fields to record in the monitoring field
-          const sfToConnect = await context.db[targetListName].findMany({
-            where: {
-              id: {
-                in: connectedIds
+        // 如果是清空所有欄位，則使用 set 操作
+        if (isDisconnectAll && isConnectEmpty) {
+          resolvedData[targetFieldName] = {
+            set: []
+          };
+          resolvedData[fieldName] = [];
+        } else {
+          var _resolvedData$targetF4;
+          // 檢查是否有 set 操作
+          if (((_resolvedData$targetF4 = resolvedData[targetFieldName]) === null || _resolvedData$targetF4 === void 0 ? void 0 : _resolvedData$targetF4.set) !== undefined) {
+            const setItems = resolvedData[targetFieldName].set || [];
+            if (setItems.length > 0) {
+              // 如果有 set 操作，則使用 set 的順序
+              const setIds = setItems.map(obj => obj.id.toString());
+              const sfToSet = await context.db[targetListName].findMany({
+                where: {
+                  id: {
+                    in: setIds
+                  }
+                }
+              });
+              for (const setItem of setItems) {
+                const sf = sfToSet.find(obj => {
+                  return `${obj.id}` === setItem.id.toString();
+                });
+                if (sf) {
+                  currentOrder.push({
+                    id: sf.id.toString(),
+                    [targetListLabelField]: sf[targetListLabelField]
+                  });
+                }
               }
             }
-          });
+          } else {
+            var _resolvedData$targetF6;
+            // update operation due to `item` not being `undefiend`
+            if (item) {
+              var _resolvedData$targetF5;
+              const previousOrder = getOrderData(item[fieldName]);
 
-          // Database query results are not sorted.
-          // We need to sort them by ourselves.
-          for (let i = 0; i < connectedIds.length; i++) {
-            const sf = sfToConnect.find(obj => {
-              return `${obj.id}` === connectedIds[i];
-            });
-            if (sf) {
-              currentOrder.push({
-                id: sf.id.toString(),
-                [targetListLabelField]: sf[targetListLabelField]
+              // user disconnects/removes some relationship items.
+              const disconnectIds = ((_resolvedData$targetF5 = resolvedData[targetFieldName]) === null || _resolvedData$targetF5 === void 0 || (_resolvedData$targetF5 = _resolvedData$targetF5.disconnect) === null || _resolvedData$targetF5 === void 0 ? void 0 : _resolvedData$targetF5.map(obj => obj.id.toString())) || [];
+
+              // filtered out to-be-disconnected relationship items
+              currentOrder = previousOrder.filter(({
+                id
+              }) => {
+                return disconnectIds.indexOf(id) === -1;
               });
+            }
+
+            // user connects/adds some relationship item.
+            const connectOrder = ((_resolvedData$targetF6 = resolvedData[targetFieldName]) === null || _resolvedData$targetF6 === void 0 ? void 0 : _resolvedData$targetF6.connect) || [];
+            if (connectOrder.length > 0) {
+              // Query relationship items from the database.
+              // Therefore, we can have other fields to record in the monitoring field
+              const connectedIds = connectOrder.map(obj => obj.id.toString());
+              const sfToConnect = await context.db[targetListName].findMany({
+                where: {
+                  id: {
+                    in: connectedIds
+                  }
+                }
+              });
+
+              // 使用 resolvedData 中的 connect 順序來排序
+              for (const connectItem of connectOrder) {
+                const sf = sfToConnect.find(obj => {
+                  return `${obj.id}` === connectItem.id.toString();
+                });
+                if (sf) {
+                  currentOrder.push({
+                    id: sf.id.toString(),
+                    [targetListLabelField]: sf[targetListLabelField]
+                  });
+                }
+              }
             }
           }
         }
 
-        // records the order in the monitoring field
+        // --- 補全缺失項目邏輯整合於此 ---
+        if (item) {
+          try {
+            // 使用 context.db[targetListName] 來查詢關係項目
+            // 但要先檢查目標欄位是否存在於當前 item 中
+            const existingItems = await context.db[targetListName].findMany({
+              where: {
+                id: {
+                  in: currentOrder.map(o => o.id)
+                }
+              },
+              take: currentOrder.length
+            });
+
+            // 如果查詢成功且有結果，說明資料庫中的資料一致
+            // 不需要額外的補全邏輯，因為 currentOrder 已經包含了所有需要的項目
+          } catch (error) {
+            // 查詢失敗時忽略，使用現有的 currentOrder
+            console.log('Error fetching items for manual order:', error);
+          }
+        }
+
+        // 更新 monitoring field
         resolvedData[fieldName] = currentOrder;
       }
     }

@@ -11,6 +11,7 @@ const richTextEditor = ({
   disabledButtons = [],
   hideOnMobileButtons = [],
   presetColors = [],
+  compact = false,
   website,
   ...config
 } = {}) => meta => {
@@ -52,7 +53,8 @@ const richTextEditor = ({
       defaultValue,
       disabledButtons,
       hideOnMobileButtons,
-      presetColors
+      presetColors,
+      compact
     })
   }, {
     default: defaultValue === null ? undefined : {

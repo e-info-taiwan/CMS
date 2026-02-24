@@ -114,7 +114,7 @@ function combineResolveInputHooks(...hooks) {
  * if it's in create mode, put data into 'createdBy' field;
  * if it's in update mode, then put data into 'updatedBy' field.
  */
-function fillByTrackingField(currentUserId, resolvedData, item, operation) {
+function fillByTrackingField(currentUserId, resolvedData, _item, operation) {
   const relationshipData = {
     connect: {
       id: currentUserId
@@ -157,6 +157,8 @@ function fillAtTrackingField(resolvedData, item) {
     resolvedData['updatedAt'] = new Date();
   } else {
     // create mode
-    resolvedData['createdAt'] = new Date();
+    const now = new Date();
+    resolvedData['createdAt'] = now;
+    resolvedData['updatedAt'] = now;
   }
 }

@@ -14,7 +14,8 @@ export type JsonFieldConfig<ListTypeInfo extends BaseListTypeInfo> =
     disabledButtons?: string[]
     hideOnMobileButtons?: string[]
     presetColors?: string[]
-    website?: 'mirrormedia' | 'readr' | 'mirrordaily' | 'einfo'
+    compact?: boolean
+    website?: 'mirrormedia' | 'readr' | 'mirrordaily' | 'mirrortv' | 'einfo'
   }
 
 export const richTextEditor =
@@ -23,6 +24,7 @@ export const richTextEditor =
     disabledButtons = [],
     hideOnMobileButtons = [],
     presetColors = [],
+    compact = false,
     website,
     ...config
   }: JsonFieldConfig<ListTypeInfo> = {}): FieldTypeFunc<ListTypeInfo> =>
@@ -64,6 +66,7 @@ export const richTextEditor =
           disabledButtons,
           hideOnMobileButtons,
           presetColors,
+          compact,
         }),
       },
       {
