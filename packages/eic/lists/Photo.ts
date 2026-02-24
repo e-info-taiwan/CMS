@@ -64,17 +64,8 @@ const listConfigurations = list({
           const extension = item?.imageFile_extension
             ? '.' + item.imageFile_extension
             : ''
-          const width =
-            typeof item?.imageFile_width === 'number' ? item.imageFile_width : 0
-          const height =
-            typeof item?.imageFile_height === 'number'
-              ? item.imageFile_height
-              : 0
 
-          const resizedTargets =
-            width >= height
-              ? ['w480', 'w800', 'w1600', 'w2400']
-              : ['w480', 'w800', 'w1200', 'w1600']
+          const resizedTargets = ['w480', 'w800', 'w1200', 'w1600', 'w2400']
 
           resizedTargets.forEach((target) => {
             rtn[
@@ -131,17 +122,7 @@ const listConfigurations = list({
 
           const extension = '.webP'
 
-          const width =
-            typeof item?.imageFile_width === 'number' ? item.imageFile_width : 0
-          const height =
-            typeof item?.imageFile_height === 'number'
-              ? item.imageFile_height
-              : 0
-
-          const resizedTargets =
-            width >= height
-              ? ['w480', 'w800', 'w1600', 'w2400']
-              : ['w480', 'w800', 'w1200', 'w1600']
+          const resizedTargets = ['w480', 'w800', 'w1200', 'w1600', 'w2400']
 
           resizedTargets.forEach((target) => {
             rtn[
