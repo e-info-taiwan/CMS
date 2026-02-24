@@ -575,7 +575,8 @@ model Post {
   contentApiData                     Json?
   contentPreview                     String?
   attachments                        Attachment[]     @relation("Attachment_posts")
-  citations                          String           @default("")
+  citations                          Json?
+  citationsApiData                   Json?
   relatedPosts                       Post[]           @relation("Post_relatedPosts")
   ad                                 Ad?              @relation("Post_ad", fields: [adId], references: [id])
   adId                               Int?             @map("ad")

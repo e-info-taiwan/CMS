@@ -1,5 +1,7 @@
 // @ts-ignore: no definition
 import { customFields, utils } from '@mirrormedia/lilith-core'
+// @ts-ignore: no definition
+import { buttonNames } from '@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor'
 import { graphql, list } from '@keystone-6/core'
 import {
   checkbox,
@@ -13,6 +15,9 @@ import {
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 import { aiPollHelperService } from '../services/ai-poll-helper'
+
+const CITATIONS_ENABLED_BUTTONS = ['unordered-list-item', 'link']
+const allReadrButtons: string[] = Object.values(buttonNames)
 import {
   invalidateByRoutes,
   invalidatePostCdnCache,
@@ -336,7 +341,6 @@ const listConfigurations = list({
     }),
     content: customFields.richTextEditor({
       label: '內文',
-      disabledButtons: ['header-three', 'header-four'],
       website: 'readr',
       presetColors: [
         '#FF6544', // 預設紅色
@@ -372,10 +376,20 @@ const listConfigurations = list({
       label: '附加檔案',
       many: true,
     }),
-    citations: text({
+    citations: customFields.richTextEditor({
       label: '參考資料',
+      disabledButtons: allReadrButtons.filter(
+        (b: string) => !CITATIONS_ENABLED_BUTTONS.includes(b)
+      ),
+      website: 'readr',
+      compact: true,
+    }),
+    citationsApiData: json({
+      label: '資料庫使用',
       ui: {
-        displayMode: 'textarea',
+        createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
       },
     }),
     relatedPosts: relationship({
@@ -477,7 +491,12 @@ const listConfigurations = list({
   },
   hooks: {
     resolveInput: async ({ resolvedData, item }) => {
-      const { content } = resolvedData
+      const { content, citations } = resolvedData
+      if (citations) {
+        resolvedData.citationsApiData = customFields.draftConverter
+          .convertToApiData(citations)
+          .toJS()
+      }
       if (content) {
         resolvedData.contentApiData = customFields.draftConverter
           .convertToApiData(content)

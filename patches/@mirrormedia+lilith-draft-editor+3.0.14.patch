@@ -451,6 +451,19 @@ index 0000000..6fc6cc2
 +    onMouseDown: isActive ? removeFootnote : promptForFootnote
 +  }, /*#__PURE__*/_react.default.createElement("span", null, "Footnote")));
 +}
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js
+index 3a9b3bc..45361d1 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js
+@@ -60,7 +60,7 @@ function ImageButton(props) {
+     enableCaption: true,
+     enableUrl: true,
+     enableAlignment: true,
+-    enableMultiSelect: true
++    enableMultiSelect: false
+   }), /*#__PURE__*/_react.default.createElement("div", {
+     className: className,
+     onClick: promptForImageSelector
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 index 2a73a12..9698c14 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
@@ -703,10 +716,18 @@ index b78fa88..399dc04 100644
          return { ...(ele === null || ele === void 0 ? void 0 : ele.image),
            desc: ele === null || ele === void 0 ? void 0 : ele.desc
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
-index ac7ea11..30d109b 100644
+index ac7ea11..5f6a316 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
-@@ -240,7 +240,8 @@ function convertRawToApiData(raw) {
+@@ -33,6 +33,7 @@ const defaultBlockTagMap = {
+   'header-two': `<h2>%content%</h2>`,
+   'header-three': `<h3>%content%</h3>`,
+   'header-four': `<h4>%content%</h4>`,
++  'header-five': `<h5>%content%</h5>`,
+   'ordered-list-item': `<li>%content%</li>`,
+   paragraph: `<p>%content%</p>`,
+   'unordered-list-item': `<li>%content%</li>`,
+@@ -240,7 +241,8 @@ function convertRawToApiData(raw) {
    const entityMap = typeof raw.entityMap === 'object' ? raw.entityMap : {};
  
    const entityTagMap = _lodash.default.merge({}, defaultEntityTagMap, {
@@ -868,7 +889,7 @@ index ba09096..133addf 100644
      onCancel: () => {
        onEditFinish({});
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..facab31 100644
+index ceebcbb..a7146d4 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 @@ -35,28 +35,26 @@ var _table = require("../../draft-js/buttons/table");
@@ -908,7 +929,7 @@ index ceebcbb..facab31 100644
  var _imageSelector = require("./selector/image-selector");
  
  var _videoSelector = require("./selector/video-selector");
-@@ -100,17 +98,13 @@ const buttonNames = {
+@@ -100,17 +98,14 @@ const buttonNames = {
    slideshow: 'slideshow',
    table: 'table',
    textAlign: 'text-align',
@@ -921,7 +942,8 @@ index ceebcbb..facab31 100644
    video: 'video',
 -  audio: 'audio'
 +  audio: 'audio',
-+  footnote: 'footnote'
++  footnote: 'footnote',
++  h5: 'header-five'
  };
  exports.buttonNames = buttonNames;
 -const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio];
@@ -929,7 +951,7 @@ index ceebcbb..facab31 100644
  const buttonStyle = (0, _styledComponents.css)`
    border-radius: 6px;
    text-align: center;
-@@ -235,9 +229,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
+@@ -235,9 +230,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
  const CustomFontColorButton = (0, _styledComponents.default)(_fontColor.FontColorButton)`
    ${buttonStyle}
  `;
@@ -939,7 +961,7 @@ index ceebcbb..facab31 100644
  const CustomButton = _styledComponents.default.div`
    ${buttonStyle}
  `;
-@@ -266,15 +257,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
+@@ -266,15 +258,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
  const CustomTableButton = createButtonWithoutProps(_table.TableButton);
  const CustomInfoBoxButton = createButtonWithoutProps(_infoBox.InfoBoxButton);
  const CustomDividerButton = createButtonWithoutProps(_divider.DividerButton);
@@ -956,7 +978,33 @@ index ceebcbb..facab31 100644
  const DraftEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-root)*/
    background: #fff;
-@@ -432,7 +420,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -324,14 +313,17 @@ const DraftEditorControls = _styledComponents.default.div`
+   padding-top: 1rem;
+   width: 100%;
+   background: rgb(255, 255, 255);
++  ${({ compact }) => compact ? `display: flex; flex-wrap: wrap;` : ''}
+ `;
+ const DraftEditorControlsWrapper = _styledComponents.default.div`
++  ${({ compact }) => compact ? `display: contents;` : `
+   width: 100%;
+   position: relative;
+   display: flex;
+   flex-direction: row;
+   flex-wrap: wrap;
+   padding-right: 45px;
++  `}
+ `;
+ const TextEditorWrapper = _styledComponents.default.div`
+   /* Rich-editor default setting (.RichEditor-editor)*/
+@@ -425,6 +417,7 @@ const EnlargeButtonWrapper = _styledComponents.default.div`
+   top: 0;
+   right: 0;
+   margin: 0;
++  ${({ compact }) => compact ? `display: none;` : ''}
+ `;
+ 
+ class RichTextEditor extends _react.default.Component {
+@@ -432,7 +425,11 @@ class RichTextEditor extends _react.default.Component {
      super(props);
      this.state = {
        isEnlarged: false,
@@ -969,7 +1017,7 @@ index ceebcbb..facab31 100644
      }; // Custom overrides for "code" style.
  
      this.customStyleMap = {
-@@ -532,10 +524,6 @@ class RichTextEditor extends _react.default.Component {
+@@ -532,10 +529,6 @@ class RichTextEditor extends _react.default.Component {
          styles['color'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_FONT_COLOR)[1];
        }
  
@@ -980,7 +1028,15 @@ index ceebcbb..facab31 100644
        return styles;
      }, {});
    };
-@@ -653,9 +641,88 @@ class RichTextEditor extends _react.default.Component {
+@@ -573,6 +566,7 @@ class RichTextEditor extends _react.default.Component {
+       case 'header-two':
+       case 'header-three':
+       case 'header-four':
++      case 'header-five':
+       case 'blockquote':
+         result += 'public-DraftStyleDefault-' + block.getType();
+         break;
+@@ -653,9 +647,89 @@ class RichTextEditor extends _react.default.Component {
      }
    };
  
@@ -1066,11 +1122,12 @@ index ceebcbb..facab31 100644
      const {
 -      disabledButtons = []
 +      disabledButtons = [],
-+      presetColors = []
++      presetColors = [],
++      compact = false
      } = this.props;
      let {
        editorState
-@@ -667,7 +734,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,7 +741,11 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -1083,7 +1140,7 @@ index ceebcbb..facab31 100644
      } = this.state;
      const entityType = this.getEntityType(editorState);
      const customStyle = this.getCustomStyle(editorState.getCurrentInlineStyle());
-@@ -678,7 +749,122 @@ class RichTextEditor extends _react.default.Component {
+@@ -678,7 +756,122 @@ class RichTextEditor extends _react.default.Component {
        }));
      };
  
@@ -1207,7 +1264,37 @@ index ceebcbb..facab31 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -718,7 +904,8 @@ class RichTextEditor extends _react.default.Component {
+@@ -694,7 +887,11 @@ class RichTextEditor extends _react.default.Component {
+       href: "https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css",
+       rel: "stylesheet",
+       type: "text/css"
+-    }), /*#__PURE__*/_react.default.createElement(DraftEditorControls, null, /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, null, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(BlockStyleControls, {
++    }), /*#__PURE__*/_react.default.createElement(DraftEditorControls, {
++      compact: compact
++    }, /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, {
++      compact: compact
++    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(BlockStyleControls, {
+       readOnly: readOnly,
+       disabledButtons: disabledButtons,
+       editorState: editorState,
+@@ -704,10 +901,14 @@ class RichTextEditor extends _react.default.Component {
+       disabledButtons: disabledButtons,
+       editorState: editorState,
+       onToggle: this.toggleInlineStyle
+-    })), /*#__PURE__*/_react.default.createElement(EnlargeButtonWrapper, null, /*#__PURE__*/_react.default.createElement(CustomEnlargeButton, {
++    })), /*#__PURE__*/_react.default.createElement(EnlargeButtonWrapper, {
++      compact: compact
++    }, /*#__PURE__*/_react.default.createElement(CustomEnlargeButton, {
+       onToggle: this.toggleEnlarge,
+       isEnlarged: isEnlarged
+-    }))), /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, null, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomLinkButton, {
++    }))), /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, {
++      compact: compact
++    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomLinkButton, {
+       isDisabled: disabledButtons.includes(buttonNames.link),
+       isActive: entityType === 'LINK',
+       readOnly: readOnly,
+@@ -718,7 +919,8 @@ class RichTextEditor extends _react.default.Component {
        isActive: Object.prototype.hasOwnProperty.call(customStyle, 'color'),
        readOnly: readOnly,
        editorState: editorState,
@@ -1217,7 +1304,7 @@ index ceebcbb..facab31 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
-@@ -730,7 +917,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +932,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -1234,7 +1321,18 @@ index ceebcbb..facab31 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -784,41 +979,6 @@ class RichTextEditor extends _react.default.Component {
+@@ -772,7 +982,9 @@ class RichTextEditor extends _react.default.Component {
+       readOnly: readOnly,
+       editorState: editorState,
+       onChange: this.onChange
+-    }))), /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, null, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAlignLeftButton, {
++    }))), /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, {
++      compact: compact
++    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAlignLeftButton, {
+       isDisabled: disabledButtons.includes(buttonNames.textAlign),
+       isActive: (0, _textAlign.getSelectionBlockData)(editorState, 'textAlign') === 'left',
+       readOnly: readOnly,
+@@ -784,41 +996,6 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -1276,7 +1374,7 @@ index ceebcbb..facab31 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
        isDisabled: disabledButtons.includes(buttonNames.sideIndex),
        readOnly: readOnly,
-@@ -845,9 +1005,10 @@ class RichTextEditor extends _react.default.Component {
+@@ -845,9 +1022,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
@@ -1288,6 +1386,17 @@ index ceebcbb..facab31 100644
  }
  
  class StyleButton extends _react.default.Component {
+@@ -881,6 +1059,10 @@ const blockStyles = [{
+   label: 'H4',
+   style: 'header-four',
+   icon: ''
++}, {
++  label: 'H5',
++  style: 'header-five',
++  icon: ''
+ }, {
+   label: 'Blockquote',
+   style: 'blockquote',
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js
 index 33802e9..a871fe6 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js

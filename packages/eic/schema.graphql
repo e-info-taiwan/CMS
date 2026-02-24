@@ -2280,7 +2280,8 @@ type Post {
   contentPreview: String
   attachments(where: AttachmentWhereInput! = {}, orderBy: [AttachmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AttachmentWhereUniqueInput): [Attachment!]
   attachmentsCount(where: AttachmentWhereInput! = {}): Int
-  citations: String
+  citations: JSON
+  citationsApiData: JSON
   relatedPosts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   relatedPostsCount(where: PostWhereInput! = {}): Int
   ad: Ad
@@ -2332,7 +2333,6 @@ input PostWhereInput {
   brief: StringFilter
   contentPreview: StringNullableFilter
   attachments: AttachmentManyRelationFilter
-  citations: StringFilter
   relatedPosts: PostManyRelationFilter
   ad: AdWhereInput
   tags: TagManyRelationFilter
@@ -2389,7 +2389,6 @@ input PostOrderByInput {
   heroCaption: OrderDirection
   brief: OrderDirection
   contentPreview: OrderDirection
-  citations: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
   isNewsletter: OrderDirection
@@ -2425,7 +2424,8 @@ input PostUpdateInput {
   contentApiData: JSON
   contentPreview: String
   attachments: AttachmentRelateToManyForUpdateInput
-  citations: String
+  citations: JSON
+  citationsApiData: JSON
   relatedPosts: PostRelateToManyForUpdateInput
   ad: AdRelateToOneForUpdateInput
   tags: TagRelateToManyForUpdateInput
@@ -2527,7 +2527,8 @@ input PostCreateInput {
   contentApiData: JSON
   contentPreview: String
   attachments: AttachmentRelateToManyForCreateInput
-  citations: String
+  citations: JSON
+  citationsApiData: JSON
   relatedPosts: PostRelateToManyForCreateInput
   ad: AdRelateToOneForCreateInput
   tags: TagRelateToManyForCreateInput
