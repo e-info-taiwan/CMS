@@ -919,6 +919,7 @@ type Event {
   organizer: String
   contactInfo: String
   eventType: String
+  city: String
   startDate: DateTime
   endDate: DateTime
   location: String
@@ -948,6 +949,7 @@ input EventWhereInput {
   organizer: StringFilter
   contactInfo: StringFilter
   eventType: StringFilter
+  city: StringNullableFilter
   startDate: DateTimeFilter
   endDate: DateTimeNullableFilter
   location: StringFilter
@@ -969,6 +971,7 @@ input EventOrderByInput {
   organizer: OrderDirection
   contactInfo: OrderDirection
   eventType: OrderDirection
+  city: OrderDirection
   startDate: OrderDirection
   endDate: OrderDirection
   location: OrderDirection
@@ -988,6 +991,7 @@ input EventUpdateInput {
   organizer: String
   contactInfo: String
   eventType: String
+  city: String
   startDate: DateTime
   endDate: DateTime
   location: String
@@ -1014,6 +1018,7 @@ input EventCreateInput {
   organizer: String
   contactInfo: String
   eventType: String
+  city: String
   startDate: DateTime
   endDate: DateTime
   location: String

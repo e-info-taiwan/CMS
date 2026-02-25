@@ -212,6 +212,7 @@ model Event {
   organizer              String       @default("")
   contactInfo            String       @default("")
   eventType              String
+  city                   String?
   startDate              DateTime
   endDate                DateTime?
   location               String       @default("")
