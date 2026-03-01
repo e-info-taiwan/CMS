@@ -262,6 +262,18 @@ const generateNewsletterHtml = async (
   const relatedPosts = orderByIds(relatedPostsRaw as any[], relatedPostIds)
   const focusPosts = orderByIds(focusPostsRaw as any[], focusPostIds)
 
+  // 近期活動、環境徵才依時間排序（startDate 升序，無日期者排最後）
+  const sortByStartDate = <T extends { startDate?: string | Date | null }>(
+    items: T[]
+  ): T[] =>
+    [...items].sort((a, b) => {
+      const tA = a.startDate ? new Date(a.startDate).getTime() : Infinity
+      const tB = b.startDate ? new Date(b.startDate).getTime() : Infinity
+      return tB - tA
+    })
+  const eventsSorted = sortByStartDate(events as any[])
+  const jobsSorted = sortByStartDate(jobs as any[])
+
   const headerDate = formatDateHeader(sendDate)
   let html = ''
 
@@ -482,7 +494,7 @@ const generateNewsletterHtml = async (
   }
 
   // ===== 04-Events (近期活動) =====
-  if (events.length > 0) {
+  if (eventsSorted.length > 0) {
     html += '        <!-- ===== 04-Events (近期活動) ===== -->\n'
     html += '        <tr>\n'
     html += '          <td class="section-header" align="center">\n'
@@ -494,11 +506,11 @@ const generateNewsletterHtml = async (
     html +=
       '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
 
-    events.forEach((event: any, idx: number) => {
+    eventsSorted.forEach((event: any, idx: number) => {
       const eventDate = formatDate(event.startDate)
       const eventUrl = `${WEB_URL_BASE}/event/${event.id}`
       const listClass =
-        idx === events.length - 1 ? 'list-item-last' : 'list-item'
+        idx === eventsSorted.length - 1 ? 'list-item-last' : 'list-item'
       html += `              <tr>\n                <td class="${listClass}">\n`
       html += `                  <div class="list-date">${eventDate}</div>\n`
       html += `                  <div class="list-title"><a class="muted-link" href="${eventUrl}">${event.name}</a></div>\n`
@@ -515,7 +527,7 @@ const generateNewsletterHtml = async (
   }
 
   // ===== 05-Jobs (環境徵才) =====
-  if (jobs.length > 0) {
+  if (jobsSorted.length > 0) {
     html += '        <!-- ===== 05-Jobs (環境徵才) ===== -->\n'
     html += '        <tr>\n'
     html += '          <td class="section-header" align="center">\n'
@@ -527,11 +539,11 @@ const generateNewsletterHtml = async (
     html +=
       '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n'
 
-    jobs.forEach((job: any, idx: number) => {
+    jobsSorted.forEach((job: any, idx: number) => {
       const jobDate = formatDate(job.startDate)
       const jobUrl = `${WEB_URL_BASE}/job/${job.id}`
       const listClass =
-        idx === jobs.length - 1 ? 'list-item-last' : 'list-item-dark'
+        idx === jobsSorted.length - 1 ? 'list-item-last' : 'list-item-dark'
       html += `              <tr>\n                <td class="${listClass}">\n`
       html += `                  <div class="list-date">${jobDate}</div>\n`
       html += `                  <div class="list-title"><a class="muted-link" href="${jobUrl}">${job.title}</a></div>\n`
