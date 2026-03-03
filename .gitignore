@@ -137,3 +137,5 @@ dist
 
 # keystone generated files
 .keystone/
+
+.DS_Store
