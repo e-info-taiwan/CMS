@@ -274,10 +274,10 @@ index 14d7c8b..75860eb 100644
      className: className,
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/footnote.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/footnote.js
 new file mode 100644
-index 0000000..6fc6cc2
+index 0000000..beb8c78
 --- /dev/null
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/footnote.js
-@@ -0,0 +1,173 @@
+@@ -0,0 +1,179 @@
 +"use strict";
 +
 +Object.defineProperty(exports, "__esModule", {
@@ -354,6 +354,9 @@ index 0000000..6fc6cc2
 +      const startOffset = selection.getStartOffset();
 +      const endOffset = startOffset + footnoteText.length;
 +      newSelection = selection.merge({
++        isBackward: false,
++        anchorKey: selection.getStartKey(),
++        focusKey: selection.getStartKey(),
 +        anchorOffset: startOffset,
 +        focusOffset: endOffset
 +      });
@@ -362,6 +365,9 @@ index 0000000..6fc6cc2
 +      const startOffset = selection.getStartOffset();
 +      const endOffset = startOffset + footnoteText.length;
 +      newSelection = selection.merge({
++        isBackward: false,
++        anchorKey: selection.getStartKey(),
++        focusKey: selection.getStartKey(),
 +        anchorOffset: startOffset,
 +        focusOffset: endOffset
 +      });
