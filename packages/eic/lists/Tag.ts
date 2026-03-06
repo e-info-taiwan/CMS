@@ -29,6 +29,10 @@ const listConfigurations = list({
       ref: 'Post.tags',
       many: true,
       label: '相關文章',
+      ui: {
+        listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
     }),
   },
   access: {
