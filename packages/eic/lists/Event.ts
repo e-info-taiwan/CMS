@@ -1,4 +1,5 @@
 import { list } from '@keystone-6/core'
+import type { KeystoneContext } from '@keystone-6/core/types'
 import {
   text,
   relationship,
@@ -15,6 +16,92 @@ import {
 } from '../services/invalidate-cdn-cache'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
+
+type SessionUser = {
+  id?: string | number
+  role?: string
+}
+
+type Session = {
+  data?: SessionUser
+  itemId?: string | number
+}
+
+/** 活動狀態，與 list 的 state 選項一致 */
+const EventState = {
+  Published: 'published',
+  Scheduled: 'scheduled',
+  Draft: 'draft',
+  Archive: 'archive',
+} as const
+
+const ALLOWED_EVENT_ROLES = ['admin', 'moderator', 'editor'] as const
+
+/**
+ * 依 accessControlStrategy 與角色過濾活動，與 Lilith Post filter 邏輯一致。
+ * - gql: 僅暴露 published
+ * - preview: 暴露全部
+ * - cms: admin/moderator 全部，editor 在 mutation/單筆查詢時全部否則僅自己建立
+ */
+const filterEventsForAccess = ({
+  session,
+  context,
+}: {
+  session?: Session
+  context: KeystoneContext
+}) => {
+  switch (envVar.accessControlStrategy) {
+    case 'gql': {
+      return {
+        state: { equals: EventState.Published },
+      }
+    }
+    case 'preview': {
+      return true
+    }
+    case 'cms':
+    default: {
+      const role = session?.data?.role
+      const userId = session?.itemId ?? session?.data?.id
+
+      if (
+        role === undefined ||
+        !(ALLOWED_EVENT_ROLES as readonly string[]).includes(role)
+      ) {
+        return false
+      }
+
+      if (role === 'admin' || role === 'moderator') {
+        return true
+      }
+
+      if (role === 'editor') {
+        const reqBody = (
+          context.req as { body?: { query?: string; variables?: unknown } }
+        )?.body
+        const query = reqBody?.query
+
+        if (query && typeof query === 'string') {
+          if (query.trim().startsWith('mutation')) {
+            return true
+          }
+          const isSingleItemQuery =
+            /\bevent\s*\(/.test(query) && !/\bevents\s*\(/.test(query)
+          if (isSingleItemQuery) {
+            return true
+          }
+        }
+
+        if (!userId) return false
+        return {
+          createdBy: { id: { equals: userId } },
+        }
+      }
+
+      return false
+    }
+  }
+}
 
 const listConfigurations = list({
   fields: {
@@ -132,6 +219,10 @@ const listConfigurations = list({
       update: allowRoles(admin, moderator, editor),
       create: allowRoles(admin, moderator, editor),
       delete: allowRoles(admin),
+    },
+    filter: {
+      query: filterEventsForAccess,
+      update: filterEventsForAccess,
     },
   },
   graphql: {

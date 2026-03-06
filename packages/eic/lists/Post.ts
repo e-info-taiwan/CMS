@@ -3,6 +3,7 @@ import { customFields, utils } from '@mirrormedia/lilith-core'
 // @ts-ignore: no definition
 import { buttonNames } from '@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor'
 import { graphql, list } from '@keystone-6/core'
+import type { KeystoneContext } from '@keystone-6/core/types'
 import {
   checkbox,
   multiselect,
@@ -105,27 +106,93 @@ const extractContentPreview = (
   return fullText.slice(0, length)
 }
 
-// 在 CMS 模式下，限制 contributor 只能看到 / 編輯自己建立的文章
-const filterPostsForAccess = ({ session }: { session?: Session }) => {
-  if (envVar.accessControlStrategy !== 'cms') {
-    return true
-  }
+/** 文章狀態，與 list 的 state 選項一致 */
+const PostState = {
+  Published: 'published',
+  Draft: 'draft',
+  Scheduled: 'scheduled',
+  Archived: 'archived',
+  Invisible: 'invisible',
+} as const
 
-  const role = session?.data?.role
-  const userId = session?.itemId
+const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 
-  if (!role) {
-    return false
-  }
+/**
+ * 依 accessControlStrategy 與角色過濾文章。
+ * - gql: 僅暴露 published、invisible
+ * - preview: 暴露全部
+ * - cms: 依角色；admin/moderator 全部，editor 在 mutation/單筆查詢時全部否則僅自己建立，contributor 僅自己建立
+ */
+const filterPostsForAccess = ({
+  session,
+  context,
+}: {
+  session?: Session
+  context: KeystoneContext
+}) => {
+  switch (envVar.accessControlStrategy) {
+    case 'gql': {
+      return {
+        state: {
+          in: [PostState.Published, PostState.Invisible],
+        },
+      }
+    }
+    case 'preview': {
+      return true
+    }
+    case 'cms':
+    default: {
+      const role = session?.data?.role
+      const userId = session?.itemId ?? session?.data?.id
 
-  if (role === 'contributor') {
-    if (!userId) return false
-    return {
-      createdBy: { id: { equals: userId } },
+      if (
+        role === undefined ||
+        !(ALLOWED_ROLES as readonly string[]).includes(role)
+      ) {
+        return false
+      }
+
+      if (role === 'admin' || role === 'moderator') {
+        return true
+      }
+
+      if (role === 'editor') {
+        const reqBody = (
+          context.req as { body?: { query?: string; variables?: unknown } }
+        )?.body
+        const query = reqBody?.query
+
+        if (query && typeof query === 'string') {
+          // Mutations: 允許所有文章（用於關聯）
+          if (query.trim().startsWith('mutation')) {
+            return true
+          }
+          // 單筆查詢（編輯頁）: 允許所有文章（用於關聯載入）
+          const isSingleItemQuery =
+            /\bpost\s*\(/.test(query) && !/\bposts\s*\(/.test(query)
+          if (isSingleItemQuery) {
+            return true
+          }
+        }
+
+        if (!userId) return false
+        return {
+          createdBy: { id: { equals: userId } },
+        }
+      }
+
+      // contributor: 僅自己建立的文章
+      if (role === 'contributor') {
+        if (!userId) return false
+        return {
+          createdBy: { id: { equals: userId } },
+        }
+      }
+
+      return false
     }
   }
-
-  return true
 }
 
 const itemViewFunction: MaybeItemFunction<FieldMode> = async ({
