@@ -838,13 +838,15 @@ index 825dc22..db4d5f3 100644
      onCancel: () => {
        onEditFinish({});
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
-index d74d67e..8470e0d 100644
+index d74d67e..0431ff9 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
-@@ -23,9 +23,15 @@ const {
+@@ -23,16 +23,33 @@ const {
    ImageBlock
  } = _readr.default.blockRenderers;
  const ImageBlockWrapper = _styledComponents.default.div`
++  position: relative;
++  display: inline-block;
 +  overflow: hidden;
 +  max-width: 100%;
 +  
@@ -858,6 +860,45 @@ index d74d67e..8470e0d 100644
    }
  `;
  const ImageEditButton = _styledComponents.default.span`
++  position: absolute;
++  right: 6px;
++  bottom: 6px;
++  z-index: 2;
+   cursor: pointer;
+-  background-color: white;
+-  padding: 6px;
+-  border-radius: 6px;
++  background-color: rgba(255, 255, 255, 0.9);
++  padding: 4px 8px;
++  border-radius: 12px;
++  display: inline-flex;
++  align-items: center;
++  gap: 3px;
++  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
++  font-size: 12px;
+ `;
+ 
+ function ImageEditorBlock(props) {
+@@ -95,14 +112,14 @@ function ImageEditorBlock(props) {
+     enableAlignment: true,
+     initialAlign: alignment,
+     initialSelected: [imageWithMeta]
+-  }), /*#__PURE__*/_react.default.createElement(ImageBlockWrapper, null, /*#__PURE__*/_react.default.createElement(ImageBlock, props)), /*#__PURE__*/_react.default.createElement(ImageEditButton, {
++  }), /*#__PURE__*/_react.default.createElement(ImageBlockWrapper, null, /*#__PURE__*/_react.default.createElement(ImageBlock, props), /*#__PURE__*/_react.default.createElement(ImageEditButton, {
+     onClick: () => {
+-      // call `onEditStart` prop as we are trying to update the BGImage entity
+-      onEditStart(); // open `BGImageInput`
++      // call `onEditStart` prop as we are trying to update the image entity
++      onEditStart(); // open `ImageSelector`
+ 
+       setToShowImageSelector(true);
+     }
+   }, /*#__PURE__*/_react.default.createElement("i", {
+     className: "fa-solid fa-pen"
+-  }), /*#__PURE__*/_react.default.createElement("span", null, "Modify")));
++  }), /*#__PURE__*/_react.default.createElement("span", null, "Modify"))));
+ }
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
 index ba09096..133addf 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
