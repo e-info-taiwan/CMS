@@ -5,6 +5,7 @@ import {
   select,
   checkbox,
   integer,
+  timestamp,
 } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 import envVar from '../environment-variables'
@@ -68,10 +69,20 @@ const listConfigurations = list({
       label: '排序',
       defaultValue: 0,
     }),
+    publishTime: timestamp({
+      label: '發佈時間',
+    }),
   },
   ui: {
     listView: {
-      initialColumns: ['title', 'status', 'isPinned', 'sortOrder'],
+      initialColumns: [
+        'title',
+        'status',
+        'publishTime',
+        'isPinned',
+        'sortOrder',
+      ],
+      initialSort: { field: 'publishTime', direction: 'DESC' },
       pageSize: 50,
     },
   },
