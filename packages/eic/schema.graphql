@@ -352,6 +352,7 @@ type Category {
   id: ID!
   slug: String
   name: String
+  description: String
   sortOrder: Int
   heroImage: Photo
   heroImageCaption: String
@@ -381,6 +382,7 @@ input CategoryWhereInput {
   id: IDFilter
   slug: StringFilter
   name: StringFilter
+  description: StringFilter
   sortOrder: IntNullableFilter
   heroImage: PhotoWhereInput
   heroImageCaption: StringFilter
@@ -415,6 +417,7 @@ input CategoryOrderByInput {
   id: OrderDirection
   slug: OrderDirection
   name: OrderDirection
+  description: OrderDirection
   sortOrder: OrderDirection
   heroImageCaption: OrderDirection
   createdAt: OrderDirection
@@ -424,6 +427,7 @@ input CategoryOrderByInput {
 input CategoryUpdateInput {
   slug: String
   name: String
+  description: String
   sortOrder: Int
   heroImage: PhotoRelateToOneForUpdateInput
   heroImageCaption: String
@@ -459,6 +463,7 @@ input CategoryUpdateArgs {
 input CategoryCreateInput {
   slug: String
   name: String
+  description: String
   sortOrder: Int
   heroImage: PhotoRelateToOneForCreateInput
   heroImageCaption: String

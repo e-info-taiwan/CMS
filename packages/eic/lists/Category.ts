@@ -21,6 +21,12 @@ const listConfigurations = list({
       label: '名稱',
       validation: { isRequired: true },
     }),
+    description: text({
+      label: '簡介',
+      ui: {
+        displayMode: 'textarea',
+      },
+    }),
     sortOrder: integer({
       label: '排序',
       defaultValue: 1,
