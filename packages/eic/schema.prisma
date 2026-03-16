@@ -81,6 +81,7 @@ model Category {
   id                         Int            @id @default(autoincrement())
   slug                       String         @default("")
   name                       String         @default("")
+  description                String         @default("")
   sortOrder                  Int?           @default(1)
   heroImage                  Photo?         @relation("Category_heroImage", fields: [heroImageId], references: [id])
   heroImageId                Int?           @map("heroImage")
