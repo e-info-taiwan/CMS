@@ -736,6 +736,7 @@ model Topic {
   posts                    Post[]         @relation("Post_topic")
   isPinned                 Boolean        @default(false)
   sortOrder                Int?           @default(0)
+  publishTime              DateTime?
   createdAt                DateTime?
   updatedAt                DateTime?
   createdBy                User?          @relation("Topic_createdBy", fields: [createdById], references: [id])

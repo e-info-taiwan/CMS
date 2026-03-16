@@ -3009,6 +3009,7 @@ type Topic {
   postsCount(where: PostWhereInput! = {}): Int
   isPinned: Boolean
   sortOrder: Int
+  publishTime: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -3033,6 +3034,7 @@ input TopicWhereInput {
   posts: PostManyRelationFilter
   isPinned: BooleanFilter
   sortOrder: IntNullableFilter
+  publishTime: DateTimeNullableFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -3048,6 +3050,7 @@ input TopicOrderByInput {
   redirectUrl: OrderDirection
   isPinned: OrderDirection
   sortOrder: OrderDirection
+  publishTime: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -3062,6 +3065,7 @@ input TopicUpdateInput {
   posts: PostRelateToManyForUpdateInput
   isPinned: Boolean
   sortOrder: Int
+  publishTime: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -3083,6 +3087,7 @@ input TopicCreateInput {
   posts: PostRelateToManyForCreateInput
   isPinned: Boolean
   sortOrder: Int
+  publishTime: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
