@@ -364,10 +364,16 @@ const listConfigurations = list({
     section: relationship({
       ref: 'Section.posts',
       label: '大分類',
+      ui: {
+        views: './lists/views/post/sections',
+      },
     }),
     category: relationship({
       ref: 'Category.posts',
       label: '中分類',
+      ui: {
+        views: './lists/views/post/categories',
+      },
     }),
     classify: relationship({
       ref: 'Classify.posts',
@@ -695,6 +701,35 @@ const listConfigurations = list({
           if (!newPublishTime) {
             addValidationError('需要填入發布時間')
           }
+        }
+      }
+
+      // 驗證：中分類必須屬於所選大分類
+      // 1. 取得此次操作後最終的 sectionId / categoryId
+      const finalSectionId =
+        (resolvedData.section && resolvedData.section.connect?.id) ||
+        (item && (item as any).sectionId)
+
+      const finalCategoryId: unknown =
+        resolvedData.category && 'connect' in resolvedData.category
+          ? resolvedData.category.connect?.id
+          : resolvedData.category && 'disconnect' in resolvedData.category
+          ? null
+          : item && (item as any).categoryId
+
+      // 2. 若兩者都有值，檢查 Category.sectionId 是否等於 Post.sectionId
+      if (finalSectionId && finalCategoryId) {
+        const category = await context.prisma.Category.findUnique({
+          where: { id: Number(finalCategoryId) },
+          select: { sectionId: true },
+        })
+
+        if (
+          !category ||
+          category.sectionId === null ||
+          Number(category.sectionId) !== Number(finalSectionId)
+        ) {
+          addValidationError('中分類必須屬於所選的大分類')
         }
       }
 

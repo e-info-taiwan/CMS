@@ -1,7 +1,7 @@
 /** @jsxRuntime classic */
 /** @jsx jsx */
 
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState } from 'react'
 
 import { Button } from '@keystone-ui/button'
 // eslint-disable-next-line
@@ -89,6 +89,8 @@ export const Field = ({
   autoFocus,
   value,
   onChange,
+  // forceValidation is part of Keystone FieldProps, but not used here
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   forceValidation,
 }: FieldProps<typeof controller>) => {
   const keystone = useKeystone()
@@ -248,7 +250,7 @@ export const Field = ({
   )
 }
 
-// @ts-ignore
+// @ts-ignore: Keystone CellComponent generic is incompatible with our controller type
 export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
   const list = useList(field.refListKey)
   const { colors } = useTheme()
@@ -262,13 +264,10 @@ export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
     )
   }
 
-  const hasManualOrder = field.listKey === 'Post'
-  const fieldPath = hasManualOrder ? `${field.path}InInputOrder` : field.path
-  const data = item[fieldPath]
+  const data = item[field.path]
   const items = (Array.isArray(data) ? data : [data]).filter((item) => item)
   const displayItems = items.length < 5 ? items : items.slice(0, 3)
   const overflow = items.length < 5 ? 0 : items.length - 3
-  const labelField = hasManualOrder ? 'label' : field.refLabelField
   const styles = {
     color: colors.foreground,
     textDecoration: 'none',
@@ -283,12 +282,9 @@ export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
       {displayItems.map((item, index) => (
         <Fragment key={item.id}>
           {index ? ', ' : ''}
-          {/* @ts-ignore */}
-          <Link
-            href={`/${list.path}/${item.id}`}
-            css={styles}
-          >
-            {item[labelField] || item.id}
+          {/* @ts-ignore: admin UI Link typing is not fully compatible here */}
+          <Link href={`/${list.path}/${item.id}`} css={styles}>
+            {item[field.refLabelField] || item.id}
           </Link>
         </Fragment>
       ))}
@@ -297,7 +293,7 @@ export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
   )
 }
 
-// @ts-ignore
+// @ts-ignore: Keystone CardValueComponent generic is incompatible with our controller type
 export const CardValue: CardValueComponent<typeof controller> = ({
   field,
   item,
@@ -312,7 +308,7 @@ export const CardValue: CardValueComponent<typeof controller> = ({
         .map((item, index) => (
           <Fragment key={item.id}>
             {index ? ', ' : ''}
-            {/* @ts-ignore */}
+            {/* @ts-ignore: admin UI Link typing is not fully compatible here */}
             <Link href={`/${list.path}/${item.id}`}>
               {item.label || item.id}
             </Link>
@@ -343,9 +339,7 @@ type CountRelationshipValue = {
 }
 
 type RelationshipController = FieldController<
-  | ManyRelationshipValue
-  | SingleRelationshipValue
-  | CountRelationshipValue,
+  ManyRelationshipValue | SingleRelationshipValue | CountRelationshipValue,
   string
 > & {
   display: 'count' | 'select'
@@ -379,11 +373,6 @@ export const controller = (
 ): RelationshipController => {
   const refLabelField = config.fieldMeta.refLabelField
   const refSearchFields = config.fieldMeta.refSearchFields
-  
-  // 檢查是否有 manualOrder 支援（通過檢查 listKey 是否為 Post）
-  // 如果有 manualOrder，使用 InInputOrder；否則使用原始欄位
-  const hasManualOrder = config.listKey === 'Post'
-  const fieldPath = hasManualOrder ? `${config.path}InInputOrder` : config.path
 
   return {
     refFieldKey: config.fieldMeta.refFieldKey,
@@ -392,17 +381,16 @@ export const controller = (
     path: config.path,
     label: config.label,
     description: config.description,
-    display:
-      config.fieldMeta.displayMode === 'count' ? 'count' : 'select',
+    display: config.fieldMeta.displayMode === 'count' ? 'count' : 'select',
     refLabelField,
     refSearchFields,
     refListKey: config.fieldMeta.refListKey,
     graphqlSelection:
       config.fieldMeta.displayMode === 'count'
         ? `${config.path}Count`
-        : `${fieldPath} {
+        : `${config.path} {
               id
-              ${hasManualOrder ? `label: ${refLabelField}` : refLabelField}
+              ${refLabelField}
             }`,
     hideCreate: config.fieldMeta.hideCreate,
     defaultValue: config.fieldMeta.many
@@ -422,14 +410,13 @@ export const controller = (
         }
       }
       if (config.fieldMeta.many) {
-        // 根據是否有 manualOrder 決定使用哪個欄位
-        const sourceData = hasManualOrder 
-          ? (data[`${config.path}InInputOrder`] || [])
-          : (data[config.path] || [])
-        const value = (Array.isArray(sourceData) ? sourceData : []).map((x: any) => ({
-          id: x.id,
-          label: hasManualOrder ? (x.label || x.id) : (x[refLabelField] || x.id),
-        }))
+        const sourceData = data[config.path] || []
+        const value = (Array.isArray(sourceData) ? sourceData : []).map(
+          (x: any) => ({
+            id: x.id,
+            label: x[refLabelField] || x.id,
+          })
+        )
         return {
           kind: 'many',
           id: data.id,
@@ -437,17 +424,11 @@ export const controller = (
           value,
         }
       }
-      // 根據是否有 manualOrder 決定使用哪個欄位
-      const sourceValue = hasManualOrder
-        ? data[`${config.path}InInputOrder`]
-        : data[config.path]
       let value = null
-      if (sourceValue) {
+      if (data[config.path]) {
         value = {
-          id: sourceValue.id,
-          label: hasManualOrder 
-            ? (sourceValue.label || sourceValue.id)
-            : (sourceValue[refLabelField] || sourceValue.id),
+          id: data[config.path].id,
+          label: data[config.path][refLabelField] || data[config.path].id,
         }
       }
       return {
@@ -463,7 +444,7 @@ export const controller = (
       Label: () => '',
       types: {},
     },
-    validate(value) {
+    validate() {
       return true
     },
     serialize: (state) => {
@@ -508,4 +489,3 @@ export const controller = (
     },
   }
 }
-
