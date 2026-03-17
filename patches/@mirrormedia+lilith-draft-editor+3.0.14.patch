@@ -938,8 +938,158 @@ index ba09096..133addf 100644
      onChange: onChange,
      onCancel: () => {
        onEditFinish({});
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/table-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/table-block.js
+index f4a4c88..ce9b88a 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/table-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/table-block.js
+@@ -138,11 +138,11 @@ function resolveTableData(action, tableData) {
+   }
+ }
+ 
+-function convertTableDataFromRaw(rawTableData) {
++function convertTableDataFromRaw(rawTableData, decorators) {
+   return rawTableData.map(rowData => {
+     return rowData.map(colData => {
+       const contentState = (0, _draftJs.convertFromRaw)(colData);
+-      return _draftJs.EditorState.createWithContent(contentState);
++      return _draftJs.EditorState.createWithContent(contentState, decorators || undefined);
+     });
+   });
+ }
+@@ -267,7 +267,14 @@ const TableEditorBlock = props => {
+   const {
+     onEditStart,
+     onEditFinish,
+-    getMainEditorReadOnly
++    getMainEditorReadOnly,
++    onActiveCellChange,
++    onCellContentChange,
++    registerCellUpdater,
++    unregisterCellUpdater,
++    cellCustomStyleFn,
++    cellBlockStyleFn,
++    decorators
+   } = blockProps;
+   const entityKey = block.getEntityAt(0);
+   const entity = contentState.getEntity(entityKey);
+@@ -275,10 +282,25 @@ const TableEditorBlock = props => {
+     tableData: rawTableData,
+     tableStyles: _tableStyles
+   } = entity.getData();
+-  const [tableData, setTableData] = (0, _react.useState)(convertTableDataFromRaw(rawTableData)); // deep clone `_tableStyles` to prevent updating the entity data directly
++  const [tableData, setTableData] = (0, _react.useState)(convertTableDataFromRaw(rawTableData, decorators)); // deep clone `_tableStyles` to prevent updating the entity data directly
+ 
+   const [tableStyles, setTableStyles] = (0, _react.useState)(_.cloneDeep(_tableStyles));
+-  const tableRef = (0, _react.useRef)(null); // `TableBlock` will render other inner/nested DraftJS Editors inside the main Editor.
++  const tableRef = (0, _react.useRef)(null);
++  const tableDataRef = (0, _react.useRef)(tableData);
++  tableDataRef.current = tableData;
++
++  (0, _react.useEffect)(() => {
++    if (registerCellUpdater) {
++      registerCellUpdater(entityKey, (rowIndex, colIndex, newEditorState) => {
++        const action = { type: ActionType.Update, rIndex: rowIndex, cIndex: colIndex, value: newEditorState };
++        const updatedTableData = resolveTableData(action, tableDataRef.current);
++        setTableData(updatedTableData);
++      });
++    }
++    return () => {
++      if (unregisterCellUpdater) unregisterCellUpdater(entityKey);
++    };
++  }, [entityKey]); // `TableBlock` will render other inner/nested DraftJS Editors inside the main Editor.
+   // However, main Editor's `readOnly` needs to be mutually exclusive with nested Editors' `readOnly`.
+   // If the main Editor and nested Editor are editable (`readOnly={false}`) at the same time,
+   // there will be a DraftJS Edtior Selection bug.
+@@ -303,6 +325,14 @@ const TableEditorBlock = props => {
+       //  If there are two tables in the main Editor,
+       //  this `handleClickOutside` will only handle the just updated one.
+       if (tableRef.current && !tableRef.current.contains(event.target) && !cellEditorReadOnly) {
++        // Skip if clicking on toolbar controls or inside a modal dialog
++        if (event.target.closest && (
++          event.target.closest('[data-draft-controls]') ||
++          event.target.closest('[role="dialog"]') ||
++          event.target.closest('[role="alertdialog"]')
++        )) {
++          return;
++        }
+         // make inner DraftJS Editors NOT editable
+         setCellEditorReadOnly(true); // call `onEditFinish` function tell the main DraftJS Editor
+         // that we are finishing interacting with the custom atomic block.
+@@ -317,11 +347,9 @@ const TableEditorBlock = props => {
+       }
+     }
+ 
+-    console.debug('(rich-text-editor/table): add click outside event listener');
+     document.addEventListener('mousedown', handleClickOutside);
+     return () => {
+       // Unbind the event listener on clean up
+-      console.debug('(rich-text-editor/table): remove click outside event listener');
+       document.removeEventListener('mousedown', handleClickOutside);
+     };
+   }, // Skip running effect if `tableData` and `cellEditorReadOnly` are not changed.
+@@ -356,23 +384,47 @@ const TableEditorBlock = props => {
+     }));
+   })), tableData.map((rowData, rIndex) => {
+     var _tableStyles$rows;
+-
+     const colsJsx = rowData.map((colData, cIndex) => {
++      const handleCellClick = () => {
++        if (onActiveCellChange) {
++          onActiveCellChange({
++            entityKey,
++            rowIndex: rIndex,
++            colIndex: cIndex,
++            editorState: colData
++          });
++        }
++      };
++    
++      const handleCellChange = editorState => {
++        const updateAction = {
++          type: ActionType.Update,
++          cIndex,
++          rIndex,
++          value: editorState
++        };
++        const updatedTableData = resolveTableData(updateAction, tableData);
++        setTableData(updatedTableData);
++    
++        if (onCellContentChange) {
++          onCellContentChange({
++            entityKey,
++            rowIndex: rIndex,
++            colIndex: cIndex,
++            editorState
++          });
++        }
++      };
++    
+       return /*#__PURE__*/_react.default.createElement(Td, {
+-        key: `col_${cIndex}`
++        key: `col_${cIndex}`,
++        onClick: handleCellClick
+       }, /*#__PURE__*/_react.default.createElement(_draftJs.Editor, {
+-        onChange: editorState => {
+-          const updateAction = {
+-            type: ActionType.Update,
+-            cIndex,
+-            rIndex,
+-            value: editorState
+-          };
+-          const updatedTableData = resolveTableData(updateAction, tableData);
+-          setTableData(updatedTableData);
+-        },
++        onChange: handleCellChange,
+         editorState: colData,
+-        readOnly: cellEditorReadOnly
++        readOnly: cellEditorReadOnly,
++        customStyleFn: cellCustomStyleFn || undefined,
++        blockStyleFn: cellBlockStyleFn || undefined
+       }));
+     });
+     return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..a7146d4 100644
+index ceebcbb..83751a6 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 @@ -35,28 +35,26 @@ var _table = require("../../draft-js/buttons/table");
@@ -1054,20 +1204,53 @@ index ceebcbb..a7146d4 100644
  `;
  
  class RichTextEditor extends _react.default.Component {
-@@ -432,7 +425,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -432,12 +425,21 @@ class RichTextEditor extends _react.default.Component {
      super(props);
      this.state = {
        isEnlarged: false,
 -      readOnly: false
+-    }; // Custom overrides for "code" style.
 +      readOnly: false,
 +      toShowFootnoteEdit: false,
 +      footnoteEditEntityKey: null,
 +      footnoteEditData: null,
-+      renderBasicEditor: null
-     }; // Custom overrides for "code" style.
++      renderBasicEditor: null,
++      activeTableCell: null,
++      cellEditorStates: {}
++    }; 
++    // Map of entityKey -> updater function, for pushing toolbar changes back to table cells
++    this.tableCellUpdaters = {};
++    // Custom overrides for "code" style.
  
      this.customStyleMap = {
-@@ -532,10 +529,6 @@ class RichTextEditor extends _react.default.Component {
+       CODE: {
+-        backgroundColor: 'rgba(0, 0, 0, 0.05)',
++        backgroundColor: 'rgba(87, 25, 25, 0.05)',
+         fontFamily: '"Inconsolata", "Menlo", "Consolas", monospace',
+         fontSize: 16,
+         padding: 2
+@@ -454,6 +456,20 @@ class RichTextEditor extends _react.default.Component {
+   onChange = editorState => {
+     this.props.onChange(editorState);
+   };
++  handleCellStyleChange = (newEditorState) => {
++    const { activeTableCell } = this.state;
++    if (!activeTableCell) return;
++    const { entityKey, rowIndex, colIndex } = activeTableCell;
++    this.setState(prevState => {
++      const cellEditorStates = { ...prevState.cellEditorStates };
++      if (!cellEditorStates[entityKey]) cellEditorStates[entityKey] = {};
++      if (!cellEditorStates[entityKey][rowIndex]) cellEditorStates[entityKey][rowIndex] = {};
++      cellEditorStates[entityKey][rowIndex][colIndex] = newEditorState;
++      return { cellEditorStates };
++    });
++    const updater = this.tableCellUpdaters[entityKey];
++    if (updater) updater(rowIndex, colIndex, newEditorState);
++  };
+   handleKeyCommand = (command, editorState) => {
+     const newState = _draftJs.RichUtils.handleKeyCommand(editorState, command);
+ 
+@@ -532,10 +548,6 @@ class RichTextEditor extends _react.default.Component {
          styles['color'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_FONT_COLOR)[1];
        }
  
@@ -1078,7 +1261,7 @@ index ceebcbb..a7146d4 100644
        return styles;
      }, {});
    };
-@@ -573,6 +566,7 @@ class RichTextEditor extends _react.default.Component {
+@@ -573,6 +585,7 @@ class RichTextEditor extends _react.default.Component {
        case 'header-two':
        case 'header-three':
        case 'header-four':
@@ -1086,7 +1269,60 @@ index ceebcbb..a7146d4 100644
        case 'blockquote':
          result += 'public-DraftStyleDefault-' + block.getType();
          break;
-@@ -653,9 +647,89 @@ class RichTextEditor extends _react.default.Component {
+@@ -627,7 +640,8 @@ class RichTextEditor extends _react.default.Component {
+ 
+ 
+         this.setState({
+-          readOnly: false
++          readOnly: false,
++          activeTableCell: null
+         });
+       }; // `onEditStart` and `onEditFinish` will be passed
+       // into custom block component.
+@@ -640,6 +654,42 @@ class RichTextEditor extends _react.default.Component {
+           onEditStart,
+           onEditFinish,
+           getMainEditorReadOnly: () => this.state.readOnly,
++          onActiveCellChange: payload => {
++            this.setState({
++              activeTableCell: {
++                entityKey: payload.entityKey,
++                rowIndex: payload.rowIndex,
++                colIndex: payload.colIndex
++              }
++            });
++          },
++          onCellContentChange: payload => {
++            const { entityKey, rowIndex, colIndex, editorState } = payload;
++            this.setState(prevState => {
++              const cellEditorStates = { ...prevState.cellEditorStates };
++              if (!cellEditorStates[entityKey]) cellEditorStates[entityKey] = {};
++              if (!cellEditorStates[entityKey][rowIndex]) cellEditorStates[entityKey][rowIndex] = {};
++              cellEditorStates[entityKey][rowIndex][colIndex] = editorState;
++              return { cellEditorStates };
++            });
++          },
++          registerCellUpdater: (entityKey, fn) => {
++            this.tableCellUpdaters[entityKey] = fn;
++          },
++          unregisterCellUpdater: (entityKey) => {
++            delete this.tableCellUpdaters[entityKey];
++          },
++          cellCustomStyleFn: this.customStyleFn,
++          cellBlockStyleFn: (block) => {
++            const blockData = block.getData();
++            if (blockData) {
++              const textAlign = blockData.get('textAlign');
++              if (textAlign === 'center') return 'alignCenter';
++              if (textAlign === 'left') return 'alignLeft';
++            }
++            return '';
++          },
++          decorators: _entityDecorator.default,
+           renderBasicEditor: propsOfBasicEditor => {
+             return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
+               disabledButtons: disabledButtonsOnBasicEditor
+@@ -653,9 +703,89 @@ class RichTextEditor extends _react.default.Component {
      }
    };
  
@@ -1177,7 +1413,7 @@ index ceebcbb..a7146d4 100644
      } = this.props;
      let {
        editorState
-@@ -667,7 +741,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,10 +797,36 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -1186,11 +1422,36 @@ index ceebcbb..a7146d4 100644
 +      toShowFootnoteEdit,
 +      footnoteEditEntityKey,
 +      footnoteEditData,
-+      renderBasicEditor: renderBasicEditorForFootnote
++      renderBasicEditor: renderBasicEditorForFootnote,
++      activeTableCell,
++      cellEditorStates
      } = this.state;
++
++    const isEditingTableCell = !!(activeTableCell && readOnly);
++    const cellState = isEditingTableCell
++      ? (cellEditorStates[activeTableCell.entityKey] &&
++         cellEditorStates[activeTableCell.entityKey][activeTableCell.rowIndex] &&
++         cellEditorStates[activeTableCell.entityKey][activeTableCell.rowIndex][activeTableCell.colIndex])
++        || null
++      : null;
++    const effectiveEditorState = cellState || editorState;
++    const effectiveOnChange = isEditingTableCell ? this.handleCellStyleChange : this.onChange;
++    const effectiveReadOnly = isEditingTableCell ? false : readOnly;
++    const effectiveToggleInlineStyle = isEditingTableCell
++      ? (inlineStyle) => {
++          if (inlineStyle === 'BOLD' || inlineStyle === 'ITALIC') {
++            this.handleCellStyleChange(_draftJs.RichUtils.toggleInlineStyle(effectiveEditorState, inlineStyle));
++          }
++        }
++      : this.toggleInlineStyle;
++
      const entityType = this.getEntityType(editorState);
      const customStyle = this.getCustomStyle(editorState.getCurrentInlineStyle());
-@@ -678,7 +756,122 @@ class RichTextEditor extends _react.default.Component {
++    const effectiveCustomStyle = isEditingTableCell ? this.getCustomStyle(effectiveEditorState.getCurrentInlineStyle()) : customStyle;
+ 
+     const renderBasicEditor = propsOfBasicEditor => {
+       return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
+@@ -678,7 +834,122 @@ class RichTextEditor extends _react.default.Component {
        }));
      };
  
@@ -1314,24 +1575,30 @@ index ceebcbb..a7146d4 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -694,7 +887,11 @@ class RichTextEditor extends _react.default.Component {
+@@ -694,7 +965,12 @@ class RichTextEditor extends _react.default.Component {
        href: "https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css",
        rel: "stylesheet",
        type: "text/css"
 -    }), /*#__PURE__*/_react.default.createElement(DraftEditorControls, null, /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, null, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(BlockStyleControls, {
 +    }), /*#__PURE__*/_react.default.createElement(DraftEditorControls, {
-+      compact: compact
++      compact: compact,
++      'data-draft-controls': 'true'
 +    }, /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, {
 +      compact: compact
 +    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(BlockStyleControls, {
        readOnly: readOnly,
        disabledButtons: disabledButtons,
        editorState: editorState,
-@@ -704,10 +901,14 @@ class RichTextEditor extends _react.default.Component {
+@@ -702,23 +978,31 @@ class RichTextEditor extends _react.default.Component {
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(InlineStyleControls, {
+       readOnly: readOnly,
        disabledButtons: disabledButtons,
-       editorState: editorState,
-       onToggle: this.toggleInlineStyle
+-      editorState: editorState,
+-      onToggle: this.toggleInlineStyle
 -    })), /*#__PURE__*/_react.default.createElement(EnlargeButtonWrapper, null, /*#__PURE__*/_react.default.createElement(CustomEnlargeButton, {
++      editorState: isEditingTableCell ? effectiveEditorState : editorState,
++      onToggle: effectiveToggleInlineStyle,
++      enabledInCellMode: isEditingTableCell ? ['BOLD', 'ITALIC'] : []
 +    })), /*#__PURE__*/_react.default.createElement(EnlargeButtonWrapper, {
 +      compact: compact
 +    }, /*#__PURE__*/_react.default.createElement(CustomEnlargeButton, {
@@ -1342,19 +1609,31 @@ index ceebcbb..a7146d4 100644
 +      compact: compact
 +    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomLinkButton, {
        isDisabled: disabledButtons.includes(buttonNames.link),
-       isActive: entityType === 'LINK',
-       readOnly: readOnly,
-@@ -718,7 +919,8 @@ class RichTextEditor extends _react.default.Component {
-       isActive: Object.prototype.hasOwnProperty.call(customStyle, 'color'),
-       readOnly: readOnly,
-       editorState: editorState,
+-      isActive: entityType === 'LINK',
+-      readOnly: readOnly,
+-      editorState: editorState,
 -      onChange: this.onChange
-+      onChange: this.onChange,
++      isActive: isEditingTableCell ? false : entityType === 'LINK',
++      readOnly: effectiveReadOnly,
++      editorState: isEditingTableCell ? effectiveEditorState : editorState,
++      onChange: effectiveOnChange
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomFontColorButton, {
+       isDisabled: disabledButtons.includes(buttonNames.fontColor),
+-      isActive: Object.prototype.hasOwnProperty.call(customStyle, 'color'),
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange
++      isActive: isEditingTableCell
++        ? Object.prototype.hasOwnProperty.call(effectiveCustomStyle, 'color')
++        : Object.prototype.hasOwnProperty.call(customStyle, 'color'),
++      readOnly: effectiveReadOnly,
++      editorState: isEditingTableCell ? effectiveEditorState : editorState,
++      onChange: effectiveOnChange,
 +      presetColors: presetColors
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
-@@ -730,7 +932,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +1014,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -1371,7 +1650,7 @@ index ceebcbb..a7146d4 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -772,7 +982,9 @@ class RichTextEditor extends _react.default.Component {
+@@ -772,53 +1064,20 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -1380,12 +1659,20 @@ index ceebcbb..a7146d4 100644
 +      compact: compact
 +    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAlignLeftButton, {
        isDisabled: disabledButtons.includes(buttonNames.textAlign),
-       isActive: (0, _textAlign.getSelectionBlockData)(editorState, 'textAlign') === 'left',
-       readOnly: readOnly,
-@@ -784,41 +996,6 @@ class RichTextEditor extends _react.default.Component {
-       readOnly: readOnly,
-       editorState: editorState,
-       onChange: this.onChange
+-      isActive: (0, _textAlign.getSelectionBlockData)(editorState, 'textAlign') === 'left',
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange
++      isActive: (0, _textAlign.getSelectionBlockData)(isEditingTableCell ? effectiveEditorState : editorState, 'textAlign') === 'left',
++      readOnly: effectiveReadOnly,
++      editorState: isEditingTableCell ? effectiveEditorState : editorState,
++      onChange: effectiveOnChange
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAlignCenterButton, {
+       isDisabled: disabledButtons.includes(buttonNames.textAlign),
+-      isActive: (0, _textAlign.getSelectionBlockData)(editorState, 'textAlign') === 'center',
+-      readOnly: readOnly,
+-      editorState: editorState,
+-      onChange: this.onChange
 -    })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomColorBoxButton, {
 -      isDisabled: disabledButtons.includes(buttonNames.colorBox),
 -      readOnly: readOnly,
@@ -1421,10 +1708,14 @@ index ceebcbb..a7146d4 100644
 -      editorState: editorState,
 -      onChange: this.onChange,
 -      PostSelector: _postSelector.PostSelector
++      isActive: (0, _textAlign.getSelectionBlockData)(isEditingTableCell ? effectiveEditorState : editorState, 'textAlign') === 'center',
++      readOnly: effectiveReadOnly,
++      editorState: isEditingTableCell ? effectiveEditorState : editorState,
++      onChange: effectiveOnChange
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
        isDisabled: disabledButtons.includes(buttonNames.sideIndex),
        readOnly: readOnly,
-@@ -845,9 +1022,10 @@ class RichTextEditor extends _react.default.Component {
+@@ -845,9 +1104,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
@@ -1436,7 +1727,7 @@ index ceebcbb..a7146d4 100644
  }
  
  class StyleButton extends _react.default.Component {
-@@ -881,6 +1059,10 @@ const blockStyles = [{
+@@ -881,6 +1141,10 @@ const blockStyles = [{
    label: 'H4',
    style: 'header-four',
    icon: ''
@@ -1447,6 +1738,38 @@ index ceebcbb..a7146d4 100644
  }, {
    label: 'Blockquote',
    style: 'blockquote',
+@@ -947,17 +1211,21 @@ const inlineStyles = [{
+ }];
+ 
+ const InlineStyleControls = props => {
++  const { enabledInCellMode = [] } = props;
+   const currentStyle = props.editorState.getCurrentInlineStyle();
+-  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, inlineStyles.map(type => /*#__PURE__*/_react.default.createElement(StyleButton, {
+-    isDisabled: props.disabledButtons.includes(type.style.toLowerCase()),
+-    key: type.label,
+-    active: currentStyle.has(type.style),
+-    label: type.label,
+-    onToggle: props.onToggle,
+-    style: type.style,
+-    icon: type.icon,
+-    readOnly: props.readOnly
+-  })));
++  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, inlineStyles.map(type => {
++    const isCellEnabled = enabledInCellMode.includes(type.style);
++    return /*#__PURE__*/_react.default.createElement(StyleButton, {
++      isDisabled: props.disabledButtons.includes(type.style.toLowerCase()),
++      key: type.label,
++      active: currentStyle.has(type.style),
++      label: type.label,
++      onToggle: props.onToggle,
++      style: type.style,
++      icon: type.icon,
++      readOnly: isCellEnabled ? false : props.readOnly
++    });
++  }));
+ };
+ 
+ const DraftEditor = {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js
 index 33802e9..a871fe6 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/entity-decorator.js
