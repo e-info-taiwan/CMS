@@ -538,6 +538,11 @@ const listConfigurations = list({
     isNewsletter: checkbox({
       label: '是否為電子報',
       defaultValue: false,
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
     }),
   },
   ui: {
