@@ -13,6 +13,9 @@ const listConfigurations = list({
     post: relationship({
       ref: 'Post',
       label: '文章',
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
   },
   ui: {

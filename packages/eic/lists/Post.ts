@@ -469,6 +469,9 @@ const listConfigurations = list({
       ref: 'Post',
       label: '相關文章',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     ad: relationship({
       ref: 'Ad',
