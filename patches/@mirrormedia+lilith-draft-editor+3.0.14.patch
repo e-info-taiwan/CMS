@@ -471,7 +471,7 @@ index 3a9b3bc..45361d1 100644
      className: className,
      onClick: promptForImageSelector
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
-index 2a73a12..5ee7f7d 100644
+index 2a73a12..16aef43 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 @@ -18,6 +18,38 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
@@ -498,7 +498,7 @@ index 2a73a12..5ee7f7d 100644
 +  // custom / atomic buttons
 +  'annotation',
 +  'divider',
-+  'embedded-code',
++  'embed',
 +  'image',
 +  'info-box',
 +  'slideshow',
@@ -699,7 +699,7 @@ index 2a73a12..5ee7f7d 100644
    return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
      isOpen: isOpen
    }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
-@@ -80,22 +244,117 @@ function InfoBoxInput(props) {
+@@ -80,22 +244,98 @@ function InfoBoxInput(props) {
          action: () => {
            onChange({
              title: inputValue.title,
@@ -736,25 +736,6 @@ index 2a73a12..5ee7f7d 100644
 +      }
 +      return '';
 +    };
-+
-+    // #region agent log
-+    fetch('http://127.0.0.1:7244/ingest/31db121b-62a7-49e9-866f-f390a8002c1d', {
-+      method: 'POST',
-+      headers: { 'Content-Type': 'application/json' },
-+      body: JSON.stringify({
-+        id: `log_${Date.now()}_infoboxParagraph`,
-+        runId: 'pre-fix',
-+        hypothesisId: 'H1',
-+        location: 'draft-js/buttons/info-box.js:paragraph',
-+        message: 'renderBasicEditor for InfoBox paragraph',
-+        data: {
-+          disabledButtons: disabledButtonsOnInfoBoxParagraphEditor,
-+          disabledLength: disabledButtonsOnInfoBoxParagraphEditor.length
-+        },
-+        timestamp: Date.now()
-+      })
-+    }).catch(() => {});
-+    // #endregion agent log
 +
 +    return /*#__PURE__*/_react.default.createElement(ParagraphWrapper, {
 +      key: p.id
@@ -824,7 +805,7 @@ index 2a73a12..5ee7f7d 100644
  }
  
  function InfoBoxButton(props) {
-@@ -109,15 +368,21 @@ function InfoBoxButton(props) {
+@@ -109,15 +349,21 @@ function InfoBoxButton(props) {
  
    const onChange = ({
      title,
