@@ -471,7 +471,7 @@ index 3a9b3bc..45361d1 100644
      className: className,
      onClick: promptForImageSelector
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
-index 2a73a12..16aef43 100644
+index 2a73a12..e09a57f 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 @@ -18,6 +18,38 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
@@ -805,7 +805,7 @@ index 2a73a12..16aef43 100644
  }
  
  function InfoBoxButton(props) {
-@@ -109,15 +349,21 @@ function InfoBoxButton(props) {
+@@ -109,15 +349,17 @@ function InfoBoxButton(props) {
  
    const onChange = ({
      title,
@@ -816,16 +816,12 @@ index 2a73a12..16aef43 100644
  
 -    const contentStateWithEntity = contentState.createEntity('INFOBOX', 'IMMUTABLE', {
 +    const normalizedParagraphs = Array.isArray(paragraphs) ? paragraphs : [];
-+    const firstParagraph = normalizedParagraphs[0] || null;
 +    const entityData = {
        title,
 -      rawContentState,
 -      body: _draftConverter.default.convertToHtml(rawContentState)
 -    });
-+      paragraphs: normalizedParagraphs,
-+      rawContentState: firstParagraph ? firstParagraph.rawContentState : undefined,
-+      body: firstParagraph ? firstParagraph.body : '',
-+      image: firstParagraph ? firstParagraph.image || null : null
++      paragraphs: normalizedParagraphs
 +    };
 +
 +    const contentStateWithEntity = contentState.createEntity('INFOBOX', 'IMMUTABLE', entityData);
@@ -1124,16 +1120,14 @@ index d74d67e..0431ff9 100644
  }
 \ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
-index ba09096..fbdecee 100644
+index ba09096..abe69bb 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
-@@ -44,21 +44,31 @@ function InfoBoxEditorBlock(props) {
+@@ -44,21 +44,22 @@ function InfoBoxEditorBlock(props) {
    const entity = contentState.getEntity(entityKey);
    const {
      title,
 -    rawContentState
-+    rawContentState,
-+    image,
 +    paragraphs
    } = entity.getData();
  
@@ -1143,10 +1137,6 @@ index ba09096..fbdecee 100644
 +    paragraphs: newParagraphs
    }) => {
 +    const normalizedParagraphs = Array.isArray(newParagraphs) ? newParagraphs : [];
-+    const firstParagraph = normalizedParagraphs[0] || null;
-+    const nextRaw = firstParagraph ? firstParagraph.rawContentState : rawContentState;
-+    const nextBody = firstParagraph ? firstParagraph.body : _draftConverter.default.convertToHtml(nextRaw);
-+    const nextImage = firstParagraph ? firstParagraph.image || null : image || null;
 +
      // close `InfoBoxInput`
      setToShowInput(false);
@@ -1156,18 +1146,18 @@ index ba09096..fbdecee 100644
          title: newTitle,
 -        body: _draftConverter.default.convertToHtml(newRawContentState),
 -        rawContentState: newRawContentState
-+        body: nextBody,
-+        rawContentState: nextRaw,
-+        image: nextImage,
 +        paragraphs: normalizedParagraphs
        }
      });
    };
-@@ -67,6 +77,8 @@ function InfoBoxEditorBlock(props) {
+@@ -66,7 +67,10 @@ function InfoBoxEditorBlock(props) {
+   return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_infoBox.InfoBoxInput, {
      renderBasicEditor: renderBasicEditor,
      title: title,
-     rawContentStateForInfoBoxEditor: rawContentState,
-+    image: image,
+-    rawContentStateForInfoBoxEditor: rawContentState,
++    // 舊版 rawContentState / image 已棄用，段落資料全部來自 paragraphs
++    rawContentStateForInfoBoxEditor: null,
++    image: null,
 +    paragraphs: paragraphs,
      onChange: onChange,
      onCancel: () => {
