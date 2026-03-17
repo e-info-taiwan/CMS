@@ -471,19 +471,49 @@ index 3a9b3bc..45361d1 100644
      className: className,
      onClick: promptForImageSelector
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
-index 2a73a12..9698c14 100644
+index 2a73a12..5ee7f7d 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
-@@ -18,6 +18,8 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
+@@ -18,6 +18,38 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
  
  var _styledComponents = _interopRequireDefault(require("styled-components"));
  
 +var _imageSelector = require("./selector/image-selector");
 +
++// 專供 Infobox 段落使用的按鈕禁用設定：
++// 只保留粗體、斜體、超連結、項目清單與文字顏色，其餘全部禁用。
++// 這裡直接使用按鈕名稱字串，避免與 draft-editor 產生循環引用。
++const disabledButtonsOnInfoBoxParagraphEditor = [
++  // block styles
++  'header-two',
++  'header-three',
++  'header-four',
++  'header-five',
++  'blockquote',
++  'code-block',
++  // inline styles（僅允許 BOLD / ITALIC）
++  'sup',
++  'sub',
++  'code',
++  // custom / atomic buttons
++  'annotation',
++  'divider',
++  'embedded-code',
++  'image',
++  'info-box',
++  'slideshow',
++  'table',
++  'text-align',
++  'side-index',
++  'video',
++  'audio',
++  'footnote'
++];
++
  function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
  
  function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
-@@ -28,6 +30,11 @@ const TitleInput = (0, _styledComponents.default)(_fields.TextInput)`
+@@ -28,6 +60,31 @@ const TitleInput = (0, _styledComponents.default)(_fields.TextInput)`
    margin-top: 30px;
    margin-bottom: 10px;
  `;
@@ -492,172 +522,335 @@ index 2a73a12..9698c14 100644
 +  font-weight: 600;
 +  margin: 10px 0;
 +`;
++const ParagraphWrapper = _styledComponents.default.div`
++  border: 1px solid #e1e5e9;
++  border-radius: 6px;
++  padding: 12px;
++  margin-top: 16px;
++`;
++const ParagraphHeader = _styledComponents.default.div`
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-bottom: 8px;
++`;
++const ParagraphActions = _styledComponents.default.div`
++  display: flex;
++  gap: 8px;
++`;
++const ParagraphButton = _styledComponents.default.button`
++  padding: 4px 8px;
++  cursor: pointer;
++`;
  
  function InfoBoxInput(props) {
    const {
-@@ -37,7 +44,9 @@ function InfoBoxInput(props) {
+@@ -37,32 +94,139 @@ function InfoBoxInput(props) {
      title,
      rawContentStateForInfoBoxEditor,
      renderBasicEditor,
 -    decorators
 +    decorators,
 +    image: initialImage,
++    paragraphs: initialParagraphs,
 +    ImageSelector = _imageSelector.ImageSelector
    } = props;
-   const rawContentState = rawContentStateForInfoBoxEditor || {
+-  const rawContentState = rawContentStateForInfoBoxEditor || {
++  const emptyRaw = {
      blocks: [],
-@@ -49,11 +58,20 @@ function InfoBoxInput(props) {
-     editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(rawContentState), decorators)
+     entityMap: {}
    };
-   const [inputValue, setInputValue] = (0, _react.useState)(initialInputValue);
-+  const [imageData, setImageData] = (0, _react.useState)(initialImage || null);
+-  const initialInputValue = {
+-    title: title || '',
+-    // create an `editorState` from raw content state object
+-    editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(rawContentState), decorators)
++
++  const createParagraphStateFromRaw = (raw, image, caption) => {
++    const safeRaw = raw || emptyRaw;
++    const contentState = (0, _draftJs.convertFromRaw)(safeRaw);
++    return {
++      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
++      editorState: _draftJs.EditorState.createWithContent(contentState, decorators),
++      image: image || null,
++      caption: caption || ''
++    };
+   };
+-  const [inputValue, setInputValue] = (0, _react.useState)(initialInputValue);
++
++  let derivedParagraphs = [];
++  if (Array.isArray(initialParagraphs) && initialParagraphs.length > 0) {
++    derivedParagraphs = initialParagraphs.map(p => createParagraphStateFromRaw(p.rawContentState, p.image, p.caption));
++  } else {
++    const legacyRaw = rawContentStateForInfoBoxEditor || emptyRaw;
++    derivedParagraphs = [createParagraphStateFromRaw(legacyRaw, initialImage, '')];
++  }
++
++  const [inputValue, setInputValue] = (0, _react.useState)({
++    title: title || '',
++    paragraphs: derivedParagraphs
++  });
 +  const [toShowImageSelector, setToShowImageSelector] = (0, _react.useState)(false);
++  const [activeParagraphIdForImage, setActiveParagraphIdForImage] = (0, _react.useState)(null);
  
    const clearInputValue = () => {
-     setInputValue(initialInputValue);
-+    setImageData(null);
+-    setInputValue(initialInputValue);
++    setInputValue({
++      title: title || '',
++      paragraphs: derivedParagraphs
++    });
++    setToShowImageSelector(false);
++    setActiveParagraphIdForImage(null);
    };
  
+-  const basicEditorJsx = renderBasicEditor({
+-    editorState: inputValue.editorStateOfBasicEditor,
+-    onChange: editorStateOfBasicEditor => {
 +  (0, _react.useEffect)(() => {
 +    if (isOpen) {
-+      setInputValue(initialInputValue);
-+      setImageData(initialImage || null);
-+    }
-+  }, [isOpen]);
-   const basicEditorJsx = renderBasicEditor({
-     editorState: inputValue.editorStateOfBasicEditor,
-     onChange: editorStateOfBasicEditor => {
-@@ -63,6 +81,37 @@ function InfoBoxInput(props) {
+       setInputValue({
+-        title: inputValue.title,
+-        editorStateOfBasicEditor
++        title: title || '',
++        paragraphs: derivedParagraphs
        });
++      setToShowImageSelector(false);
++      setActiveParagraphIdForImage(null);
      }
-   });
+-  });
++  }, [isOpen]);
 +
 +  const onImageSelectorChange = (selected, align, delay) => {
-+    // ImageSelector 的 onChange 會在以下情況被調用：
-+    // 1. 用戶點擊 Confirm 並選擇了圖片：selected 包含選中的圖片
-+    // 2. 用戶點擊 Cancel：selected 為空陣列 []
-+    // 3. 用戶點擊 Confirm 但沒有選擇任何圖片：selected 為空陣列 []
-+    // 我們只在用戶明確選擇了圖片時才更新 imageData
-+    if (selected.length > 0) {
++    if (selected.length > 0 && activeParagraphIdForImage) {
 +      const selectedImage = selected[0];
-+      setImageData({
-+        id: selectedImage.image.id,
-+        name: selectedImage.image.name || '',
-+        resized: selectedImage.image.resized || null,
-+        imageFile: selectedImage.image.imageFile || null,
-+        caption: selectedImage.desc || ''
++      setInputValue(prev => {
++        const paragraphs = prev.paragraphs.map(p => {
++          if (p.id !== activeParagraphIdForImage) return p;
++          return Object.assign({}, p, {
++            image: {
++              id: selectedImage.image.id,
++              name: selectedImage.image.name || '',
++              resized: selectedImage.image.resized || null,
++              imageFile: selectedImage.image.imageFile || null
++            },
++            caption: selectedImage.desc || ''
++          });
++        });
++        return Object.assign({}, prev, {
++          paragraphs
++        });
 +      });
 +    }
-+    // 關閉選擇器，但不清除已選擇的圖片（除非用戶明確選擇了新的圖片）
 +    setToShowImageSelector(false);
++    setActiveParagraphIdForImage(null);
 +  };
 +
-+  const getImagePreviewSrc = () => {
-+    if (!imageData) return '';
-+    if (imageData.resized) {
-+      return imageData.resized.w800 || imageData.resized.original || '';
-+    }
-+    if (imageData.imageFile && imageData.imageFile.url) {
-+      return imageData.imageFile.url;
-+    }
-+    return '';
++  const updateParagraphEditorState = (id, editorState) => {
++    setInputValue(prev => {
++      const paragraphs = prev.paragraphs.map(p => p.id === id ? Object.assign({}, p, {
++        editorState
++      }) : p);
++      return Object.assign({}, prev, {
++        paragraphs
++      });
++    });
 +  };
++
++  const updateParagraphCaption = (id, caption) => {
++    setInputValue(prev => {
++      const paragraphs = prev.paragraphs.map(p => p.id === id ? Object.assign({}, p, {
++        caption
++      }) : p);
++      return Object.assign({}, prev, {
++        paragraphs
++      });
++    });
++  };
++
++  const addParagraph = () => {
++    const newParagraph = createParagraphStateFromRaw(emptyRaw, null, '');
++    setInputValue(prev => Object.assign({}, prev, {
++      paragraphs: [...prev.paragraphs, newParagraph]
++    }));
++  };
++
++  const removeParagraph = id => {
++    setInputValue(prev => {
++      if (prev.paragraphs.length <= 1) {
++        return prev;
++      }
++      return Object.assign({}, prev, {
++        paragraphs: prev.paragraphs.filter(p => p.id !== id)
++      });
++    });
++  };
++
++  const buildParagraphsPayload = () => {
++    return inputValue.paragraphs.map(p => {
++      const raw = (0, _draftJs.convertToRaw)(p.editorState.getCurrentContent());
++      return {
++        rawContentState: raw,
++        body: _draftConverter.default.convertToHtml(raw),
++        image: p.image || null,
++        caption: p.caption || ''
++      };
++    });
++  };
++
    return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
      isOpen: isOpen
    }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
-@@ -81,7 +130,8 @@ function InfoBoxInput(props) {
+@@ -80,22 +244,117 @@ function InfoBoxInput(props) {
+         action: () => {
            onChange({
              title: inputValue.title,
-             // convert `contentState` of the `editorState` into raw content state object
+-            // convert `contentState` of the `editorState` into raw content state object
 -            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent())
-+            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent()),
-+            image: imageData
++            paragraphs: buildParagraphsPayload()
            });
            clearInputValue();
          }
-@@ -95,6 +145,63 @@ function InfoBoxInput(props) {
+       }
+     }
+   }, /*#__PURE__*/_react.default.createElement(TitleInput, {
+-    onChange: e => setInputValue({
+-      title: e.target.value,
+-      editorStateOfBasicEditor: inputValue.editorStateOfBasicEditor
+-    }),
++    onChange: e => setInputValue(prev => Object.assign({}, prev, {
++      title: e.target.value
++    })),
      type: "text",
      placeholder: "Title",
      value: inputValue.title
-+  }), /*#__PURE__*/_react.default.createElement(Label, null, "圖片"), /*#__PURE__*/_react.default.createElement("div", {
+-  }), basicEditorJsx));
++  }), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(Label, null, "\u6BB5\u843D"), inputValue.paragraphs.map((p, index) => {
++    const paragraphImage = p.image;
++
++    const getImagePreviewSrc = () => {
++      if (!paragraphImage) return '';
++      if (paragraphImage.resized) {
++        return paragraphImage.resized.w800 || paragraphImage.resized.original || '';
++      }
++      if (paragraphImage.imageFile && paragraphImage.imageFile.url) {
++        return paragraphImage.imageFile.url;
++      }
++      return '';
++    };
++
++    // #region agent log
++    fetch('http://127.0.0.1:7244/ingest/31db121b-62a7-49e9-866f-f390a8002c1d', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify({
++        id: `log_${Date.now()}_infoboxParagraph`,
++        runId: 'pre-fix',
++        hypothesisId: 'H1',
++        location: 'draft-js/buttons/info-box.js:paragraph',
++        message: 'renderBasicEditor for InfoBox paragraph',
++        data: {
++          disabledButtons: disabledButtonsOnInfoBoxParagraphEditor,
++          disabledLength: disabledButtonsOnInfoBoxParagraphEditor.length
++        },
++        timestamp: Date.now()
++      })
++    }).catch(() => {});
++    // #endregion agent log
++
++    return /*#__PURE__*/_react.default.createElement(ParagraphWrapper, {
++      key: p.id
++    }, /*#__PURE__*/_react.default.createElement(ParagraphHeader, null, /*#__PURE__*/_react.default.createElement("span", null, `\u6BB5\u843D ${index + 1}`), /*#__PURE__*/_react.default.createElement(ParagraphActions, null, /*#__PURE__*/_react.default.createElement(ParagraphButton, {
++      type: "button",
++      onClick: () => {
++        setActiveParagraphIdForImage(p.id);
++        setToShowImageSelector(true);
++      }
++    }, paragraphImage ? '\u4FEE\u6539\u5716\u7247' : '\u65B0\u589E\u5716\u7247'), /*#__PURE__*/_react.default.createElement(ParagraphButton, {
++      type: "button",
++      onClick: () => removeParagraph(p.id)
++    }, "\u522A\u9664\u6BB5\u843D"))), paragraphImage && /*#__PURE__*/_react.default.createElement("div", {
++      style: {
++        marginBottom: '10px'
++      }
++    }, /*#__PURE__*/_react.default.createElement("div", {
++      style: {
++        marginBottom: '10px',
++        padding: '10px',
++        border: '1px solid #e1e5e9',
++        borderRadius: '4px'
++      }
++    }, getImagePreviewSrc() && /*#__PURE__*/_react.default.createElement("div", {
++      style: {
++        marginBottom: '10px',
++        textAlign: 'center'
++      }
++    }, /*#__PURE__*/_react.default.createElement("img", {
++      src: getImagePreviewSrc(),
++      alt: paragraphImage.name || '',
++      style: {
++        maxWidth: '100%',
++        height: 'auto',
++        maxHeight: '200px',
++        borderRadius: '4px'
++      }
++    })))), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
++      onChange: e => updateParagraphCaption(p.id, e.target.value),
++      type: "text",
++      placeholder: "\u5716\u8AAA\uFF08\u9078\u586B\uFF09",
++      value: p.caption || ''
++    }), /*#__PURE__*/_react.default.createElement("div", {
++      style: {
++        marginTop: '8px'
++      }
++    }, renderBasicEditor({
++      editorState: p.editorState,
++      onChange: editorStateOfBasicEditor => {
++        updateParagraphEditorState(p.id, editorStateOfBasicEditor);
++      },
++      disabledButtons: disabledButtonsOnInfoBoxParagraphEditor,
++      compact: true
++    })));
++  })), /*#__PURE__*/_react.default.createElement("div", {
 +    style: {
-+      marginBottom: '10px'
++      marginTop: '12px'
 +    }
-+  }, imageData && /*#__PURE__*/_react.default.createElement("div", {
-+    style: {
-+      marginBottom: '10px',
-+      padding: '10px',
-+      border: '1px solid #e1e5e9',
-+      borderRadius: '4px'
-+    }
-+  }, /*#__PURE__*/_react.default.createElement("div", {
-+    style: {
-+      display: 'flex',
-+      justifyContent: 'space-between',
-+      alignItems: 'center',
-+      marginBottom: '10px'
-+    }
-+  }, /*#__PURE__*/_react.default.createElement("span", null, imageData.name || "已選擇圖片"), /*#__PURE__*/_react.default.createElement("button", {
++  }, /*#__PURE__*/_react.default.createElement(ParagraphButton, {
 +    type: "button",
-+    onClick: () => setImageData(null),
-+    style: {
-+      padding: '4px 8px',
-+      cursor: 'pointer'
-+    }
-+  }, "刪除")), getImagePreviewSrc() && /*#__PURE__*/_react.default.createElement("div", {
-+    style: {
-+      marginBottom: '10px',
-+      textAlign: 'center'
-+    }
-+  }, /*#__PURE__*/_react.default.createElement("img", {
-+    src: getImagePreviewSrc(),
-+    alt: imageData.name || '',
-+    style: {
-+      maxWidth: '100%',
-+      height: 'auto',
-+      maxHeight: '200px',
-+      borderRadius: '4px'
-+    }
-+  })), imageData.caption && /*#__PURE__*/_react.default.createElement("div", {
-+    style: {
-+      marginTop: '8px',
-+      fontSize: '14px',
-+      color: '#666',
-+      textAlign: 'center'
-+    }
-+  }, imageData.caption)), /*#__PURE__*/_react.default.createElement("button", {
-+    type: "button",
-+    onClick: () => setToShowImageSelector(true),
-+    style: {
-+      padding: '8px 16px',
-+      cursor: 'pointer'
-+    }
-+  }, imageData ? "修改圖片" : "新增圖片")), toShowImageSelector && /*#__PURE__*/_react.default.createElement(ImageSelector, {
++    onClick: addParagraph
++  }, "\u65B0\u589E\u6BB5\u843D")), toShowImageSelector && /*#__PURE__*/_react.default.createElement(ImageSelector, {
 +    onChange: onImageSelectorChange,
 +    enableCaption: true,
 +    enableMultiSelect: false
-   }), basicEditorJsx));
++  })));
  }
  
-@@ -109,14 +216,16 @@ function InfoBoxButton(props) {
+ function InfoBoxButton(props) {
+@@ -109,15 +368,21 @@ function InfoBoxButton(props) {
  
    const onChange = ({
      title,
 -    rawContentState
-+    rawContentState,
-+    image
++    paragraphs
    }) => {
      const contentState = editorState.getCurrentContent(); // create an InfoBox entity
  
-     const contentStateWithEntity = contentState.createEntity('INFOBOX', 'IMMUTABLE', {
+-    const contentStateWithEntity = contentState.createEntity('INFOBOX', 'IMMUTABLE', {
++    const normalizedParagraphs = Array.isArray(paragraphs) ? paragraphs : [];
++    const firstParagraph = normalizedParagraphs[0] || null;
++    const entityData = {
        title,
-       rawContentState,
+-      rawContentState,
 -      body: _draftConverter.default.convertToHtml(rawContentState)
-+      body: _draftConverter.default.convertToHtml(rawContentState),
-+      image: image || null
-     });
+-    });
++      paragraphs: normalizedParagraphs,
++      rawContentState: firstParagraph ? firstParagraph.rawContentState : undefined,
++      body: firstParagraph ? firstParagraph.body : '',
++      image: firstParagraph ? firstParagraph.image || null : null
++    };
++
++    const contentStateWithEntity = contentState.createEntity('INFOBOX', 'IMMUTABLE', entityData);
      const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
  
+     const newEditorState = _draftJs.EditorState.set(editorState, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
 index a8aafa5..511efc6 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
@@ -724,6 +917,56 @@ index b78fa88..c82871b 100644
        images: selected.map(ele => {
          return { ...(ele === null || ele === void 0 ? void 0 : ele.image),
            desc: ele === null || ele === void 0 ? void 0 : ele.desc
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
+index e579193..3f70ab8 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
+@@ -58,14 +58,40 @@ const processor = {
+     switch (type && type.toUpperCase()) {
+       case _entities.default.INFOBOX.type:
+         {
+-          var _entity$data, _entity$data2;
++          var _entity$data, _entity$data2, _entity$data3;
+ 
+           // About INFOBOX atomic block entity data structure,
+           // see `../views/editor/info-box.tsx` for more information.
+-          content = [{
+-            title: entity === null || entity === void 0 ? void 0 : (_entity$data = entity.data) === null || _entity$data === void 0 ? void 0 : _entity$data.title,
+-            body: entity === null || entity === void 0 ? void 0 : (_entity$data2 = entity.data) === null || _entity$data2 === void 0 ? void 0 : _entity$data2.body
+-          }];
++          const paragraphs = (entity === null || entity === void 0 ? void 0 : (_entity$data = entity.data) === null || _entity$data === void 0 ? void 0 : _entity$data.paragraphs) || null;
++
++          if (Array.isArray(paragraphs) && paragraphs.length > 0) {
++            // 新結構：多段落
++            // 保持相容：仍提供 top-level body（合併所有段落的 body）
++            const mergedBody = paragraphs.map(p => p.body || '').filter(Boolean).join('<br/><br/>');
++            content = [{
++              title: entity === null || entity === void 0 ? void 0 : (_entity$data2 = entity.data) === null || _entity$data2 === void 0 ? void 0 : _entity$data2.title,
++              body: mergedBody,
++              paragraphs: paragraphs.map(p => ({
++                body: p.body,
++                image: p.image || null,
++                caption: p.caption || ''
++              }))
++            }];
++          } else {
++            // fallback to legacy single body/image
++            const legacyTitle = entity === null || entity === void 0 ? void 0 : (_entity$data3 = entity.data) === null || _entity$data3 === void 0 ? void 0 : _entity$data3.title;
++            const legacyBody = entity === null || entity === void 0 ? void 0 : entity.data.body;
++            const legacyImage = (entity === null || entity === void 0 ? void 0 : entity.data.image) || null;
++            content = [{
++              title: legacyTitle,
++              body: legacyBody,
++              paragraphs: [{
++                body: legacyBody,
++                image: legacyImage,
++                caption: ''
++              }]
++            }];
++          }
+           break;
+         }
+ 
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
 index ac7ea11..5f6a316 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
@@ -900,41 +1143,51 @@ index d74d67e..0431ff9 100644
  }
 \ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
-index ba09096..133addf 100644
+index ba09096..fbdecee 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/info-box-block.js
-@@ -44,12 +44,14 @@ function InfoBoxEditorBlock(props) {
+@@ -44,21 +44,31 @@ function InfoBoxEditorBlock(props) {
    const entity = contentState.getEntity(entityKey);
    const {
      title,
 -    rawContentState
 +    rawContentState,
-+    image
++    image,
++    paragraphs
    } = entity.getData();
  
    const onChange = ({
      title: newTitle,
 -    rawContentState: newRawContentState
-+    rawContentState: newRawContentState,
-+    image: newImage
++    paragraphs: newParagraphs
    }) => {
++    const normalizedParagraphs = Array.isArray(newParagraphs) ? newParagraphs : [];
++    const firstParagraph = normalizedParagraphs[0] || null;
++    const nextRaw = firstParagraph ? firstParagraph.rawContentState : rawContentState;
++    const nextBody = firstParagraph ? firstParagraph.body : _draftConverter.default.convertToHtml(nextRaw);
++    const nextImage = firstParagraph ? firstParagraph.image || null : image || null;
++
      // close `InfoBoxInput`
      setToShowInput(false);
-@@ -58,7 +60,8 @@ function InfoBoxEditorBlock(props) {
+     onEditFinish({
+       entityKey,
        entityData: {
          title: newTitle,
-         body: _draftConverter.default.convertToHtml(newRawContentState),
+-        body: _draftConverter.default.convertToHtml(newRawContentState),
 -        rawContentState: newRawContentState
-+        rawContentState: newRawContentState,
-+        image: newImage || null
++        body: nextBody,
++        rawContentState: nextRaw,
++        image: nextImage,
++        paragraphs: normalizedParagraphs
        }
      });
    };
-@@ -67,6 +70,7 @@ function InfoBoxEditorBlock(props) {
+@@ -67,6 +77,8 @@ function InfoBoxEditorBlock(props) {
      renderBasicEditor: renderBasicEditor,
      title: title,
      rawContentStateForInfoBoxEditor: rawContentState,
 +    image: image,
++    paragraphs: paragraphs,
      onChange: onChange,
      onCancel: () => {
        onEditFinish({});
@@ -1089,7 +1342,7 @@ index f4a4c88..ce9b88a 100644
      });
      return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..83751a6 100644
+index ceebcbb..83a1099 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 @@ -35,28 +35,26 @@ var _table = require("../../draft-js/buttons/table");
@@ -1129,7 +1382,7 @@ index ceebcbb..83751a6 100644
  var _imageSelector = require("./selector/image-selector");
  
  var _videoSelector = require("./selector/video-selector");
-@@ -100,17 +98,14 @@ const buttonNames = {
+@@ -100,17 +98,42 @@ const buttonNames = {
    slideshow: 'slideshow',
    table: 'table',
    textAlign: 'text-align',
@@ -1148,10 +1401,38 @@ index ceebcbb..83751a6 100644
  exports.buttonNames = buttonNames;
 -const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.colorBox, buttonNames.backgroundColor, buttonNames.backgroundImage, buttonNames.backgroundVideo, buttonNames.relatedPost, buttonNames.sideIndex, buttonNames.video, buttonNames.audio];
 +const disabledButtonsOnBasicEditor = [buttonNames.annotation, buttonNames.divider, buttonNames.embed, buttonNames.image, buttonNames.infoBox, buttonNames.slideshow, buttonNames.table, buttonNames.textAlign, buttonNames.sideIndex, buttonNames.video, buttonNames.audio, buttonNames.footnote];
++// InfoBox 段落專用：只保留 B/I/Link/List/FontColor，其餘全部禁用
++const disabledButtonsOnInfoBoxParagraphEditor = [
++  // block: 只允許 UL / OL，禁用其他 block 樣式
++  buttonNames.h2,
++  buttonNames.h3,
++  buttonNames.h4,
++  buttonNames.h5,
++  buttonNames.blockquote,
++  buttonNames.codeBlock,
++  // inline: 只留 bold / italic，其餘禁用
++  buttonNames.sup,
++  buttonNames.sub,
++  buttonNames.underline,
++  buttonNames.code,
++  // custom: 只留 link / fontColor / list，本身沒有獨立 buttonNames.ul/ol，所以使用 block 控制
++  buttonNames.annotation,
++  buttonNames.divider,
++  buttonNames.embed,
++  buttonNames.image,
++  buttonNames.infoBox,
++  buttonNames.slideshow,
++  buttonNames.table,
++  buttonNames.textAlign,
++  buttonNames.sideIndex,
++  buttonNames.video,
++  buttonNames.audio,
++  buttonNames.footnote
++];
  const buttonStyle = (0, _styledComponents.css)`
    border-radius: 6px;
    text-align: center;
-@@ -235,9 +230,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
+@@ -235,9 +258,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
  const CustomFontColorButton = (0, _styledComponents.default)(_fontColor.FontColorButton)`
    ${buttonStyle}
  `;
@@ -1161,7 +1442,7 @@ index ceebcbb..83751a6 100644
  const CustomButton = _styledComponents.default.div`
    ${buttonStyle}
  `;
-@@ -266,15 +258,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
+@@ -266,15 +286,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
  const CustomTableButton = createButtonWithoutProps(_table.TableButton);
  const CustomInfoBoxButton = createButtonWithoutProps(_infoBox.InfoBoxButton);
  const CustomDividerButton = createButtonWithoutProps(_divider.DividerButton);
@@ -1178,7 +1459,7 @@ index ceebcbb..83751a6 100644
  const DraftEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-root)*/
    background: #fff;
-@@ -324,14 +313,17 @@ const DraftEditorControls = _styledComponents.default.div`
+@@ -324,14 +341,17 @@ const DraftEditorControls = _styledComponents.default.div`
    padding-top: 1rem;
    width: 100%;
    background: rgb(255, 255, 255);
@@ -1196,7 +1477,7 @@ index ceebcbb..83751a6 100644
  `;
  const TextEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-editor)*/
-@@ -425,6 +417,7 @@ const EnlargeButtonWrapper = _styledComponents.default.div`
+@@ -425,6 +445,7 @@ const EnlargeButtonWrapper = _styledComponents.default.div`
    top: 0;
    right: 0;
    margin: 0;
@@ -1204,7 +1485,7 @@ index ceebcbb..83751a6 100644
  `;
  
  class RichTextEditor extends _react.default.Component {
-@@ -432,12 +425,21 @@ class RichTextEditor extends _react.default.Component {
+@@ -432,12 +453,21 @@ class RichTextEditor extends _react.default.Component {
      super(props);
      this.state = {
        isEnlarged: false,
@@ -1229,7 +1510,7 @@ index ceebcbb..83751a6 100644
          fontFamily: '"Inconsolata", "Menlo", "Consolas", monospace',
          fontSize: 16,
          padding: 2
-@@ -454,6 +456,20 @@ class RichTextEditor extends _react.default.Component {
+@@ -454,6 +484,20 @@ class RichTextEditor extends _react.default.Component {
    onChange = editorState => {
      this.props.onChange(editorState);
    };
@@ -1250,7 +1531,7 @@ index ceebcbb..83751a6 100644
    handleKeyCommand = (command, editorState) => {
      const newState = _draftJs.RichUtils.handleKeyCommand(editorState, command);
  
-@@ -532,10 +548,6 @@ class RichTextEditor extends _react.default.Component {
+@@ -532,10 +576,6 @@ class RichTextEditor extends _react.default.Component {
          styles['color'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_FONT_COLOR)[1];
        }
  
@@ -1261,7 +1542,7 @@ index ceebcbb..83751a6 100644
        return styles;
      }, {});
    };
-@@ -573,6 +585,7 @@ class RichTextEditor extends _react.default.Component {
+@@ -573,6 +613,7 @@ class RichTextEditor extends _react.default.Component {
        case 'header-two':
        case 'header-three':
        case 'header-four':
@@ -1269,7 +1550,7 @@ index ceebcbb..83751a6 100644
        case 'blockquote':
          result += 'public-DraftStyleDefault-' + block.getType();
          break;
-@@ -627,7 +640,8 @@ class RichTextEditor extends _react.default.Component {
+@@ -627,7 +668,8 @@ class RichTextEditor extends _react.default.Component {
  
  
          this.setState({
@@ -1279,7 +1560,7 @@ index ceebcbb..83751a6 100644
          });
        }; // `onEditStart` and `onEditFinish` will be passed
        // into custom block component.
-@@ -640,6 +654,42 @@ class RichTextEditor extends _react.default.Component {
+@@ -640,6 +682,42 @@ class RichTextEditor extends _react.default.Component {
            onEditStart,
            onEditFinish,
            getMainEditorReadOnly: () => this.state.readOnly,
@@ -1322,7 +1603,7 @@ index ceebcbb..83751a6 100644
            renderBasicEditor: propsOfBasicEditor => {
              return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
                disabledButtons: disabledButtonsOnBasicEditor
-@@ -653,9 +703,89 @@ class RichTextEditor extends _react.default.Component {
+@@ -653,9 +731,89 @@ class RichTextEditor extends _react.default.Component {
      }
    };
  
@@ -1413,7 +1694,7 @@ index ceebcbb..83751a6 100644
      } = this.props;
      let {
        editorState
-@@ -667,10 +797,36 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,18 +825,180 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -1450,8 +1731,30 @@ index ceebcbb..83751a6 100644
 +    const effectiveCustomStyle = isEditingTableCell ? this.getCustomStyle(effectiveEditorState.getCurrentInlineStyle()) : customStyle;
  
      const renderBasicEditor = propsOfBasicEditor => {
++      const disabledButtonsOverride = propsOfBasicEditor.disabledButtons;
++      const effectiveDisabledButtons = Array.isArray(disabledButtonsOverride) ? disabledButtonsOverride : disabledButtonsOnBasicEditor;
++      // #region agent log
++      fetch('http://127.0.0.1:7244/ingest/31db121b-62a7-49e9-866f-f390a8002c1d', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({
++          id: `log_${Date.now()}_renderBasicEditor`,
++          runId: 'pre-fix',
++          hypothesisId: 'H1',
++          location: 'readr/draft-editor.js:renderBasicEditor',
++          message: 'renderBasicEditor invocation',
++          data: {
++            hasOverride: Array.isArray(disabledButtonsOverride),
++            overrideLength: Array.isArray(disabledButtonsOverride) ? disabledButtonsOverride.length : 0,
++            effectiveLength: effectiveDisabledButtons.length
++          },
++          timestamp: Date.now()
++        })
++      }).catch(() => {});
++      // #endregion agent log
        return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
-@@ -678,7 +834,122 @@ class RichTextEditor extends _react.default.Component {
+-        disabledButtons: disabledButtonsOnBasicEditor
++        disabledButtons: effectiveDisabledButtons
        }));
      };
  
@@ -1575,7 +1878,7 @@ index ceebcbb..83751a6 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -694,7 +965,12 @@ class RichTextEditor extends _react.default.Component {
+@@ -694,31 +1014,46 @@ class RichTextEditor extends _react.default.Component {
        href: "https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css",
        rel: "stylesheet",
        type: "text/css"
@@ -1589,7 +1892,9 @@ index ceebcbb..83751a6 100644
        readOnly: readOnly,
        disabledButtons: disabledButtons,
        editorState: editorState,
-@@ -702,23 +978,31 @@ class RichTextEditor extends _react.default.Component {
+-      onToggle: this.toggleBlockType
++      onToggle: this.toggleBlockType,
++      compact: compact
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(InlineStyleControls, {
        readOnly: readOnly,
        disabledButtons: disabledButtons,
@@ -1598,7 +1903,8 @@ index ceebcbb..83751a6 100644
 -    })), /*#__PURE__*/_react.default.createElement(EnlargeButtonWrapper, null, /*#__PURE__*/_react.default.createElement(CustomEnlargeButton, {
 +      editorState: isEditingTableCell ? effectiveEditorState : editorState,
 +      onToggle: effectiveToggleInlineStyle,
-+      enabledInCellMode: isEditingTableCell ? ['BOLD', 'ITALIC'] : []
++      enabledInCellMode: isEditingTableCell ? ['BOLD', 'ITALIC'] : [],
++      compact: compact
 +    })), /*#__PURE__*/_react.default.createElement(EnlargeButtonWrapper, {
 +      compact: compact
 +    }, /*#__PURE__*/_react.default.createElement(CustomEnlargeButton, {
@@ -1633,7 +1939,7 @@ index ceebcbb..83751a6 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
-@@ -730,7 +1014,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +1065,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -1650,7 +1956,7 @@ index ceebcbb..83751a6 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -772,53 +1064,20 @@ class RichTextEditor extends _react.default.Component {
+@@ -772,53 +1115,20 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -1715,7 +2021,7 @@ index ceebcbb..83751a6 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
        isDisabled: disabledButtons.includes(buttonNames.sideIndex),
        readOnly: readOnly,
-@@ -845,9 +1104,10 @@ class RichTextEditor extends _react.default.Component {
+@@ -845,9 +1155,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
@@ -1727,7 +2033,7 @@ index ceebcbb..83751a6 100644
  }
  
  class StyleButton extends _react.default.Component {
-@@ -881,6 +1141,10 @@ const blockStyles = [{
+@@ -881,6 +1192,10 @@ const blockStyles = [{
    label: 'H4',
    style: 'header-four',
    icon: ''
@@ -1738,11 +2044,50 @@ index ceebcbb..83751a6 100644
  }, {
    label: 'Blockquote',
    style: 'blockquote',
-@@ -947,17 +1211,21 @@ const inlineStyles = [{
+@@ -904,20 +1219,27 @@ const BlockStyleControls = props => {
+     editorState,
+     disabledButtons,
+     onToggle,
+-    readOnly
++    readOnly,
++    compact = false
+   } = props;
+   const selection = editorState.getSelection();
+   const blockType = editorState.getCurrentContent().getBlockForKey(selection.getStartKey()).getType();
+-  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, blockStyles.map(type => /*#__PURE__*/_react.default.createElement(StyleButton, {
+-    isDisabled: disabledButtons.includes(type.style),
+-    key: type.label,
+-    active: type.style === blockType,
+-    label: type.label,
+-    onToggle: onToggle,
+-    style: type.style,
+-    icon: type.icon,
+-    readOnly: readOnly
+-  })));
++  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, blockStyles.map(type => {
++    // 在 compact 模式下，僅保留 UL / OL 兩顆按鈕
++    if (compact && type.style !== 'unordered-list-item' && type.style !== 'ordered-list-item') {
++      return null;
++    }
++    return /*#__PURE__*/_react.default.createElement(StyleButton, {
++      isDisabled: disabledButtons.includes(type.style),
++      key: type.label,
++      active: type.style === blockType,
++      label: type.label,
++      onToggle: onToggle,
++      style: type.style,
++      icon: type.icon,
++      readOnly: readOnly
++    });
++  }));
+ };
+ 
+ const inlineStyles = [{
+@@ -947,17 +1269,25 @@ const inlineStyles = [{
  }];
  
  const InlineStyleControls = props => {
-+  const { enabledInCellMode = [] } = props;
++  const { enabledInCellMode = [], compact = false } = props;
    const currentStyle = props.editorState.getCurrentInlineStyle();
 -  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, inlineStyles.map(type => /*#__PURE__*/_react.default.createElement(StyleButton, {
 -    isDisabled: props.disabledButtons.includes(type.style.toLowerCase()),
@@ -1756,6 +2101,10 @@ index ceebcbb..83751a6 100644
 -  })));
 +  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, inlineStyles.map(type => {
 +    const isCellEnabled = enabledInCellMode.includes(type.style);
++    // 在 compact 模式下，僅保留粗體、斜體、底線
++    if (compact && type.style !== 'BOLD' && type.style !== 'ITALIC' && type.style !== 'UNDERLINE') {
++      return null;
++    }
 +    return /*#__PURE__*/_react.default.createElement(StyleButton, {
 +      isDisabled: props.disabledButtons.includes(type.style.toLowerCase()),
 +      key: type.label,
