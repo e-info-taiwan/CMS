@@ -65,6 +65,7 @@ const listConfigurations = list({
       ui: {
         hideCreate: true,
         linkToItem: false,
+        views: './lists/views/sorted-relationship',
       },
     }),
   },

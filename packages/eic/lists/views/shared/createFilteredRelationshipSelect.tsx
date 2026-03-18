@@ -11,6 +11,7 @@ import {
   useContext,
   useRef,
 } from 'react'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { jsx } from '@keystone-ui/core'
 import { MultiSelect, Select, selectComponents } from '@keystone-ui/fields'
 import { validate as validateUUID } from 'uuid'
@@ -160,9 +161,17 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
         }
       | {
           kind: 'one'
-          value: { label: string; id: string; data?: Record<string, any> } | null
+          value: {
+            label: string
+            id: string
+            data?: Record<string, any>
+          } | null
           onChange(
-            value: { label: string; id: string; data: Record<string, any> } | null
+            value: {
+              label: string
+              id: string
+              data: Record<string, any>
+            } | null
           ): void
         }
     extraSelection?: string
@@ -174,13 +183,17 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
       useState<null | HTMLElement>(null)
 
     // 使用 state 來追蹤當前的源欄位值
-    const [currentSourceIds, setCurrentSourceIds] = useState<string[]>(sourceFieldIds)
+    const [currentSourceIds, setCurrentSourceIds] =
+      useState<string[]>(sourceFieldIds)
 
     // 訂閱源欄位的變化
     useEffect(() => {
-      const unsubscribe = fieldFilterManager.subscribe(config.sourceField, (ids) => {
-        setCurrentSourceIds(ids)
-      })
+      const unsubscribe = fieldFilterManager.subscribe(
+        config.sourceField,
+        (ids) => {
+          setCurrentSourceIds(ids)
+        }
+      )
       return unsubscribe
     }, [])
 
@@ -221,7 +234,7 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
     // 建立完整的 where 條件，包括源欄位過濾
     const where = useMemo(() => {
       const conditions: any = {}
-      
+
       // 如果有搜尋條件，加入搜尋過濾
       if (searchFilter.OR && searchFilter.OR.length > 0) {
         Object.assign(conditions, searchFilter)
@@ -285,11 +298,16 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
 
     const options =
       data?.items?.map(
-        ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => ({
-          value,
-          label: label || value,
-          data,
-        })
+        ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => {
+          const baseLabel = label || value
+          const displayLabel =
+            list.key === 'Post' ? `${baseLabel}(${value})` : baseLabel
+          return {
+            value,
+            label: displayLabel,
+            data,
+          }
+        }
       ) || []
 
     const loadingIndicatorContextVal = useMemo(
@@ -390,8 +408,11 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
               state.value
                 ? {
                     value: state.value.id,
-                    label: state.value.label,
-                    // @ts-ignore
+                    label:
+                      list.key === 'Post'
+                        ? `${state.value.label}(${state.value.id})`
+                        : state.value.label,
+                    // @ts-ignore: value.data comes from Keystone runtime shape
                     data: state.value.data,
                   }
                 : null
@@ -427,7 +448,8 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
           portalMenu={portalMenu}
           value={state.value.map((value) => ({
             value: value.id,
-            label: value.label,
+            label:
+              list.key === 'Post' ? `${value.label}(${value.id})` : value.label,
             data: value.data,
           }))}
           options={options}
@@ -465,4 +487,3 @@ const relationshipSelectComponents: Partial<typeof selectComponents> = {
     )
   },
 }
-

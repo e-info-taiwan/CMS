@@ -166,13 +166,13 @@ export const RelationshipSelect = ({
   const [loadingIndicatorElement, setLoadingIndicatorElement] =
     useState<null | HTMLElement>(null)
 
-  // 查詢當前 Post 的 sections（只在初始化時）
+  // 查詢當前 Post 的 section（只在初始化時）
   const { data: postData } = useQuery(
     gql`
-      query GetPostSections($id: ID!) {
+      query GetPostSection($id: ID!) {
         post(where: { id: $id }) {
           id
-          sections {
+          section {
             id
           }
         }
@@ -186,17 +186,17 @@ export const RelationshipSelect = ({
 
   // 使用 state 來追蹤當前的 sections
   const [currentSections, setCurrentSections] = useState<string[]>(
-    postData?.post?.sections?.map((s: any) => s.id) || []
+    postData?.post?.section ? [postData.post.section.id] : []
   )
 
-  // 當從數據庫查詢到 sections 時，更新 state 並通知 manager
+  // 當從數據庫查詢到 section 時，更新 state 並通知 manager
   useEffect(() => {
-    if (postData?.post?.sections) {
-      const sectionIds = postData.post.sections.map((s: any) => s.id)
+    if (postData?.post?.section) {
+      const sectionIds = [postData.post.section.id]
       setCurrentSections(sectionIds)
       sectionsManager.updateSections(sectionIds)
     }
-  }, [postData?.post?.sections])
+  }, [postData?.post?.section])
 
   // 訂閱 sections 的變化（來自用戶在表單中的選擇）
   useEffect(() => {
@@ -236,19 +236,17 @@ export const RelationshipSelect = ({
   // 建立完整的 where 條件，包括 sections 過濾
   const where = useMemo(() => {
     const conditions: any = {}
-    
+
     // 如果有搜尋條件，加入搜尋過濾
     if (searchFilter.OR && searchFilter.OR.length > 0) {
       Object.assign(conditions, searchFilter)
     }
 
-    // 如果有選中的 sections，只顯示屬於這些 sections 的 categories
+    // 如果有選中的 section，只顯示屬於該 section 的 categories
     if (selectedSections.length > 0) {
-      conditions.sections = {
-        some: {
-          id: {
-            in: selectedSections,
-          },
+      conditions.section = {
+        id: {
+          in: selectedSections,
         },
       }
     }
@@ -300,11 +298,16 @@ export const RelationshipSelect = ({
 
   const options =
     data?.items?.map(
-      ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => ({
-        value,
-        label: label || value,
-        data,
-      })
+      ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => {
+        const baseLabel = label || value
+        const displayLabel =
+          list.key === 'Post' ? `${baseLabel}(${value})` : baseLabel
+        return {
+          value,
+          label: displayLabel,
+          data,
+        }
+      }
     ) || []
 
   const loadingIndicatorContextVal = useMemo(
@@ -386,7 +389,7 @@ export const RelationshipSelect = ({
   if (selectedSections.length === 0) {
     return (
       <div style={{ padding: '8px', color: '#666', fontStyle: 'italic' }}>
-        請先選擇大分類（Sections），才能選擇小分類（Categories）
+        請先選擇大分類，才能選擇中分類
       </div>
     )
   }
@@ -404,7 +407,10 @@ export const RelationshipSelect = ({
             state.value
               ? {
                   value: state.value.id,
-                  label: state.value.label,
+                  label:
+                    list.key === 'Post'
+                      ? `${state.value.label}(${state.value.id})`
+                      : state.value.label,
                   // eslint-disable-next-line
                   // @ts-ignore
                   data: state.value.data,
@@ -442,7 +448,8 @@ export const RelationshipSelect = ({
         portalMenu={portalMenu}
         value={state.value.map((value) => ({
           value: value.id,
-          label: value.label,
+          label:
+            list.key === 'Post' ? `${value.label}(${value.id})` : value.label,
           data: value.data,
         }))}
         options={options}
@@ -479,4 +486,3 @@ const relationshipSelectComponents: Partial<typeof selectComponents> = {
     )
   },
 }
-

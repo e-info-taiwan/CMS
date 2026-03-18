@@ -240,11 +240,16 @@ export const RelationshipSelect = ({
 
   const options =
     data?.items?.map(
-      ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => ({
-        value,
-        label: label || value,
-        data,
-      })
+      ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => {
+        const baseLabel = label || value
+        const displayLabel =
+          list.key === 'Post' ? `${baseLabel}(${value})` : baseLabel
+        return {
+          value,
+          label: displayLabel,
+          data,
+        }
+      }
     ) || []
 
   const loadingIndicatorContextVal = useMemo(
@@ -343,7 +348,10 @@ export const RelationshipSelect = ({
             state.value
               ? {
                   value: state.value.id,
-                  label: state.value.label,
+                  label:
+                    list.key === 'Post'
+                      ? `${state.value.label}(${state.value.id})`
+                      : state.value.label,
                   // eslint-disable-next-line
                   // @ts-ignore
                   data: state.value.data,
@@ -382,7 +390,8 @@ export const RelationshipSelect = ({
         portalMenu={portalMenu}
         value={state.value.map((value) => ({
           value: value.id,
-          label: value.label,
+          label:
+            list.key === 'Post' ? `${value.label}(${value.id})` : value.label,
           data: value.data,
         }))}
         options={options}

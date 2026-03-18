@@ -14,6 +14,9 @@ const listConfigurations = list({
       ref: 'Post',
       label: '精選文章',
       many: false,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     topics: relationship({
       ref: 'Topic',

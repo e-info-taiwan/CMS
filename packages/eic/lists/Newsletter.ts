@@ -738,11 +738,17 @@ const listConfigurations = list({
       ref: 'Post',
       many: true,
       label: '焦點話題',
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     relatedPosts: relationship({
       ref: 'Post',
       many: true,
       label: '相關文章',
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     ads: relationship({
       ref: 'Ad',
@@ -773,6 +779,9 @@ const listConfigurations = list({
       ref: 'Post',
       many: false,
       label: '讀者回應文章',
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     originalUrl: text({
       label: '原始網址',
