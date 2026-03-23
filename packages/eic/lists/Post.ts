@@ -578,13 +578,13 @@ const listConfigurations = list({
         Object.prototype.hasOwnProperty.call(resolvedData, 'citations') &&
         citations === null
       ) {
-        resolvedData.citations = Prisma.JsonNull
+        resolvedData.citations = Prisma.DbNull
       }
       if (
         Object.prototype.hasOwnProperty.call(resolvedData, 'content') &&
         content === null
       ) {
-        resolvedData.content = Prisma.JsonNull
+        resolvedData.content = Prisma.DbNull
       }
       if (citations) {
         resolvedData.citationsApiData = customFields.draftConverter
