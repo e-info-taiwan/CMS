@@ -4,6 +4,7 @@ import { customFields, utils } from '@mirrormedia/lilith-core'
 import { buttonNames } from '@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor'
 import { graphql, list } from '@keystone-6/core'
 import type { KeystoneContext } from '@keystone-6/core/types'
+import { Prisma } from '@prisma/client'
 import {
   checkbox,
   multiselect,
@@ -573,6 +574,18 @@ const listConfigurations = list({
   hooks: {
     resolveInput: async ({ resolvedData, item }) => {
       const { content, citations } = resolvedData
+      if (
+        Object.prototype.hasOwnProperty.call(resolvedData, 'citations') &&
+        citations === null
+      ) {
+        resolvedData.citations = Prisma.JsonNull
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(resolvedData, 'content') &&
+        content === null
+      ) {
+        resolvedData.content = Prisma.JsonNull
+      }
       if (citations) {
         resolvedData.citationsApiData = customFields.draftConverter
           .convertToApiData(citations)

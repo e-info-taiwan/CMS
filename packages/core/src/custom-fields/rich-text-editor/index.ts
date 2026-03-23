@@ -43,8 +43,8 @@ export const richTextEditor =
     }
 
     // handle null value, ref: https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types/working-with-json-fields#using-null-values
-    const resolve = (val: JSONValue | undefined) =>
-      val === null && meta.provider === 'postgresql' ? 'DbNull' : val
+    // Keep core package Prisma-agnostic; JsonNull/DbNull mapping is handled at app layer.
+    const resolve = (val: JSONValue | undefined) => val
 
     return jsonFieldTypePolyfilledForSQLite(
       meta.provider,
@@ -53,7 +53,7 @@ export const richTextEditor =
         input: {
           create: {
             arg: graphql.arg({ type: graphql.JSON }),
-            resolve(val) {
+            resolve(val: JSONValue | undefined) {
               return resolve(val === undefined ? defaultValue : val)
             },
           },
