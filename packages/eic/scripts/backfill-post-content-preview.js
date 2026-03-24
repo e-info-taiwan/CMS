@@ -2,7 +2,7 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { PrismaClient } = require('@prisma/client')
 
-const CONTENT_PREVIEW_LENGTH = 100
+const CONTENT_PREVIEW_LENGTH = 400
 const BATCH_SIZE = 200
 
 function extractContentPreview(

@@ -66,7 +66,7 @@ type MaybeItemFunction<T extends FieldMode> =
   | ((args: ListItemContext) => Promise<T>)
 
 const LOCK_DURATION_MINUTES = 30
-const CONTENT_PREVIEW_LENGTH = 200
+const CONTENT_PREVIEW_LENGTH = 400
 
 const extractContentPreview = (
   contentApiData: unknown,
