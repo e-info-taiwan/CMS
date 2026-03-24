@@ -5,6 +5,10 @@ const { PrismaClient } = require('@prisma/client')
 const CONTENT_PREVIEW_LENGTH = 400
 const BATCH_SIZE = 200
 
+/**
+ * @param {unknown} contentApiData
+ * @param {number} [length]
+ */
 function extractContentPreview(
   contentApiData,
   length = CONTENT_PREVIEW_LENGTH
@@ -54,19 +58,22 @@ async function main() {
 
   try {
     while (hasMore) {
-      const posts = await prisma.post.findMany({
-        where: {
-          OR: [{ contentPreview: null }, { contentPreview: '' }],
-        },
-        select: {
-          id: true,
-          contentApiData: true,
-          contentPreview: true,
-        },
-        orderBy: { id: 'asc' },
-        take: BATCH_SIZE,
-        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      })
+      const posts =
+        /** @type {Array<{id: number, contentApiData: unknown, contentPreview: string | null}>} */ (
+          await prisma.post.findMany({
+            where: {
+              OR: [{ contentPreview: null }, { contentPreview: '' }],
+            },
+            select: {
+              id: true,
+              contentApiData: true,
+              contentPreview: true,
+            },
+            orderBy: { id: 'asc' },
+            take: BATCH_SIZE,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          })
+        )
 
       if (posts.length === 0) {
         hasMore = false
