@@ -19,6 +19,7 @@ import envVar from '../environment-variables'
 import { aiPollHelperService } from '../services/ai-poll-helper'
 
 const CITATIONS_ENABLED_BUTTONS = ['unordered-list-item', 'link']
+const BRIEF_ENABLED_BUTTONS = ['bold', 'italic', 'link', 'font-color']
 const allReadrButtons: string[] = Object.values(buttonNames)
 import {
   invalidateByRoutes,
@@ -396,14 +397,13 @@ const listConfigurations = list({
       ref: 'Photo',
       label: '首圖',
     }),
-    heroCaption: text({
-      label: '首圖圖說',
-    }),
-    brief: text({
+    brief: customFields.richTextEditor({
       label: '前言',
-      ui: {
-        displayMode: 'textarea',
-      },
+      website: 'readr',
+      compact: true,
+      disabledButtons: allReadrButtons.filter(
+        (b: string) => !BRIEF_ENABLED_BUTTONS.includes(b)
+      ),
     }),
     briefApiData: json({
       label: '資料庫使用',
@@ -573,7 +573,13 @@ const listConfigurations = list({
   },
   hooks: {
     resolveInput: async ({ resolvedData, item }) => {
-      const { content, citations } = resolvedData
+      const { brief, content, citations } = resolvedData
+      if (
+        Object.prototype.hasOwnProperty.call(resolvedData, 'brief') &&
+        brief === null
+      ) {
+        resolvedData.brief = Prisma.DbNull
+      }
       if (
         Object.prototype.hasOwnProperty.call(resolvedData, 'citations') &&
         citations === null
@@ -589,6 +595,11 @@ const listConfigurations = list({
       if (citations) {
         resolvedData.citationsApiData = customFields.draftConverter
           .convertToApiData(citations)
+          .toJS()
+      }
+      if (brief) {
+        resolvedData.briefApiData = customFields.draftConverter
+          .convertToApiData(brief)
           .toJS()
       }
       if (content) {

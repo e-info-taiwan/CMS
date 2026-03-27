@@ -570,8 +570,7 @@ model Post {
   style                              String?          @default("default")
   heroImage                          Photo?           @relation("Post_heroImage", fields: [heroImageId], references: [id])
   heroImageId                        Int?             @map("heroImage")
-  heroCaption                        String           @default("")
-  brief                              String           @default("")
+  brief                              Json?
   briefApiData                       Json?
   content                            Json?
   contentApiData                     Json?

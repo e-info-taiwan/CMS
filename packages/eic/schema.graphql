@@ -2282,8 +2282,7 @@ type Post {
   topic: Topic
   style: String
   heroImage: Photo
-  heroCaption: String
-  brief: String
+  brief: JSON
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
@@ -2339,8 +2338,6 @@ input PostWhereInput {
   topic: TopicWhereInput
   style: StringNullableFilter
   heroImage: PhotoWhereInput
-  heroCaption: StringFilter
-  brief: StringFilter
   contentPreview: StringNullableFilter
   attachments: AttachmentManyRelationFilter
   relatedPosts: PostManyRelationFilter
@@ -2396,8 +2393,6 @@ input PostOrderByInput {
   publishTime: OrderDirection
   otherByline: OrderDirection
   style: OrderDirection
-  heroCaption: OrderDirection
-  brief: OrderDirection
   contentPreview: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
@@ -2427,8 +2422,7 @@ input PostUpdateInput {
   topic: TopicRelateToOneForUpdateInput
   style: String
   heroImage: PhotoRelateToOneForUpdateInput
-  heroCaption: String
-  brief: String
+  brief: JSON
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
@@ -2530,8 +2524,7 @@ input PostCreateInput {
   topic: TopicRelateToOneForCreateInput
   style: String
   heroImage: PhotoRelateToOneForCreateInput
-  heroCaption: String
-  brief: String
+  brief: JSON
   briefApiData: JSON
   content: JSON
   contentApiData: JSON
