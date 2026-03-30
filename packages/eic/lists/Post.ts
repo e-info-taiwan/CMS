@@ -334,26 +334,41 @@ const listConfigurations = list({
       ref: 'Author',
       label: '記者',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     translators: relationship({
       ref: 'Author',
       label: '編譯',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     reviewers: relationship({
       ref: 'Author',
       label: '審校',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     writers: relationship({
       ref: 'Author',
       label: '文',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     sources: relationship({
       ref: 'Author',
       label: '稿源',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     otherByline: text({
       label: '作者（其他）',
@@ -470,9 +485,6 @@ const listConfigurations = list({
       ref: 'Post',
       label: '相關文章',
       many: true,
-      ui: {
-        views: './lists/views/sorted-relationship',
-      },
     }),
     ad: relationship({
       ref: 'Ad',
@@ -775,7 +787,54 @@ const listConfigurations = list({
   },
 })
 
-let extendedListConfigurations = utils.addTrackingFields(listConfigurations)
+const postListWithManualOrder = utils.addManualOrderRelationshipFields(
+  [
+    {
+      fieldName: 'manualOrderOfReporters',
+      fieldLabel: '記者（按新增順序）',
+      targetFieldName: 'reporters',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+    {
+      fieldName: 'manualOrderOfTranslators',
+      fieldLabel: '編譯（按新增順序）',
+      targetFieldName: 'translators',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+    {
+      fieldName: 'manualOrderOfReviewers',
+      fieldLabel: '審校（按新增順序）',
+      targetFieldName: 'reviewers',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+    {
+      fieldName: 'manualOrderOfWriters',
+      fieldLabel: '文（按新增順序）',
+      targetFieldName: 'writers',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+    {
+      fieldName: 'manualOrderOfSources',
+      fieldLabel: '稿源（按新增順序）',
+      targetFieldName: 'sources',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+  ],
+  listConfigurations,
+  {
+    parentListKey: 'Post',
+    manualOrderJsonViews: './lists/views/manual-order-json-read',
+  }
+)
+
+let extendedListConfigurations = utils.addTrackingFields(
+  postListWithManualOrder
+)
 
 if (
   typeof envVar.invalidateCDNCacheServerURL === 'string' &&

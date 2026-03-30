@@ -19,6 +19,16 @@ type ManualOrderFieldConfig = {
   targetListLabelField: string
 }
 
+export type AddManualOrderRelationshipOptions = {
+  /**
+   * Prisma / list key for the item being edited (e.g. `Post`).
+   * When manualOrder JSON is still empty (舊資料), used to load current relations so connect/disconnect 不會覆蓋成只剩新連上的項目。
+   */
+  parentListKey?: string
+  /** Admin UI custom views path for JSON snapshot fields (e.g. `./lists/views/manual-order-json-read`) */
+  manualOrderJsonViews?: string
+}
+
 /** Item for order data */
 type Item = {
   id: string
@@ -72,9 +82,55 @@ type Item = {
  *
  *  `authorsInInputOrder` is a virtual field, which means its value is computed on-the-fly, not stored in the database. This virtual field combines relationship field `authors` and monitoring field `manualOrderOfAuthors` to sort the authors in specific input order.
  */
+function orderFromRelationshipItems(
+  related: unknown,
+  labelField: string
+): Item[] {
+  if (!Array.isArray(related)) {
+    return []
+  }
+  const out: Item[] = []
+  for (const x of related) {
+    if (!x || typeof x !== 'object' || !('id' in x)) {
+      continue
+    }
+    const o = x as Record<string, unknown>
+    out.push({
+      id: String(o.id),
+      [labelField]: o[labelField],
+    })
+  }
+  return out
+}
+
+function prismaDelegateForListKey(
+  context: {
+    prisma?: Record<
+      string,
+      { findUnique?: (args: unknown) => Promise<unknown> }
+    >
+  },
+  listKey: string
+) {
+  const prisma = context.prisma
+  if (!prisma) {
+    return null
+  }
+  const camel = listKey.charAt(0).toLowerCase() + listKey.slice(1)
+  return prisma[camel] ?? null
+}
+
+function normalizeItemId(id: unknown): number | string {
+  if (typeof id === 'string' && /^\d+$/.test(id)) {
+    return Number(id)
+  }
+  return id as number
+}
+
 function addManualOrderRelationshipFields(
   manualOrderFields: ManualOrderFieldConfig[] = [],
-  list: ListConfig<BaseListTypeInfo, BaseFields<BaseListTypeInfo>>
+  list: ListConfig<BaseListTypeInfo, BaseFields<BaseListTypeInfo>>,
+  options?: AddManualOrderRelationshipOptions
 ) {
   manualOrderFields.forEach((mo) => {
     if (!list.fields?.[mo.fieldName]) {
@@ -84,6 +140,15 @@ function addManualOrderRelationshipFields(
           itemView: {
             fieldMode: 'read',
           },
+          createView: {
+            fieldMode: 'hidden',
+          },
+          listView: {
+            fieldMode: 'hidden',
+          },
+          ...(options?.manualOrderJsonViews
+            ? { views: options.manualOrderJsonViews }
+            : {}),
         },
       })
     }
@@ -103,6 +168,45 @@ function addManualOrderRelationshipFields(
     }
 
     const { item, context } = props
+
+    let parentRowLoaded = false
+    let parentRow: Record<string, unknown> | null = null
+
+    const ensureParentRow = async (): Promise<Record<
+      string,
+      unknown
+    > | null> => {
+      if (parentRowLoaded) {
+        return parentRow
+      }
+      parentRowLoaded = true
+      if (!options?.parentListKey || !item?.id) {
+        return null
+      }
+      const delegate = prismaDelegateForListKey(context, options.parentListKey)
+      if (!delegate?.findUnique) {
+        return null
+      }
+      const select: Record<string, { select: Record<string, boolean> }> = {}
+      for (const mo of manualOrderFields) {
+        select[mo.targetFieldName] = {
+          select: {
+            id: true,
+            [mo.targetListLabelField]: true,
+          },
+        }
+      }
+      try {
+        const row = await delegate.findUnique({
+          where: { id: normalizeItemId(item.id) },
+          select,
+        })
+        parentRow = (row as Record<string, unknown>) || null
+      } catch {
+        parentRow = null
+      }
+      return parentRow
+    }
 
     // check if create/update item has the fields
     // we want to monitor
@@ -156,7 +260,16 @@ function addManualOrderRelationshipFields(
           } else {
             // update operation due to `item` not being `undefiend`
             if (item) {
-              const previousOrder = getOrderData(item[fieldName])
+              let previousOrder = getOrderData(item[fieldName])
+              if (previousOrder.length === 0) {
+                const row = await ensureParentRow()
+                const rel =
+                  (row && row[targetFieldName]) ?? item[targetFieldName]
+                previousOrder = orderFromRelationshipItems(
+                  rel,
+                  targetListLabelField
+                )
+              }
 
               // user disconnects/removes some relationship items.
               const disconnectIds =
@@ -201,6 +314,24 @@ function addManualOrderRelationshipFields(
         }
         // 更新 monitoring field
         resolvedData[fieldName] = currentOrder
+      } else {
+        /* 表單未帶 relationship 變更（payload 為 falsy）時，manualOrder 快照可能仍為空：
+         * update 其它欄位時從 DB 關聯補齊 JSON，後台排序欄位才與現有關聯一致。 */
+        const op = (props as { operation?: string }).operation
+        const snapshotEmpty = getOrderData(item?.[fieldName]).length === 0
+        if (
+          op === 'update' &&
+          item?.id &&
+          options?.parentListKey &&
+          snapshotEmpty
+        ) {
+          const row = await ensureParentRow()
+          const rel = (row && row[targetFieldName]) ?? item?.[targetFieldName]
+          const fromDb = orderFromRelationshipItems(rel, targetListLabelField)
+          if (fromDb.length > 0) {
+            resolvedData[fieldName] = fromDb
+          }
+        }
       }
     }
     return resolvedData

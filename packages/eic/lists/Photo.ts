@@ -162,7 +162,6 @@ const listConfigurations = list({
       ui: {
         itemView: { fieldMode: 'read' },
         createView: { fieldMode: 'hidden' },
-        views: './lists/views/sorted-relationship',
       },
     }),
   },
