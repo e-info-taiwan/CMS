@@ -419,6 +419,15 @@ const listConfigurations = list({
       disabledButtons: allReadrButtons.filter(
         (b: string) => !BRIEF_ENABLED_BUTTONS.includes(b)
       ),
+      presetColors: [
+        '#FF6544', // 預設紅色
+        '#5085EF', // 預設藍色
+        '#A0A0A2', // 預設灰色
+        '#373740', // 預設黑色
+        '#8BC890', // 預設綠色
+        '#D1951D', // 預設黃色
+        '#B55514', // 預設棕色
+      ],
     }),
     briefApiData: json({
       label: '資料庫使用',
