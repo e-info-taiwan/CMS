@@ -2304,6 +2304,16 @@ type Post {
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean
+  manualOrderOfReporters: JSON
+  reportersInInputOrder: [Author]
+  manualOrderOfTranslators: JSON
+  translatorsInInputOrder: [Author]
+  manualOrderOfReviewers: JSON
+  reviewersInInputOrder: [Author]
+  manualOrderOfWriters: JSON
+  writersInInputOrder: [Author]
+  manualOrderOfSources: JSON
+  sourcesInInputOrder: [Author]
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2439,6 +2449,11 @@ input PostUpdateInput {
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean
+  manualOrderOfReporters: JSON
+  manualOrderOfTranslators: JSON
+  manualOrderOfReviewers: JSON
+  manualOrderOfWriters: JSON
+  manualOrderOfSources: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2541,6 +2556,11 @@ input PostCreateInput {
   aiPollHelper: Boolean
   aiPollHelperResult: String
   isNewsletter: Boolean
+  manualOrderOfReporters: JSON
+  manualOrderOfTranslators: JSON
+  manualOrderOfReviewers: JSON
+  manualOrderOfWriters: JSON
+  manualOrderOfSources: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput

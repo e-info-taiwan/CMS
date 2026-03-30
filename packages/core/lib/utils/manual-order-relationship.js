@@ -54,7 +54,38 @@ var _fields = require("@keystone-6/core/fields");
  *
  *  `authorsInInputOrder` is a virtual field, which means its value is computed on-the-fly, not stored in the database. This virtual field combines relationship field `authors` and monitoring field `manualOrderOfAuthors` to sort the authors in specific input order.
  */
-function addManualOrderRelationshipFields(manualOrderFields = [], list) {
+function orderFromRelationshipItems(related, labelField) {
+  if (!Array.isArray(related)) {
+    return [];
+  }
+  const out = [];
+  for (const x of related) {
+    if (!x || typeof x !== 'object' || !('id' in x)) {
+      continue;
+    }
+    const o = x;
+    out.push({
+      id: String(o.id),
+      [labelField]: o[labelField]
+    });
+  }
+  return out;
+}
+function prismaDelegateForListKey(context, listKey) {
+  const prisma = context.prisma;
+  if (!prisma) {
+    return null;
+  }
+  const camel = listKey.charAt(0).toLowerCase() + listKey.slice(1);
+  return prisma[camel] ?? null;
+}
+function normalizeItemId(id) {
+  if (typeof id === 'string' && /^\d+$/.test(id)) {
+    return Number(id);
+  }
+  return id;
+}
+function addManualOrderRelationshipFields(manualOrderFields = [], list, options) {
   var _list$hooks;
   manualOrderFields.forEach(mo => {
     var _list$fields;
@@ -64,7 +95,16 @@ function addManualOrderRelationshipFields(manualOrderFields = [], list) {
         ui: {
           itemView: {
             fieldMode: 'read'
-          }
+          },
+          createView: {
+            fieldMode: 'hidden'
+          },
+          listView: {
+            fieldMode: 'hidden'
+          },
+          ...(options !== null && options !== void 0 && options.manualOrderJsonViews ? {
+            views: options.manualOrderJsonViews
+          } : {})
         }
       });
     }
@@ -85,6 +125,42 @@ function addManualOrderRelationshipFields(manualOrderFields = [], list) {
       item,
       context
     } = props;
+    let parentRowLoaded = false;
+    let parentRow = null;
+    const ensureParentRow = async () => {
+      if (parentRowLoaded) {
+        return parentRow;
+      }
+      parentRowLoaded = true;
+      if (!(options !== null && options !== void 0 && options.parentListKey) || !(item !== null && item !== void 0 && item.id)) {
+        return null;
+      }
+      const delegate = prismaDelegateForListKey(context, options.parentListKey);
+      if (!(delegate !== null && delegate !== void 0 && delegate.findUnique)) {
+        return null;
+      }
+      const select = {};
+      for (const mo of manualOrderFields) {
+        select[mo.targetFieldName] = {
+          select: {
+            id: true,
+            [mo.targetListLabelField]: true
+          }
+        };
+      }
+      try {
+        const row = await delegate.findUnique({
+          where: {
+            id: normalizeItemId(item.id)
+          },
+          select
+        });
+        parentRow = row || null;
+      } catch {
+        parentRow = null;
+      }
+      return parentRow;
+    };
 
     // check if create/update item has the fields
     // we want to monitor
@@ -144,7 +220,12 @@ function addManualOrderRelationshipFields(manualOrderFields = [], list) {
             // update operation due to `item` not being `undefiend`
             if (item) {
               var _resolvedData$targetF5;
-              const previousOrder = getOrderData(item[fieldName]);
+              let previousOrder = getOrderData(item[fieldName]);
+              if (previousOrder.length === 0) {
+                const row = await ensureParentRow();
+                const rel = (row && row[targetFieldName]) ?? item[targetFieldName];
+                previousOrder = orderFromRelationshipItems(rel, targetListLabelField);
+              }
 
               // user disconnects/removes some relationship items.
               const disconnectIds = ((_resolvedData$targetF5 = resolvedData[targetFieldName]) === null || _resolvedData$targetF5 === void 0 || (_resolvedData$targetF5 = _resolvedData$targetF5.disconnect) === null || _resolvedData$targetF5 === void 0 ? void 0 : _resolvedData$targetF5.map(obj => obj.id.toString())) || [];
@@ -186,31 +267,21 @@ function addManualOrderRelationshipFields(manualOrderFields = [], list) {
             }
           }
         }
-
-        // --- 補全缺失項目邏輯整合於此 ---
-        if (item) {
-          try {
-            // 使用 context.db[targetListName] 來查詢關係項目
-            // 但要先檢查目標欄位是否存在於當前 item 中
-            const existingItems = await context.db[targetListName].findMany({
-              where: {
-                id: {
-                  in: currentOrder.map(o => o.id)
-                }
-              },
-              take: currentOrder.length
-            });
-
-            // 如果查詢成功且有結果，說明資料庫中的資料一致
-            // 不需要額外的補全邏輯，因為 currentOrder 已經包含了所有需要的項目
-          } catch (error) {
-            // 查詢失敗時忽略，使用現有的 currentOrder
-            console.log('Error fetching items for manual order:', error);
-          }
-        }
-
         // 更新 monitoring field
         resolvedData[fieldName] = currentOrder;
+      } else {
+        /* 表單未帶 relationship 變更（payload 為 falsy）時，manualOrder 快照可能仍為空：
+         * update 其它欄位時從 DB 關聯補齊 JSON，後台排序欄位才與現有關聯一致。 */
+        const op = props.operation;
+        const snapshotEmpty = getOrderData(item === null || item === void 0 ? void 0 : item[fieldName]).length === 0;
+        if (op === 'update' && item !== null && item !== void 0 && item.id && options !== null && options !== void 0 && options.parentListKey && snapshotEmpty) {
+          const row = await ensureParentRow();
+          const rel = (row && row[targetFieldName]) ?? (item === null || item === void 0 ? void 0 : item[targetFieldName]);
+          const fromDb = orderFromRelationshipItems(rel, targetListLabelField);
+          if (fromDb.length > 0) {
+            resolvedData[fieldName] = fromDb;
+          }
+        }
       }
     }
     return resolvedData;

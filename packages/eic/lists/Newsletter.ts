@@ -1104,7 +1104,11 @@ const listWithManualOrder = utils.addManualOrderRelationshipFields(
       targetListLabelField: 'title',
     },
   ],
-  listConfigurations
+  listConfigurations,
+  {
+    parentListKey: 'Newsletter',
+    manualOrderJsonViews: './lists/views/manual-order-json-read',
+  }
 )
 
 export default utils.addTrackingFields(listWithManualOrder)

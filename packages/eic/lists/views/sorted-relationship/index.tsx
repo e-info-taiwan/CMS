@@ -282,7 +282,15 @@ export const Cell: CellComponent<typeof controller> = ({ field, item }) => {
     )
   }
 
-  const data = item[field.path]
+  const inOrder = field.many
+    ? (item[`${field.path}InInputOrder`] as
+        | { id: string; label?: string }[]
+        | undefined)
+    : undefined
+  const data =
+    field.many && Array.isArray(inOrder) && inOrder.length > 0
+      ? inOrder
+      : item[field.path]
   const items = (Array.isArray(data) ? data : [data]).filter((item) => item)
   const displayItems = items.length < 5 ? items : items.slice(0, 3)
   const overflow = items.length < 5 ? 0 : items.length - 3
@@ -319,7 +327,15 @@ export const CardValue: CardValueComponent<typeof controller> = ({
   item,
 }) => {
   const list = useList(field.refListKey)
-  const data = item[field.path]
+  const inOrder = field.many
+    ? (item[`${field.path}InInputOrder`] as
+        | { id: string; label?: string }[]
+        | undefined)
+    : undefined
+  const data =
+    field.many && Array.isArray(inOrder) && inOrder.length > 0
+      ? inOrder
+      : item[field.path]
   return (
     <FieldContainer>
       <FieldLabel>{field.label}</FieldLabel>
@@ -447,6 +463,8 @@ export const controller = (
     graphqlSelection:
       config.fieldMeta.displayMode === 'count'
         ? `${config.path}Count`
+        : config.fieldMeta.many
+        ? `${config.path} { id label: ${refLabelField} } ${config.path}InInputOrder { id label: ${refLabelField} }`
         : `${config.path} {
               id
               label: ${refLabelField}
@@ -503,7 +521,19 @@ export const controller = (
         }
       }
       if (config.fieldMeta.many) {
-        const value = (data[config.path] || []).map((x: any) => ({
+        const inOrder = data[`${config.path}InInputOrder`] as
+          | { id: string; label?: string }[]
+          | undefined
+        const plain = data[config.path] as
+          | { id: string; label?: string }[]
+          | undefined
+        const raw =
+          Array.isArray(inOrder) && inOrder.length > 0
+            ? inOrder
+            : Array.isArray(plain)
+            ? plain
+            : []
+        const value = raw.map((x: any) => ({
           id: x.id,
           label: x.label || x.id,
         }))

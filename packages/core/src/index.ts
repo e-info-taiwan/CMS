@@ -22,6 +22,8 @@ export const utils = {
   createLoginLoggingPlugin,
 }
 
+export type { AddManualOrderRelationshipOptions } from './utils/manual-order-relationship'
+
 export default {
   customFields,
   utils,

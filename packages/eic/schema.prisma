@@ -589,6 +589,11 @@ model Post {
   aiPollHelper                       Boolean          @default(false)
   aiPollHelperResult                 String           @default("")
   isNewsletter                       Boolean          @default(false)
+  manualOrderOfReporters             Json?
+  manualOrderOfTranslators           Json?
+  manualOrderOfReviewers             Json?
+  manualOrderOfWriters               Json?
+  manualOrderOfSources               Json?
   createdAt                          DateTime?
   updatedAt                          DateTime?
   createdBy                          User?            @relation("Post_createdBy", fields: [createdById], references: [id])
