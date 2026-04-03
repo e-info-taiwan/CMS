@@ -1936,6 +1936,8 @@ type Photo {
   imageFile: ImageFieldOutput
   resized: ResizedImages
   resizedWebp: ResizedWebPImages
+  phash: String
+  exif: JSON
   file: FileFieldOutput
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
@@ -1990,6 +1992,7 @@ input PhotoWhereInput {
   id: IDFilter
   name: StringFilter
   description: StringFilter
+  phash: StringFilter
   posts: PostManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
@@ -2001,6 +2004,7 @@ input PhotoOrderByInput {
   id: OrderDirection
   name: OrderDirection
   description: OrderDirection
+  phash: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -2009,6 +2013,8 @@ input PhotoUpdateInput {
   name: String
   description: String
   imageFile: ImageFieldInput
+  phash: String
+  exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForUpdateInput
   createdAt: DateTime
@@ -2030,6 +2036,8 @@ input PhotoCreateInput {
   name: String
   description: String
   imageFile: ImageFieldInput
+  phash: String
+  exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForCreateInput
   createdAt: DateTime
