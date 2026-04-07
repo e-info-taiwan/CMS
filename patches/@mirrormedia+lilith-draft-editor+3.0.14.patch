@@ -1,3 +1,405 @@
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js
+index 0925f4e..094edcb 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js
+@@ -12,21 +12,56 @@ var _draftJs = require("draft-js");
+ 
+ var _modals = require("@keystone-ui/modals");
+ 
+-var _button = require("@keystone-ui/button");
+-
+ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
+ 
+ var _styledComponents = _interopRequireDefault(require("styled-components"));
+ 
+-var _videoSelector = require("./selector/video-selector");
++var _fields = require("@keystone-ui/fields");
+ 
+ var _alignSelector = require("./selector/align-selector");
+ 
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
++function _interopRequireDefault(obj) {
++  return obj && obj.__esModule ? obj : { default: obj };
++}
+ 
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
++function _getRequireWildcardCache(nodeInterop) {
++  if (typeof WeakMap !== "function") return null;
++  var cacheBabelInterop = new WeakMap();
++  var cacheNodeInterop = new WeakMap();
++  return (_getRequireWildcardCache = function (nodeInterop) {
++    return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
++  })(nodeInterop);
++}
+ 
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
++function _interopRequireWildcard(obj, nodeInterop) {
++  if (!nodeInterop && obj && obj.__esModule) {
++    return obj;
++  }
++  if (obj === null || (typeof obj !== "object" && typeof obj !== "function")) {
++    return { default: obj };
++  }
++  var cache = _getRequireWildcardCache(nodeInterop);
++  if (cache && cache.has(obj)) {
++    return cache.get(obj);
++  }
++  var newObj = {};
++  var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
++  for (var key in obj) {
++    if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
++      var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
++      if (desc && (desc.get || desc.set)) {
++        Object.defineProperty(newObj, key, desc);
++      } else {
++        newObj[key] = obj[key];
++      }
++    }
++  }
++  newObj.default = obj;
++  if (cache) {
++    cache.set(obj, newObj);
++  }
++  return newObj;
++}
+ 
+ const Label = _styledComponents.default.label`
+   display: block;
+@@ -39,8 +74,6 @@ const VideoInputText = _styledComponents.default.span`
+ `;
+ 
+ function BGVideoInput(props) {
+-  var _inputValue$video;
+-
+   const {
+     isOpen,
+     onChange,
+@@ -48,7 +81,6 @@ function BGVideoInput(props) {
+     textBlockAlign,
+     video,
+     rawContentStateForBGVideoEditor,
+-    VideoSelector = _videoSelector.VideoSelector,
+     renderBasicEditor,
+     decorators
+   } = props;
+@@ -56,61 +88,61 @@ function BGVideoInput(props) {
+     blocks: [],
+     entityMap: {}
+   };
+-  const options = [{
+-    value: 'fixed',
+-    label: 'fixed (default)',
+-    isDisabled: false
+-  }, {
+-    value: 'bottom',
+-    label: 'bottom',
+-    isDisabled: false
+-  }, {
+-    value: 'left',
+-    label: 'left',
+-    isDisabled: false
+-  }, {
+-    value: 'right',
+-    label: 'right',
+-    isDisabled: false
+-  }];
++  const options = [
++    {
++      value: "fixed",
++      label: "fixed (default)",
++      isDisabled: false
++    },
++    {
++      value: "bottom",
++      label: "bottom",
++      isDisabled: false
++    },
++    {
++      value: "left",
++      label: "left",
++      isDisabled: false
++    },
++    {
++      value: "right",
++      label: "right",
++      isDisabled: false
++    }
++  ];
++  const initialVideoUrl =
++    (video === null || video === void 0 ? void 0 : video.videoSrc) ||
++    (video === null || video === void 0 ? void 0 : video.url) ||
++    "";
+   const initialInputValue = {
+-    textBlockAlign: textBlockAlign || 'fixed',
+-    video: video || undefined,
+-    // create an `editorState` from raw content state object
+-    editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(rawContentState), decorators)
++    textBlockAlign: textBlockAlign || "fixed",
++    videoUrl: initialVideoUrl,
++    editorStateOfBasicEditor: _draftJs.EditorState.createWithContent(
++      (0, _draftJs.convertFromRaw)(rawContentState),
++      decorators
++    )
+   };
+   const [inputValue, setInputValue] = (0, _react.useState)(initialInputValue);
+-  const [toShowVideoSelector, setToShowVideoSelector] = (0, _react.useState)(false);
+ 
+   const clearInputValue = () => {
+-    setInputValue(oldInputValue => ({ ...oldInputValue,
+-      editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)({
+-        blocks: [],
+-        entityMap: {}
+-      }), decorators)
++    setInputValue(oldInputValue => ({
++      ...oldInputValue,
++      videoUrl: "",
++      editorStateOfBasicEditor: _draftJs.EditorState.createWithContent(
++        (0, _draftJs.convertFromRaw)({
++          blocks: [],
++          entityMap: {}
++        }),
++        decorators
++      )
+     }));
+   };
+ 
+-  const onVideoSelectorChange = selectedVideosWithMeta => {
+-    var _selectedVideosWithMe;
+-
+-    const video = selectedVideosWithMeta === null || selectedVideosWithMeta === void 0 ? void 0 : (_selectedVideosWithMe = selectedVideosWithMeta[0]) === null || _selectedVideosWithMe === void 0 ? void 0 : _selectedVideosWithMe.video;
+-
+-    if (!video) {
+-      setToShowVideoSelector(false);
+-      return;
+-    }
+-
+-    setInputValue(oldInputValue => ({ ...oldInputValue,
+-      video: video
+-    }));
+-    setToShowVideoSelector(false);
+-  };
+-
+   const basicEditorJsx = renderBasicEditor({
+     editorState: inputValue.editorStateOfBasicEditor,
+     onChange: editorStateOfBasicEditor => {
+-      setInputValue(oldInputValue => ({ ...oldInputValue,
++      setInputValue(oldInputValue => ({
++        ...oldInputValue,
+         editorStateOfBasicEditor
+       }));
+     }
+@@ -120,106 +152,128 @@ function BGVideoInput(props) {
+       setInputValue(initialInputValue);
+     }
+   }, [isOpen]);
+-  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, toShowVideoSelector && /*#__PURE__*/_react.default.createElement(VideoSelector, {
+-    onChange: onVideoSelectorChange
+-  }), /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+-    isOpen: isOpen
+-  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+-    title: `Insert Background Video`,
+-    actions: {
+-      cancel: {
+-        label: 'Cancel',
+-        action: () => {
+-          clearInputValue();
+-          onCancel();
++  const urlTrim = String(inputValue.videoUrl || "").trim();
++  const videoPayload =
++    urlTrim ?
++      {
++        videoSrc: urlTrim,
++        name: urlTrim
++      } :
++      undefined;
++  return /*#__PURE__*/ _react.default.createElement(
++    _react.default.Fragment,
++    null,
++    /*#__PURE__*/ _react.default.createElement(_modals.DrawerController, {
++      isOpen: isOpen
++    }, /*#__PURE__*/ _react.default.createElement(
++      _modals.Drawer,
++      {
++        title: `Insert Background Video`,
++        actions: {
++          cancel: {
++            label: "Cancel",
++            action: () => {
++              clearInputValue();
++              onCancel();
++            }
++          },
++          confirm: {
++            label: "Confirm",
++            action: () => {
++              onChange({
++                textBlockAlign: inputValue.textBlockAlign,
++                video: videoPayload,
++                rawContentState: (0, _draftJs.convertToRaw)(
++                  inputValue.editorStateOfBasicEditor.getCurrentContent()
++                )
++              });
++              clearInputValue();
++            }
++          }
+         }
+       },
+-      confirm: {
+-        label: 'Confirm',
+-        action: () => {
+-          onChange({
+-            textBlockAlign: inputValue.textBlockAlign,
+-            video: inputValue.video,
+-            // convert `contentState` of the `editorState` into raw content state object
+-            rawContentState: (0, _draftJs.convertToRaw)(inputValue.editorStateOfBasicEditor.getCurrentContent())
+-          });
+-          clearInputValue();
++      /*#__PURE__*/ _react.default.createElement(Label, null, "\u5F71\u7247\u7DB2\u5740"),
++      /*#__PURE__*/ _react.default.createElement(_fields.TextInput, {
++        onChange: e =>
++          setInputValue(old => ({
++            ...old,
++            videoUrl: e.target.value
++          })),
++        placeholder: "https://",
++        value: inputValue.videoUrl || ""
++      }),
++      /*#__PURE__*/ _react.default.createElement("div", null, /*#__PURE__*/ _react.default.createElement(VideoInputText, null, urlTrim || "\u5C1A\u672A\u8F38\u5165\u7DB2\u5740")),
++      /*#__PURE__*/ _react.default.createElement(_alignSelector.AlignSelector, {
++        align: inputValue.textBlockAlign,
++        options: options,
++        onChange: textBlockAlign => {
++          setInputValue(oldInputValue => ({
++            ...oldInputValue,
++            textBlockAlign
++          }));
+         }
+-      }
+-    }
+-  }, /*#__PURE__*/_react.default.createElement(Label, null, "\u5F71\u7247"), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(VideoInputText, null, (_inputValue$video = inputValue.video) !== null && _inputValue$video !== void 0 && _inputValue$video.name ? inputValue.video.name : '尚未選取影片'), /*#__PURE__*/_react.default.createElement(_button.Button, {
+-    type: "button",
+-    onClick: () => setToShowVideoSelector(true),
+-    tone: "passive"
+-  }, "\u6DFB\u52A0\u5F71\u7247")), /*#__PURE__*/_react.default.createElement(_alignSelector.AlignSelector, {
+-    align: inputValue.textBlockAlign,
+-    options: options,
+-    onChange: textBlockAlign => {
+-      setInputValue(oldInputValue => ({ ...oldInputValue,
+-        textBlockAlign
+-      }));
+-    }
+-  }), /*#__PURE__*/_react.default.createElement(Label, null, "\u5167\u6587"), basicEditorJsx)));
++      }),
++      /*#__PURE__*/ _react.default.createElement(Label, null, "\u5167\u6587"),
++      basicEditorJsx
++    ))
++  );
+ }
+ 
+ function BGVideoButton(props) {
+   const [toShowInput, setToShowInput] = (0, _react.useState)(false);
+-  const {
+-    className,
+-    editorState,
+-    onChange: onEditorStateChange,
+-    VideoSelector,
+-    renderBasicEditor,
+-    decorators
+-  } = props;
+-
+-  const onChange = ({
+-    textBlockAlign,
+-    video,
+-    rawContentState
+-  }) => {
+-    const contentState = editorState.getCurrentContent(); // create an BGVideo entity
++  const { className, editorState, onChange: onEditorStateChange, renderBasicEditor, decorators } = props;
+ 
+-    const contentStateWithEntity = contentState.createEntity('BACKGROUNDVIDEO', 'IMMUTABLE', {
++  const onChange = ({ textBlockAlign, video, rawContentState }) => {
++    const contentState = editorState.getCurrentContent();
++    const contentStateWithEntity = contentState.createEntity("BACKGROUNDVIDEO", "IMMUTABLE", {
+       textBlockAlign,
+       video,
+       rawContentState,
+       body: _draftConverter.default.convertToHtml(rawContentState)
+     });
+     const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+-
+     const newEditorState = _draftJs.EditorState.set(editorState, {
+       currentContent: contentStateWithEntity
+-    }); //The third parameter here is a space string, not an empty string
+-    //If you set an empty string, you will get an error: Unknown DraftEntity key: null
+-
+-
+-    onEditorStateChange(_draftJs.AtomicBlockUtils.insertAtomicBlock(newEditorState, entityKey, ' '));
++    });
++    onEditorStateChange(_draftJs.AtomicBlockUtils.insertAtomicBlock(newEditorState, entityKey, " "));
+     setToShowInput(false);
+   };
+ 
+-  return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(BGVideoInput, {
+-    renderBasicEditor: renderBasicEditor,
+-    onChange: onChange,
+-    onCancel: () => {
+-      setToShowInput(false);
+-    },
+-    isOpen: toShowInput,
+-    VideoSelector: VideoSelector,
+-    decorators: decorators
+-  }), /*#__PURE__*/_react.default.createElement("div", {
+-    className: className,
+-    onClick: () => {
+-      setToShowInput(true);
+-    }
+-  }, /*#__PURE__*/_react.default.createElement("svg", {
+-    width: "16",
+-    height: "10",
+-    viewBox: "0 0 16 10",
+-    fill: "none",
+-    xmlns: "http://www.w3.org/2000/svg"
+-  }, /*#__PURE__*/_react.default.createElement("path", {
+-    d: "M10.6667 1.25V8.75C10.6667 9.44036 10.0697 10 9.33333 10H1.33333C0.596944 10 0 9.44036 0 8.75V1.25C0 0.559635 0.596944 0 1.33333 0H9.33333C10.0694 0 10.6667 0.559635 10.6667 1.25ZM16 1.65365V8.34375C16 9.00781 15.1897 9.39557 14.6003 9.01536L11.5556 7.04948V2.95052L14.6 0.982812C15.1917 0.602344 16 0.992188 16 1.65365Z",
+-    fill: "#6b7280"
+-  })), /*#__PURE__*/_react.default.createElement("span", null, "Background Video")));
++  return /*#__PURE__*/ _react.default.createElement(
++    _react.default.Fragment,
++    null,
++    /*#__PURE__*/ _react.default.createElement(BGVideoInput, {
++      renderBasicEditor: renderBasicEditor,
++      onChange: onChange,
++      onCancel: () => {
++        setToShowInput(false);
++      },
++      isOpen: toShowInput,
++      decorators: decorators
++    }),
++    /*#__PURE__*/ _react.default.createElement(
++      "div",
++      {
++        className: className,
++        onClick: () => {
++          setToShowInput(true);
++        }
++      },
++      /*#__PURE__*/ _react.default.createElement(
++        "svg",
++        {
++          width: "16",
++          height: "10",
++          viewBox: "0 0 16 10",
++          fill: "none",
++          xmlns: "http://www.w3.org/2000/svg"
++        },
++        /*#__PURE__*/ _react.default.createElement("path", {
++          d: "M10.6667 1.25V8.75C10.6667 9.44036 10.0697 10 9.33333 10H1.33333C0.596944 10 0 9.44036 0 8.75V1.25C0 0.559635 0.596944 0 1.33333 0H9.33333C10.0694 0 10.6667 0.559635 10.6667 1.25ZM16 1.65365V8.34375C16 9.00781 15.1897 9.39557 14.6003 9.01536L11.5556 7.04948V2.95052L14.6 0.982812C15.1917 0.602344 16 0.992188 16 1.65365Z",
++          fill: "#6b7280"
++        })
++      ),
++      /*#__PURE__*/ _react.default.createElement("span", null, "Background Video")
++    )
++  );
+ }
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
 index 5ffdb99..e203af6 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
@@ -870,8 +1272,303 @@ index a8aafa5..511efc6 100644
    flex: 0 0 33.3333%;
    cursor: pointer;
    padding: 0 10px 10px;
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/video-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/video-selector.js
+deleted file mode 100644
+index 4e4833f..0000000
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/video-selector.js
++++ /dev/null
+@@ -1,288 +0,0 @@
+-"use strict";
+-
+-Object.defineProperty(exports, "__esModule", {
+-  value: true
+-});
+-exports.VideoSelector = VideoSelector;
+-
+-var _react = _interopRequireWildcard(require("react"));
+-
+-var _styledComponents = _interopRequireDefault(require("styled-components"));
+-
+-var _modals = require("@keystone-ui/modals");
+-
+-var _apollo = require("@keystone-6/core/admin-ui/apollo");
+-
+-var _searchBox = require("./search-box");
+-
+-var _pagination = require("./pagination");
+-
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+-
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+-
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+-
+-const VideoSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+-  margin-top: 10px;
+-`;
+-const VideoSelectionWrapper = _styledComponents.default.div`
+-  overflow: auto;
+-  margin-top: 10px;
+-`;
+-const VideoGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const VideoMetaGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoMetaGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const Video = _styledComponents.default.video`
+-  display: block;
+-  width: 100%;
+-  aspect-ratio: 2;
+-  object-fit: cover;
+-`;
+-const SeparationLine = _styledComponents.default.div`
+-  border: #e1e5e9 1px solid;
+-  margin-top: 10px;
+-  margin-bottom: 10px;
+-`;
+-const VideoSelected = _styledComponents.default.div`
+-  height: 1.4rem;
+-`;
+-const ErrorWrapper = _styledComponents.default.div`
+-  & * {
+-    margin: 0;
+-  }
+-`;
+-
+-function VideosGrids(props) {
+-  const {
+-    videos,
+-    selected,
+-    onSelect
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridsWrapper, null, videos.map(video => {
+-    return /*#__PURE__*/_react.default.createElement(VideoGrid, {
+-      key: video.id,
+-      isSelected: selected === null || selected === void 0 ? void 0 : selected.includes(video),
+-      onSelect: () => onSelect(video),
+-      video: video
+-    });
+-  }));
+-}
+-
+-function VideoGrid(props) {
+-  var _newVideo$videoFile;
+-
+-  const {
+-    video,
+-    onSelect,
+-    isSelected
+-  } = props;
+-  const newVideo = video;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridWrapper, {
+-    key: newVideo === null || newVideo === void 0 ? void 0 : newVideo.id,
+-    onClick: () => onSelect(video)
+-  }, /*#__PURE__*/_react.default.createElement(VideoSelected, null, isSelected ? /*#__PURE__*/_react.default.createElement("i", {
+-    className: "fas fa-check-circle"
+-  }) : null), /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: newVideo === null || newVideo === void 0 ? void 0 : newVideo.videoSrc
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: newVideo === null || newVideo === void 0 ? void 0 : (_newVideo$videoFile = newVideo.videoFile) === null || _newVideo$videoFile === void 0 ? void 0 : _newVideo$videoFile.url
+-  })));
+-}
+-
+-function VideoMetaGrids(props) {
+-  const {
+-    videoMetas
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridsWrapper, null, videoMetas.map(videoMeta => {
+-    var _videoMeta$video;
+-
+-    return /*#__PURE__*/_react.default.createElement(VideoMetaGrid, {
+-      key: videoMeta === null || videoMeta === void 0 ? void 0 : (_videoMeta$video = videoMeta.video) === null || _videoMeta$video === void 0 ? void 0 : _videoMeta$video.id,
+-      videoMeta: videoMeta
+-    });
+-  }));
+-}
+-
+-function VideoMetaGrid(props) {
+-  var _newVideo$videoFile2;
+-
+-  const {
+-    videoMeta
+-  } = props;
+-  const {
+-    video
+-  } = videoMeta;
+-  const newVideo = video;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridWrapper, null, /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    autoPlay: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: newVideo === null || newVideo === void 0 ? void 0 : newVideo.videoSrc
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: newVideo === null || newVideo === void 0 ? void 0 : (_newVideo$videoFile2 = newVideo.videoFile) === null || _newVideo$videoFile2 === void 0 ? void 0 : _newVideo$videoFile2.url
+-  })));
+-}
+-
+-const videosQuery = (0, _apollo.gql)`
+-  query Videos($searchText: String!, $take: Int, $skip: Int) {
+-    videosCount(where: { name: { contains: $searchText } })
+-    videos(
+-      where: { name: { contains: $searchText } }
+-      take: $take
+-      skip: $skip
+-    ) {
+-      id
+-      name
+-      videoSrc
+-      description
+-      videoFile {
+-        filename
+-        filesize
+-        url
+-      }
+-      coverPhoto {
+-        id
+-        name
+-        imageFile {
+-          url
+-        }
+-        resized {
+-          original
+-        }
+-      }
+-    }
+-  }
+-`;
+-
+-function VideoSelector(props) {
+-  const [queryVideos, {
+-    loading,
+-    error,
+-    data: {
+-      videos = [],
+-      videosCount = 0
+-    } = {}
+-  }] = (0, _apollo.useLazyQuery)(videosQuery, {
+-    fetchPolicy: 'no-cache'
+-  });
+-  const [currentPage, setCurrentPage] = (0, _react.useState)(0); // page starts with 1, 0 is used to detect initialization
+-
+-  const [searchText, setSearchText] = (0, _react.useState)('');
+-  const [selected, setSelected] = (0, _react.useState)([]);
+-  const pageSize = 6;
+-  const {
+-    onChange
+-  } = props;
+-
+-  const onSave = () => {
+-    onChange(selected);
+-  };
+-
+-  const onCancel = () => {
+-    onChange([]);
+-  };
+-
+-  const onSearchBoxChange = async searchInput => {
+-    setSearchText(searchInput);
+-    setCurrentPage(1);
+-  };
+-
+-  const onVideosGridSelect = videoEntity => {
+-    setSelected(selected => {
+-      const filterdSelected = selected.filter(ele => {
+-        var _ele$video;
+-
+-        return ((_ele$video = ele.video) === null || _ele$video === void 0 ? void 0 : _ele$video.id) !== videoEntity.id;
+-      }); // deselect the video
+-
+-      if (filterdSelected.length !== selected.length) {
+-        return filterdSelected;
+-      } // single select
+-
+-
+-      return [{
+-        video: videoEntity
+-      }];
+-    });
+-  };
+-
+-  const selectedVideos = selected.map(ele => {
+-    return ele.video;
+-  });
+-  (0, _react.useEffect)(() => {
+-    if (currentPage !== 0) {
+-      queryVideos({
+-        variables: {
+-          searchText: searchText,
+-          skip: (currentPage - 1) * pageSize,
+-          take: pageSize
+-        }
+-      });
+-    }
+-  }, [currentPage, searchText]);
+-
+-  let searchResult = /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(VideosGrids, {
+-    videos: videos,
+-    selected: selectedVideos,
+-    onSelect: onVideosGridSelect
+-  }), /*#__PURE__*/_react.default.createElement(_pagination.Pagination, {
+-    currentPage: currentPage,
+-    total: videosCount,
+-    pageSize: pageSize,
+-    onChange: pageIndex => {
+-      setCurrentPage(pageIndex);
+-    }
+-  }));
+-
+-  if (loading) {
+-    searchResult = /*#__PURE__*/_react.default.createElement("p", null, "searching...");
+-  }
+-
+-  if (error) {
+-    var _videosQuery$loc;
+-
+-    searchResult = /*#__PURE__*/_react.default.createElement(ErrorWrapper, null, /*#__PURE__*/_react.default.createElement("h3", null, "Errors occurs in the `videos` query"), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Message:"), /*#__PURE__*/_react.default.createElement("div", null, error.message), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Stack:"), /*#__PURE__*/_react.default.createElement("div", null, error.stack), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Query:"), /*#__PURE__*/_react.default.createElement("pre", null, videosQuery === null || videosQuery === void 0 ? void 0 : (_videosQuery$loc = videosQuery.loc) === null || _videosQuery$loc === void 0 ? void 0 : _videosQuery$loc.source.body)));
+-  }
+-
+-  return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+-    isOpen: true
+-  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+-    title: "Select video",
+-    actions: {
+-      cancel: {
+-        label: 'Cancel',
+-        action: onCancel
+-      },
+-      confirm: {
+-        label: 'Confirm',
+-        action: onSave
+-      }
+-    }
+-  }, /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(VideoSearchBox, {
+-    onChange: onSearchBoxChange
+-  }), /*#__PURE__*/_react.default.createElement(VideoSelectionWrapper, null, /*#__PURE__*/_react.default.createElement("div", null, searchResult), !!selected.length && /*#__PURE__*/_react.default.createElement(SeparationLine, null), /*#__PURE__*/_react.default.createElement(VideoMetaGrids, {
+-    videoMetas: selected
+-  })))));
+-}
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
-index b78fa88..c82871b 100644
+index b78fa88..399dc04 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
 @@ -28,7 +28,7 @@ function SlideshowButton(props) {
@@ -879,21 +1576,330 @@ index b78fa88..c82871b 100644
    };
  
 -  const onImageSelectorChange = (selected, align, delay) => {
-+  const onImageSelectorChange = (selected, align, delay, overallCaption, widthPercentage, maxImagesPerRow, lightboxEnabled) => {
++  const onImageSelectorChange = (selected, align, delay, overallCaption) => {
      if (selected.length === 0) {
        setToShowImageSelector(false);
        return;
-@@ -39,6 +39,10 @@ function SlideshowButton(props) {
+@@ -39,6 +39,7 @@ function SlideshowButton(props) {
      const contentStateWithEntity = contentState.createEntity('slideshow-v2', 'IMMUTABLE', {
        alignment: align,
        delay,
 +      overallCaption: overallCaption || '',
-+      widthPercentage: typeof widthPercentage === 'number' ? widthPercentage : widthPercentage ? +widthPercentage : undefined,
-+      maxImagesPerRow: typeof maxImagesPerRow === 'number' ? maxImagesPerRow : maxImagesPerRow ? +maxImagesPerRow : undefined,
-+      lightboxEnabled: lightboxEnabled !== false,
        images: selected.map(ele => {
          return { ...(ele === null || ele === void 0 ? void 0 : ele.image),
            desc: ele === null || ele === void 0 ? void 0 : ele.desc
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js
+index 26044ef..af7e742 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js
+@@ -9,57 +9,270 @@ var _react = _interopRequireWildcard(require("react"));
+ 
+ var _draftJs = require("draft-js");
+ 
+-var _videoSelector = require("./selector/video-selector");
++var _modals = require("@keystone-ui/modals");
+ 
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
++var _fields = require("@keystone-ui/fields");
+ 
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
++var _styledComponents = _interopRequireDefault(require("styled-components"));
+ 
+-function VideoButton(props) {
+-  const {
+-    editorState,
+-    onChange,
+-    className,
+-    VideoSelector = _videoSelector.VideoSelector
+-  } = props;
+-  const [toShowVideoSelector, setToShowVideoSelector] = (0, _react.useState)(false);
+-
+-  const promptForVideoSelector = () => {
+-    setToShowVideoSelector(true);
+-  };
++var _draftConverter = _interopRequireDefault(require("../draft-converter"));
+ 
+-  const onVideoSelectorChange = selectedVideosWithMeta => {
+-    const selected = selectedVideosWithMeta === null || selectedVideosWithMeta === void 0 ? void 0 : selectedVideosWithMeta[0];
++var _link = require("./link");
+ 
+-    if (!selected) {
+-      setToShowVideoSelector(false);
+-      return;
++var _readr = _interopRequireDefault(require("@mirrormedia/lilith-draft-renderer/lib/website/readr"));
++
++function _interopRequireDefault(obj) {
++  return obj && obj.__esModule ? obj : { default: obj };
++}
++
++function _getRequireWildcardCache(nodeInterop) {
++  if (typeof WeakMap !== "function") return null;
++  var cacheBabelInterop = new WeakMap();
++  var cacheNodeInterop = new WeakMap();
++  return (_getRequireWildcardCache = function (nodeInterop) {
++    return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
++  })(nodeInterop);
++}
++
++function _interopRequireWildcard(obj, nodeInterop) {
++  if (!nodeInterop && obj && obj.__esModule) {
++    return obj;
++  }
++  if (obj === null || (typeof obj !== "object" && typeof obj !== "function")) {
++    return { default: obj };
++  }
++  var cache = _getRequireWildcardCache(nodeInterop);
++  if (cache && cache.has(obj)) {
++    return cache.get(obj);
++  }
++  var newObj = {};
++  var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
++  for (var key in obj) {
++    if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
++      var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
++      if (desc && (desc.get || desc.set)) {
++        Object.defineProperty(newObj, key, desc);
++      } else {
++        newObj[key] = obj[key];
++      }
+     }
++  }
++  newObj.default = obj;
++  if (cache) {
++    cache.set(obj, newObj);
++  }
++  return newObj;
++}
++
++const captionDecorators = new _draftJs.CompositeDecorator([_readr.default.entityDecorators.linkDecorator]);
++
++function escapeAttr(s) {
++  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
++}
++
++function getYoutubeEmbedUrl(url) {
++  try {
++    const u = new URL(url);
++    const host = u.hostname.replace(/^www\./, "");
++    if (host === "youtu.be") {
++      const id = u.pathname.replace(/^\//, "").split("/")[0];
++      return id ? "https://www.youtube.com/embed/" + id : null;
++    }
++    if (host === "youtube.com" || host === "m.youtube.com") {
++      const v = u.searchParams.get("v");
++      if (v) return "https://www.youtube.com/embed/" + v;
++      const m = u.pathname.match(/\/embed\/([^/?]+)/);
++      if (m) return "https://www.youtube.com/embed/" + m[1];
++      const shortM = u.pathname.match(/\/shorts\/([^/?]+)/);
++      if (shortM) return "https://www.youtube.com/embed/" + shortM[1];
++    }
++  } catch (e) {
++    return null;
++  }
++  return null;
++}
+ 
+-    const contentState = editorState.getCurrentContent(); // since 202310, only VIDEO-V2 will be created
++function buildEmbedMarkup(videoUrl) {
++  const u = String(videoUrl || "").trim();
++  if (!u) return "";
++  const embed = getYoutubeEmbedUrl(u);
++  if (embed) {
++    return (
++      '<iframe width="560" height="315" src="' +
++      escapeAttr(embed) +
++      '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
++    );
++  }
++  return "<video controls src=\"" + escapeAttr(u) + "\"></video>";
++}
++
++const Label = _styledComponents.default.label`
++  display: block;
++  font-weight: 600;
++  margin: 12px 0 6px;
++`;
++const ToolbarRow = _styledComponents.default.div`
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 6px;
++  margin-bottom: 6px;
++`;
++const StyleBtn = _styledComponents.default.button`
++  padding: 4px 10px;
++  border: solid 1px #c1c7d0;
++  background: #fff;
++  border-radius: 4px;
++  cursor: pointer;
++  font-weight: ${props => (props.$bold ? "700" : props.$italic ? "400" : "400")};
++  font-style: ${props => (props.$italic ? "italic" : "normal")};
++`;
++const CaptionEditorWrap = _styledComponents.default.div`
++  border: 1px solid #c1c7d0;
++  border-radius: 4px;
++  padding: 8px;
++  min-height: 88px;
++  font-family: Georgia, serif;
++  font-size: 14px;
++`;
++
++function VideoButton(props) {
++  const { editorState, onChange, className, readOnly } = props;
++  const [open, setOpen] = (0, _react.useState)(false);
++  const [videoUrl, setVideoUrl] = (0, _react.useState)("");
++  const [captionState, setCaptionState] = (0, _react.useState)(() =>
++    _draftJs.EditorState.createEmpty(captionDecorators)
++  );
+ 
+-    const contentStateWithEntity = contentState.createEntity('VIDEO-V2', 'IMMUTABLE', {
+-      video: selected.video,
+-      desc: selected.desc
++  const resetForm = () => {
++    setVideoUrl("");
++    setCaptionState(_draftJs.EditorState.createEmpty(captionDecorators));
++  };
++
++  const handleConfirm = () => {
++    const url = videoUrl.trim();
++    if (!url) {
++      setOpen(false);
++      resetForm();
++      return;
++    }
++    const raw = (0, _draftJs.convertToRaw)(captionState.getCurrentContent());
++    const captionHtml = _draftConverter.default.convertToHtml(raw) || "";
++    const embedMarkup = buildEmbedMarkup(url);
++    const contentState = editorState.getCurrentContent();
++    const contentStateWithEntity = contentState.createEntity("VIDEO-V2", "IMMUTABLE", {
++      videoUrl: url,
++      captionRaw: raw,
++      captionHtml,
++      embedMarkup
+     });
+     const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+-
+     const newEditorState = _draftJs.EditorState.set(editorState, {
+       currentContent: contentStateWithEntity
+-    }); // The third parameter here is a space string, not an empty string
+-    // If you set an empty string, you will get an error: Unknown DraftEntity key: null
++    });
++    onChange(_draftJs.AtomicBlockUtils.insertAtomicBlock(newEditorState, entityKey, " "));
++    setOpen(false);
++    resetForm();
++  };
++
++  const handleCancel = () => {
++    setOpen(false);
++    resetForm();
++  };
++
++  const onOpen = () => {
++    if (readOnly) return;
++    resetForm();
++    setOpen(true);
++  };
+ 
++  const toggleBold = e => {
++    e.preventDefault();
++    setCaptionState(s => _draftJs.RichUtils.toggleInlineStyle(s, "BOLD"));
++  };
+ 
+-    onChange(_draftJs.AtomicBlockUtils.insertAtomicBlock(newEditorState, entityKey, ' '));
+-    setToShowVideoSelector(false);
++  const toggleItalic = e => {
++    e.preventDefault();
++    setCaptionState(s => _draftJs.RichUtils.toggleInlineStyle(s, "ITALIC"));
+   };
+ 
+-  return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, toShowVideoSelector && /*#__PURE__*/_react.default.createElement(VideoSelector, {
+-    onChange: onVideoSelectorChange
+-  }), /*#__PURE__*/_react.default.createElement("div", {
+-    className: className,
+-    onClick: promptForVideoSelector
+-  }, /*#__PURE__*/_react.default.createElement("i", {
+-    className: "fa fa-video-camera"
+-  }), /*#__PURE__*/_react.default.createElement("span", null, " Video")));
++  return /*#__PURE__*/ _react.default.createElement(
++    _react.default.Fragment,
++    null,
++    open &&
++      /*#__PURE__*/ _react.default.createElement(_modals.DrawerController, {
++        isOpen: open
++      }, /*#__PURE__*/ _react.default.createElement(
++        _modals.Drawer,
++        {
++          title: "插入影片",
++          actions: {
++            cancel: {
++              label: "取消",
++              action: handleCancel
++            },
++            confirm: {
++              label: "確認",
++              action: handleConfirm
++            }
++          }
++        },
++        /*#__PURE__*/ _react.default.createElement(Label, null, "影片網址"),
++        /*#__PURE__*/ _react.default.createElement(_fields.TextInput, {
++          autoFocus: true,
++          onChange: e => setVideoUrl(e.target.value),
++          placeholder: "https://",
++          value: videoUrl
++        }),
++        /*#__PURE__*/ _react.default.createElement(Label, null, "圖說"),
++        /*#__PURE__*/ _react.default.createElement(
++          ToolbarRow,
++          null,
++          /*#__PURE__*/ _react.default.createElement(
++            StyleBtn,
++            {
++              type: "button",
++              $bold: true,
++              onMouseDown: toggleBold,
++              "aria-label": "Bold"
++            },
++            "B"
++          ),
++          /*#__PURE__*/ _react.default.createElement(
++            StyleBtn,
++            {
++              type: "button",
++              $italic: true,
++              onMouseDown: toggleItalic,
++              "aria-label": "Italic"
++            },
++            "I"
++          ),
++          /*#__PURE__*/ _react.default.createElement(_link.LinkButton, {
++            editorState: captionState,
++            onChange: setCaptionState
++          })
++        ),
++        /*#__PURE__*/ _react.default.createElement(
++          CaptionEditorWrap,
++          null,
++          /*#__PURE__*/ _react.default.createElement(_draftJs.Editor, {
++            editorState: captionState,
++            onChange: setCaptionState,
++            placeholder: "圖說（選填）"
++          })
++        )
++      )),
++    /*#__PURE__*/ _react.default.createElement(
++      "div",
++      {
++        className: className,
++        onClick: onOpen
++      },
++      /*#__PURE__*/ _react.default.createElement("i", {
++        className: "fa fa-video-camera"
++      }),
++      /*#__PURE__*/ _react.default.createElement("span", null, " Video")
++    )
++  );
+ }
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
 index e579193..3f70ab8 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
@@ -945,7 +1951,7 @@ index e579193..3f70ab8 100644
          }
  
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
-index ac7ea11..5f6a316 100644
+index ac7ea11..d033b29 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/index.js
 @@ -33,6 +33,7 @@ const defaultBlockTagMap = {
@@ -956,7 +1962,15 @@ index ac7ea11..5f6a316 100644
    'ordered-list-item': `<li>%content%</li>`,
    paragraph: `<p>%content%</p>`,
    'unordered-list-item': `<li>%content%</li>`,
-@@ -240,7 +241,8 @@ function convertRawToApiData(raw) {
+@@ -62,6 +63,7 @@ const defaultEntityTagMap = {
+   [_entities.default.LINK.type]: ['<a target="_blank" href="<%= data.url %>">', '</a>'],
+   [_entities.default.SLIDESHOW.type]: ['<!-- slideshow component start --> <ol class="slideshow-container"> <%  _.forEach(data, function(image) { %><li class="slideshow-slide"><img alt="<%- image.name %>" src="<%- image.url %>" srcset="<%= image.mobile.url %> 800w,  <%= image.tablet.url %> 1280w, <%= image.desktop.url %> 2400w" /></li><% }); %>', '</ol><!-- slideshow component end -->'],
+   [_entities.default.VIDEO.type]: ['<div controls class="video-container <%= data.alignment %>"><div class="video-name"><%= data.title %></div><div class="video-desc"><%= data.description %></div><video src="<%= data.url %>" />', '</div>'],
++  [_entities.default['VIDEO-V2'].type]: ['<figure class="video-block-v2"><div class="video-embed"><%- data.embedMarkup %></div><figcaption class="video-caption"><%- data.captionHtml %></figcaption></figure>', ''],
+   [_entities.default.YOUTUBE.type]: ['<iframe width="560" alt="<%= data.description %>" height="315" src="https://www.youtube.com/embed/<%= data.id %>" frameborder="0" allowfullscreen>', '</iframe>']
+ };
+ const nestedTagMap = {
+@@ -240,7 +242,8 @@ function convertRawToApiData(raw) {
    const entityMap = typeof raw.entityMap === 'object' ? raw.entityMap : {};
  
    const entityTagMap = _lodash.default.merge({}, defaultEntityTagMap, {
@@ -966,8 +1980,1237 @@ index ac7ea11..5f6a316 100644
    });
  
    const apiData = convertBlocksToApiData(blocks, entityMap, entityTagMap);
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/draft-editor.js
+index 694bb82..4046dc2 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/draft-editor.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/draft-editor.js
+@@ -61,8 +61,6 @@ var _const = require("../../draft-js/const");
+ 
+ var _imageSelector = require("./selector/image-selector");
+ 
+-var _videoSelector = require("./selector/video-selector");
+-
+ var _postSelector = require("./selector/post-selector");
+ 
+ var _audioSelector = require("./selector/audio-selector");
+@@ -738,8 +736,7 @@ const RichTextEditor = ({
+     isDisabled: checkIsDisabled(buttonNames.video),
+     readOnly: readOnly,
+     editorState: editorState,
+-    onChange: onChange,
+-    VideoSelector: _videoSelector.VideoSelector
++    onChange: onChange
+   }), /*#__PURE__*/_react.default.createElement(CustomYoutubeButton, {
+     isDisabled: checkIsDisabled(buttonNames.youtube),
+     readOnly: readOnly,
+@@ -812,7 +809,6 @@ const RichTextEditor = ({
+     readOnly: readOnly,
+     editorState: editorState,
+     onChange: onChange,
+-    VideoSelector: _videoSelector.VideoSelector,
+     renderBasicEditor: renderBasicEditor,
+     decorators: _entityDecorator.default
+   }), /*#__PURE__*/_react.default.createElement(CustomRelatedPostButton, {
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/selector/video-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/selector/video-selector.js
+deleted file mode 100644
+index 0a57075..0000000
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrordaily/selector/video-selector.js
++++ /dev/null
+@@ -1,357 +0,0 @@
+-"use strict";
+-
+-Object.defineProperty(exports, "__esModule", {
+-  value: true
+-});
+-exports.VideoSelector = VideoSelector;
+-
+-var _react = _interopRequireWildcard(require("react"));
+-
+-var _debounce = _interopRequireDefault(require("lodash/debounce"));
+-
+-var _styledComponents = _interopRequireWildcard(require("styled-components"));
+-
+-var _modals = require("@keystone-ui/modals");
+-
+-var _apollo = require("@keystone-6/core/admin-ui/apollo");
+-
+-var _searchBox = require("./search-box");
+-
+-var _pagination = require("./pagination");
+-
+-var _fields = require("@keystone-ui/fields");
+-
+-var _videoUploader = require("./video-uploader");
+-
+-var _button = require("@keystone-ui/button");
+-
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+-
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+-
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+-
+-const videosQuery = (0, _apollo.gql)`
+-  query Videos($searchText: String!, $take: Int, $skip: Int) {
+-    videosCount(
+-      where: { name: { contains: $searchText }, state: { equals: "published" } }
+-    )
+-    videos(
+-      where: { name: { contains: $searchText }, state: { equals: "published" } }
+-      orderBy: { id: desc }
+-      take: $take
+-      skip: $skip
+-    ) {
+-      id
+-      name
+-      videoSrc
+-      youtubeUrl
+-      file {
+-        filename
+-        filesize
+-        url
+-      }
+-      heroImage {
+-        id
+-        name
+-        imageFile {
+-          url
+-        }
+-        resized {
+-          original
+-        }
+-      }
+-    }
+-  }
+-`;
+-const _ = {
+-  debounce: _debounce.default
+-};
+-const GlobalStyle = (0, _styledComponents.createGlobalStyle)`
+-  form {
+-    @media (max-width: 575px) {
+-      width: 100vw !important;
+-    }
+-  }
+-`;
+-const VideoSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+-  margin-top: 10px;
+-`;
+-const CustomButton = (0, _styledComponents.default)(_button.Button)`
+-  margin-top: 10px;
+-`;
+-const VideoSelectionWrapper = _styledComponents.default.div`
+-  overflow: auto;
+-  margin-top: 10px;
+-`;
+-const VideoGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoGridWrapper = _styledComponents.default.div`
+-  width: 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const VideoMetaGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoMetaGridWrapper = _styledComponents.default.div`
+-  width: 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const Video = _styledComponents.default.video`
+-  display: block;
+-  width: 100%;
+-  aspect-ratio: 2;
+-  object-fit: contain;
+-`;
+-const SeparationLine = _styledComponents.default.div`
+-  border: #e1e5e9 1px solid;
+-  margin-top: 10px;
+-  margin-bottom: 10px;
+-`;
+-const VideoSelected = _styledComponents.default.div`
+-  height: 1.4rem;
+-`;
+-const ErrorWrapper = _styledComponents.default.div`
+-  & * {
+-    margin: 0;
+-  }
+-`;
+-const VideoName = _styledComponents.default.p`
+-  text-align: center;
+-`;
+-const Label = _styledComponents.default.label`
+-  display: block;
+-  margin: 10px 0;
+-  font-weight: 600;
+-`;
+-
+-function VideosGrids(props) {
+-  const {
+-    videos,
+-    selected,
+-    onSelect
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridsWrapper, null, videos.map(video => {
+-    return /*#__PURE__*/_react.default.createElement(VideoGrid, {
+-      key: video.id,
+-      isSelected: selected === null || selected === void 0 ? void 0 : selected.includes(video),
+-      onSelect: () => onSelect(video),
+-      video: video
+-    });
+-  }));
+-}
+-
+-function VideoGrid(props) {
+-  var _video$file;
+-
+-  const {
+-    video,
+-    onSelect,
+-    isSelected
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridWrapper, {
+-    key: video === null || video === void 0 ? void 0 : video.id,
+-    onClick: () => onSelect(video)
+-  }, /*#__PURE__*/_react.default.createElement(VideoSelected, null, isSelected ? /*#__PURE__*/_react.default.createElement("i", {
+-    className: "fas fa-check-circle"
+-  }) : null), /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.videoSrc
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file = video.file) === null || _video$file === void 0 ? void 0 : _video$file.url
+-  })));
+-}
+-
+-function VideoMetaGrids(props) {
+-  const {
+-    videoMetas,
+-    onChange
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridsWrapper, null, videoMetas.map(videoMeta => {
+-    var _videoMeta$video;
+-
+-    return /*#__PURE__*/_react.default.createElement(VideoMetaGrid, {
+-      key: videoMeta === null || videoMeta === void 0 ? void 0 : (_videoMeta$video = videoMeta.video) === null || _videoMeta$video === void 0 ? void 0 : _videoMeta$video.id,
+-      videoMeta: videoMeta,
+-      onChange: onChange
+-    });
+-  }));
+-}
+-
+-function VideoMetaGrid(props) {
+-  var _video$file2;
+-
+-  const {
+-    videoMeta,
+-    onChange
+-  } = props;
+-  const {
+-    video,
+-    desc
+-  } = videoMeta;
+-
+-  const onVideoDescriptionChange = e => {
+-    onChange({
+-      video,
+-      desc: e.target.value
+-    });
+-  };
+-
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridWrapper, null, /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    autoPlay: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.videoSrc
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file2 = video.file) === null || _video$file2 === void 0 ? void 0 : _video$file2.url
+-  })), /*#__PURE__*/_react.default.createElement(Label, null, "Video Name"), /*#__PURE__*/_react.default.createElement(VideoName, null, video === null || video === void 0 ? void 0 : video.name), /*#__PURE__*/_react.default.createElement(Label, {
+-    htmlFor: "description"
+-  }, "Video Description"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+-    id: "description",
+-    type: "text",
+-    placeholder: "(Optional)",
+-    defaultValue: desc,
+-    onChange: _.debounce(onVideoDescriptionChange)
+-  }));
+-}
+-
+-function VideoSelector(props) {
+-  const [queryVideos, {
+-    loading,
+-    error,
+-    data: {
+-      videos = [],
+-      videosCount = 0
+-    } = {}
+-  }] = (0, _apollo.useLazyQuery)(videosQuery, {
+-    fetchPolicy: 'no-cache'
+-  });
+-  const [currentPage, setCurrentPage] = (0, _react.useState)(0); // page starts with 1, 0 is used to detect initialization
+-
+-  const [searchText, setSearchText] = (0, _react.useState)('');
+-  const [selected, setSelected] = (0, _react.useState)([]);
+-  const [showVideoUploader, setShowVideoUploader] = (0, _react.useState)(false);
+-  const pageSize = 6;
+-  const {
+-    onChange
+-  } = props;
+-
+-  const onSave = () => {
+-    onChange(selected);
+-  };
+-
+-  const onCancel = () => {
+-    onChange([]);
+-  };
+-
+-  const onSearchBoxChange = async searchInput => {
+-    setSearchText(searchInput);
+-    setCurrentPage(1);
+-  };
+-
+-  const onVideoUploaderChange = video => {
+-    if (video) setSelected(prev => [...prev, {
+-      video,
+-      desc: ''
+-    }]);
+-    setShowVideoUploader(false);
+-  };
+-
+-  const onVideoMetaChange = videoEntityWithMeta => {
+-    setSelected([videoEntityWithMeta]);
+-  };
+-
+-  const onVideosGridSelect = videoEntity => {
+-    setSelected(selected => {
+-      const filterdSelected = selected.filter(ele => {
+-        var _ele$video;
+-
+-        return ((_ele$video = ele.video) === null || _ele$video === void 0 ? void 0 : _ele$video.id) !== videoEntity.id;
+-      }); // deselect the video
+-
+-      if (filterdSelected.length !== selected.length) {
+-        return filterdSelected;
+-      } // single select
+-
+-
+-      return [{
+-        video: videoEntity,
+-        desc: ''
+-      }];
+-    });
+-  };
+-
+-  const selectedVideos = selected.map(ele => {
+-    return ele.video;
+-  });
+-  (0, _react.useEffect)(() => {
+-    if (currentPage !== 0) {
+-      queryVideos({
+-        variables: {
+-          searchText: searchText,
+-          skip: (currentPage - 1) * pageSize,
+-          take: pageSize
+-        }
+-      });
+-    }
+-  }, [currentPage, searchText]);
+-
+-  let searchResult = /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(VideosGrids, {
+-    videos: videos,
+-    selected: selectedVideos,
+-    onSelect: onVideosGridSelect
+-  }), /*#__PURE__*/_react.default.createElement(_pagination.Pagination, {
+-    currentPage: currentPage,
+-    total: videosCount,
+-    pageSize: pageSize,
+-    onChange: pageIndex => {
+-      setCurrentPage(pageIndex);
+-    }
+-  }));
+-
+-  if (loading) {
+-    searchResult = /*#__PURE__*/_react.default.createElement("p", null, "searching...");
+-  }
+-
+-  if (error) {
+-    var _videosQuery$loc;
+-
+-    searchResult = /*#__PURE__*/_react.default.createElement(ErrorWrapper, null, /*#__PURE__*/_react.default.createElement("h3", null, "Errors occurs in the `videos` query"), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Message:"), /*#__PURE__*/_react.default.createElement("div", null, error.message), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Stack:"), /*#__PURE__*/_react.default.createElement("div", null, error.stack), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Query:"), /*#__PURE__*/_react.default.createElement("pre", null, (_videosQuery$loc = videosQuery.loc) === null || _videosQuery$loc === void 0 ? void 0 : _videosQuery$loc.source.body)));
+-  }
+-
+-  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(GlobalStyle, null), /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+-    isOpen: true
+-  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+-    title: "Select video",
+-    actions: {
+-      cancel: {
+-        label: 'Cancel',
+-        action: onCancel
+-      },
+-      confirm: {
+-        label: 'Confirm',
+-        action: onSave
+-      }
+-    },
+-    width: "narrow"
+-  }, /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(CustomButton, {
+-    onClick: () => setShowVideoUploader(true)
+-  }, "\u4E0A\u50B3\u5F71\u7247"), /*#__PURE__*/_react.default.createElement(VideoSearchBox, {
+-    onChange: onSearchBoxChange
+-  }), /*#__PURE__*/_react.default.createElement(VideoSelectionWrapper, null, /*#__PURE__*/_react.default.createElement("div", null, searchResult), !!selected.length && /*#__PURE__*/_react.default.createElement(SeparationLine, null), /*#__PURE__*/_react.default.createElement(VideoMetaGrids, {
+-    videoMetas: selected,
+-    onChange: onVideoMetaChange
+-  }))))), showVideoUploader && /*#__PURE__*/_react.default.createElement(_videoUploader.VideoUploader, {
+-    onChange: onVideoUploaderChange
+-  }));
+-}
+\ No newline at end of file
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/draft-editor.js
+index bb089ba..2f5ac63 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/draft-editor.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/draft-editor.js
+@@ -61,8 +61,6 @@ var _const = require("../../draft-js/const");
+ 
+ var _imageSelector = require("./selector/image-selector");
+ 
+-var _videoSelector = require("./selector/video-selector");
+-
+ var _postSelector = require("./selector/post-selector");
+ 
+ var _audioSelector = require("./selector/audio-selector");
+@@ -765,8 +763,7 @@ const RichTextEditor = ({
+     isDisabled: checkIsDisabled(buttonNames.video),
+     readOnly: readOnly,
+     editorState: editorState,
+-    onChange: onChange,
+-    VideoSelector: _videoSelector.VideoSelector
++    onChange: onChange
+   })), /*#__PURE__*/_react.default.createElement(ButtonGroup, {
+     isDisabled: disabledButtons.includes(buttonNames.youtube)
+   }, /*#__PURE__*/_react.default.createElement(CustomYoutubeButton, {
+@@ -863,7 +860,6 @@ const RichTextEditor = ({
+     readOnly: readOnly,
+     editorState: editorState,
+     onChange: onChange,
+-    VideoSelector: _videoSelector.VideoSelector,
+     renderBasicEditor: renderBasicEditor,
+     decorators: _entityDecorator.default
+   })), /*#__PURE__*/_react.default.createElement(ButtonGroup, {
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/selector/video-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/selector/video-selector.js
+deleted file mode 100644
+index d73ab15..0000000
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrormedia/selector/video-selector.js
++++ /dev/null
+@@ -1,326 +0,0 @@
+-"use strict";
+-
+-Object.defineProperty(exports, "__esModule", {
+-  value: true
+-});
+-exports.VideoSelector = VideoSelector;
+-
+-var _react = _interopRequireWildcard(require("react"));
+-
+-var _debounce = _interopRequireDefault(require("lodash/debounce"));
+-
+-var _styledComponents = _interopRequireDefault(require("styled-components"));
+-
+-var _modals = require("@keystone-ui/modals");
+-
+-var _apollo = require("@keystone-6/core/admin-ui/apollo");
+-
+-var _searchBox = require("./search-box");
+-
+-var _pagination = require("./pagination");
+-
+-var _fields = require("@keystone-ui/fields");
+-
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+-
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+-
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+-
+-const videosQuery = (0, _apollo.gql)`
+-  query Videos($searchText: String!, $take: Int, $skip: Int) {
+-    videosCount(where: { name: { contains: $searchText } })
+-    videos(
+-      where: { name: { contains: $searchText } }
+-      orderBy: { id: desc }
+-      take: $take
+-      skip: $skip
+-    ) {
+-      id
+-      name
+-      videoSrc
+-      file {
+-        filename
+-        filesize
+-        url
+-      }
+-      heroImage {
+-        id
+-        name
+-        imageFile {
+-          url
+-        }
+-        resized {
+-          original
+-        }
+-      }
+-    }
+-  }
+-`;
+-const _ = {
+-  debounce: _debounce.default
+-};
+-const VideoSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+-  margin-top: 10px;
+-`;
+-const VideoSelectionWrapper = _styledComponents.default.div`
+-  overflow: auto;
+-  margin-top: 10px;
+-`;
+-const VideoGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const VideoMetaGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoMetaGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const Video = _styledComponents.default.video`
+-  display: block;
+-  width: 100%;
+-  aspect-ratio: 2;
+-  object-fit: cover;
+-`;
+-const SeparationLine = _styledComponents.default.div`
+-  border: #e1e5e9 1px solid;
+-  margin-top: 10px;
+-  margin-bottom: 10px;
+-`;
+-const VideoSelected = _styledComponents.default.div`
+-  height: 1.4rem;
+-`;
+-const ErrorWrapper = _styledComponents.default.div`
+-  & * {
+-    margin: 0;
+-  }
+-`;
+-const VideoName = _styledComponents.default.p`
+-  text-align: center;
+-`;
+-const Label = _styledComponents.default.label`
+-  display: block;
+-  margin: 10px 0;
+-  font-weight: 600;
+-`;
+-
+-function VideosGrids(props) {
+-  const {
+-    videos,
+-    selected,
+-    onSelect
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridsWrapper, null, videos.map(video => {
+-    return /*#__PURE__*/_react.default.createElement(VideoGrid, {
+-      key: video.id,
+-      isSelected: selected === null || selected === void 0 ? void 0 : selected.includes(video),
+-      onSelect: () => onSelect(video),
+-      video: video
+-    });
+-  }));
+-}
+-
+-function VideoGrid(props) {
+-  var _video$file;
+-
+-  const {
+-    video,
+-    onSelect,
+-    isSelected
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridWrapper, {
+-    key: video === null || video === void 0 ? void 0 : video.id,
+-    onClick: () => onSelect(video)
+-  }, /*#__PURE__*/_react.default.createElement(VideoSelected, null, isSelected ? /*#__PURE__*/_react.default.createElement("i", {
+-    className: "fas fa-check-circle"
+-  }) : null), /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.videoSrc
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file = video.file) === null || _video$file === void 0 ? void 0 : _video$file.url
+-  })));
+-}
+-
+-function VideoMetaGrids(props) {
+-  const {
+-    videoMetas,
+-    onChange
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridsWrapper, null, videoMetas.map(videoMeta => {
+-    var _videoMeta$video;
+-
+-    return /*#__PURE__*/_react.default.createElement(VideoMetaGrid, {
+-      key: videoMeta === null || videoMeta === void 0 ? void 0 : (_videoMeta$video = videoMeta.video) === null || _videoMeta$video === void 0 ? void 0 : _videoMeta$video.id,
+-      videoMeta: videoMeta,
+-      onChange: onChange
+-    });
+-  }));
+-}
+-
+-function VideoMetaGrid(props) {
+-  var _video$file2;
+-
+-  const {
+-    videoMeta,
+-    onChange
+-  } = props;
+-  const {
+-    video,
+-    desc
+-  } = videoMeta;
+-
+-  const onVideoDescriptionChange = e => {
+-    onChange({
+-      video,
+-      desc: e.target.value
+-    });
+-  };
+-
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridWrapper, null, /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    autoPlay: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.videoSrc
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file2 = video.file) === null || _video$file2 === void 0 ? void 0 : _video$file2.url
+-  })), /*#__PURE__*/_react.default.createElement(Label, null, "Video Name"), /*#__PURE__*/_react.default.createElement(VideoName, null, video === null || video === void 0 ? void 0 : video.name), /*#__PURE__*/_react.default.createElement(Label, {
+-    htmlFor: "description"
+-  }, "Video Description"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+-    id: "description",
+-    type: "text",
+-    placeholder: "(Optional)",
+-    defaultValue: desc,
+-    onChange: _.debounce(onVideoDescriptionChange)
+-  }));
+-}
+-
+-function VideoSelector(props) {
+-  const [queryVideos, {
+-    loading,
+-    error,
+-    data: {
+-      videos = [],
+-      videosCount = 0
+-    } = {}
+-  }] = (0, _apollo.useLazyQuery)(videosQuery, {
+-    fetchPolicy: 'no-cache'
+-  });
+-  const [currentPage, setCurrentPage] = (0, _react.useState)(0); // page starts with 1, 0 is used to detect initialization
+-
+-  const [searchText, setSearchText] = (0, _react.useState)('');
+-  const [selected, setSelected] = (0, _react.useState)([]);
+-  const pageSize = 6;
+-  const {
+-    onChange
+-  } = props;
+-
+-  const onSave = () => {
+-    onChange(selected);
+-  };
+-
+-  const onCancel = () => {
+-    onChange([]);
+-  };
+-
+-  const onSearchBoxChange = async searchInput => {
+-    setSearchText(searchInput);
+-    setCurrentPage(1);
+-  };
+-
+-  const onVideoMetaChange = videoEntityWithMeta => {
+-    setSelected([videoEntityWithMeta]);
+-  };
+-
+-  const onVideosGridSelect = videoEntity => {
+-    setSelected(selected => {
+-      const filterdSelected = selected.filter(ele => {
+-        var _ele$video;
+-
+-        return ((_ele$video = ele.video) === null || _ele$video === void 0 ? void 0 : _ele$video.id) !== videoEntity.id;
+-      }); // deselect the video
+-
+-      if (filterdSelected.length !== selected.length) {
+-        return filterdSelected;
+-      } // single select
+-
+-
+-      return [{
+-        video: videoEntity,
+-        desc: ''
+-      }];
+-    });
+-  };
+-
+-  const selectedVideos = selected.map(ele => {
+-    return ele.video;
+-  });
+-  (0, _react.useEffect)(() => {
+-    if (currentPage !== 0) {
+-      queryVideos({
+-        variables: {
+-          searchText: searchText,
+-          skip: (currentPage - 1) * pageSize,
+-          take: pageSize
+-        }
+-      });
+-    }
+-  }, [currentPage, searchText]);
+-
+-  let searchResult = /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(VideosGrids, {
+-    videos: videos,
+-    selected: selectedVideos,
+-    onSelect: onVideosGridSelect
+-  }), /*#__PURE__*/_react.default.createElement(_pagination.Pagination, {
+-    currentPage: currentPage,
+-    total: videosCount,
+-    pageSize: pageSize,
+-    onChange: pageIndex => {
+-      setCurrentPage(pageIndex);
+-    }
+-  }));
+-
+-  if (loading) {
+-    searchResult = /*#__PURE__*/_react.default.createElement("p", null, "searching...");
+-  }
+-
+-  if (error) {
+-    var _videosQuery$loc;
+-
+-    searchResult = /*#__PURE__*/_react.default.createElement(ErrorWrapper, null, /*#__PURE__*/_react.default.createElement("h3", null, "Errors occurs in the `videos` query"), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Message:"), /*#__PURE__*/_react.default.createElement("div", null, error.message), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Stack:"), /*#__PURE__*/_react.default.createElement("div", null, error.stack), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Query:"), /*#__PURE__*/_react.default.createElement("pre", null, (_videosQuery$loc = videosQuery.loc) === null || _videosQuery$loc === void 0 ? void 0 : _videosQuery$loc.source.body)));
+-  }
+-
+-  return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+-    isOpen: true
+-  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+-    title: "Select video",
+-    actions: {
+-      cancel: {
+-        label: 'Cancel',
+-        action: onCancel
+-      },
+-      confirm: {
+-        label: 'Confirm',
+-        action: onSave
+-      }
+-    }
+-  }, /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(VideoSearchBox, {
+-    onChange: onSearchBoxChange
+-  }), /*#__PURE__*/_react.default.createElement(VideoSelectionWrapper, null, /*#__PURE__*/_react.default.createElement("div", null, searchResult), !!selected.length && /*#__PURE__*/_react.default.createElement(SeparationLine, null), /*#__PURE__*/_react.default.createElement(VideoMetaGrids, {
+-    videoMetas: selected,
+-    onChange: onVideoMetaChange
+-  })))));
+-}
+\ No newline at end of file
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/draft-editor.js
+index bb089ba..2f5ac63 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/draft-editor.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/draft-editor.js
+@@ -61,8 +61,6 @@ var _const = require("../../draft-js/const");
+ 
+ var _imageSelector = require("./selector/image-selector");
+ 
+-var _videoSelector = require("./selector/video-selector");
+-
+ var _postSelector = require("./selector/post-selector");
+ 
+ var _audioSelector = require("./selector/audio-selector");
+@@ -765,8 +763,7 @@ const RichTextEditor = ({
+     isDisabled: checkIsDisabled(buttonNames.video),
+     readOnly: readOnly,
+     editorState: editorState,
+-    onChange: onChange,
+-    VideoSelector: _videoSelector.VideoSelector
++    onChange: onChange
+   })), /*#__PURE__*/_react.default.createElement(ButtonGroup, {
+     isDisabled: disabledButtons.includes(buttonNames.youtube)
+   }, /*#__PURE__*/_react.default.createElement(CustomYoutubeButton, {
+@@ -863,7 +860,6 @@ const RichTextEditor = ({
+     readOnly: readOnly,
+     editorState: editorState,
+     onChange: onChange,
+-    VideoSelector: _videoSelector.VideoSelector,
+     renderBasicEditor: renderBasicEditor,
+     decorators: _entityDecorator.default
+   })), /*#__PURE__*/_react.default.createElement(ButtonGroup, {
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/selector/video-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/selector/video-selector.js
+deleted file mode 100644
+index fa7be9e..0000000
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/mirrortv/selector/video-selector.js
++++ /dev/null
+@@ -1,432 +0,0 @@
+-"use strict";
+-
+-Object.defineProperty(exports, "__esModule", {
+-  value: true
+-});
+-exports.VideoSelector = VideoSelector;
+-
+-var _react = _interopRequireWildcard(require("react"));
+-
+-var _debounce = _interopRequireDefault(require("lodash/debounce"));
+-
+-var _styledComponents = _interopRequireDefault(require("styled-components"));
+-
+-var _modals = require("@keystone-ui/modals");
+-
+-var _apollo = require("@keystone-6/core/admin-ui/apollo");
+-
+-var _searchBox = require("./search-box");
+-
+-var _pagination = require("./pagination");
+-
+-var _fields = require("@keystone-ui/fields");
+-
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+-
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+-
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+-
+-const videosQuery = (0, _apollo.gql)`
+-  query Videos($searchText: String!, $take: Int, $skip: Int) {
+-    videosCount(where: { name: { contains: $searchText } })
+-    videos(
+-      where: { name: { contains: $searchText } }
+-      orderBy: { id: desc }
+-      take: $take
+-      skip: $skip
+-    ) {
+-      id
+-      name
+-      videoSrc
+-      file {
+-        filename
+-        filesize
+-        url
+-      }
+-      coverPhoto {
+-        id
+-        name
+-        resized {
+-          original
+-        }
+-      }
+-    }
+-  }
+-`;
+-const _ = {
+-  debounce: _debounce.default
+-};
+-const VideoSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+-  margin-top: 10px;
+-`;
+-const VideoSelectionWrapper = _styledComponents.default.div`
+-  overflow: auto;
+-  margin-top: 10px;
+-`;
+-const VideoGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const VideoMetaGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoMetaGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const Video = _styledComponents.default.video`
+-  display: block;
+-  width: 100%;
+-  aspect-ratio: 16 / 9;
+-  object-fit: cover;
+-`;
+-const SeparationLine = _styledComponents.default.div`
+-  border: #e1e5e9 1px solid;
+-  margin-top: 10px;
+-  margin-bottom: 10px;
+-`;
+-const VideoSelected = _styledComponents.default.div`
+-  height: 1.4rem;
+-`;
+-const ErrorWrapper = _styledComponents.default.div`
+-  & * {
+-    margin: 0;
+-  }
+-`;
+-const VideoName = _styledComponents.default.p`
+-  text-align: center;
+-`;
+-const Label = _styledComponents.default.label`
+-  display: block;
+-  margin: 10px 0;
+-  font-weight: 600;
+-`;
+-
+-const getYoutubeId = url => {
+-  if (!url) return null;
+-  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+-  return match ? match[1] : null;
+-};
+-
+-function VideosGrids(props) {
+-  const {
+-    videos,
+-    selected,
+-    onSelect
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridsWrapper, null, videos.map(video => {
+-    return /*#__PURE__*/_react.default.createElement(VideoGrid, {
+-      key: video.id,
+-      isSelected: selected === null || selected === void 0 ? void 0 : selected.some(s => s.id === video.id),
+-      onSelect: () => onSelect(video),
+-      video: video
+-    });
+-  }));
+-}
+-
+-function VideoGrid(props) {
+-  var _video$file, _video$coverPhoto, _video$coverPhoto$res;
+-
+-  const {
+-    video,
+-    onSelect,
+-    isSelected
+-  } = props;
+-  const [isPlaying, setIsPlaying] = (0, _react.useState)(false);
+-  (0, _react.useEffect)(() => {
+-    setIsPlaying(false);
+-  }, [video.id]);
+-  const youtubeId = getYoutubeId(video === null || video === void 0 ? void 0 : video.videoSrc);
+-  const fileUrl = video === null || video === void 0 ? void 0 : (_video$file = video.file) === null || _video$file === void 0 ? void 0 : _video$file.url;
+-  const posterUrl = (video === null || video === void 0 ? void 0 : (_video$coverPhoto = video.coverPhoto) === null || _video$coverPhoto === void 0 ? void 0 : (_video$coverPhoto$res = _video$coverPhoto.resized) === null || _video$coverPhoto$res === void 0 ? void 0 : _video$coverPhoto$res.original) || (youtubeId ? `https://img.youtube.com/vi/${encodeURIComponent(youtubeId)}/hqdefault.jpg` : "");
+-
+-  const handlePlayAndSelect = e => {
+-    e.stopPropagation();
+-
+-    if (isPlaying) {
+-      setIsPlaying(false);
+-    } else {
+-      setIsPlaying(true);
+-      onSelect(video);
+-    }
+-  };
+-
+-  return /*#__PURE__*/_react.default.createElement(VideoGridWrapper, {
+-    key: video === null || video === void 0 ? void 0 : video.id,
+-    onClick: () => onSelect(video)
+-  }, /*#__PURE__*/_react.default.createElement(VideoSelected, {
+-    style: {
+-      height: '24px',
+-      marginBottom: '4px'
+-    }
+-  }, isSelected ? /*#__PURE__*/_react.default.createElement("i", {
+-    className: "fas fa-check-circle",
+-    style: {
+-      color: '#007bff'
+-    }
+-  }) : null), /*#__PURE__*/_react.default.createElement("div", {
+-    onClick: handlePlayAndSelect,
+-    style: {
+-      width: '100%',
+-      aspectRatio: '16/9',
+-      position: 'relative',
+-      backgroundColor: '#000',
+-      borderRadius: '4px',
+-      overflow: 'hidden'
+-    }
+-  }, isPlaying ? youtubeId ? /*#__PURE__*/_react.default.createElement("iframe", {
+-    style: {
+-      width: '100%',
+-      height: '100%',
+-      border: 'none',
+-      display: 'block'
+-    },
+-    src: `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&rel=0`,
+-    allow: "autoplay; encrypted-media",
+-    allowFullScreen: true
+-  }) : /*#__PURE__*/_react.default.createElement(Video, {
+-    autoPlay: true,
+-    controls: true,
+-    muted: true,
+-    style: {
+-      width: '100%',
+-      height: '100%',
+-      objectFit: 'cover'
+-    }
+-  }, (fileUrl || (video === null || video === void 0 ? void 0 : video.videoSrc)) && /*#__PURE__*/_react.default.createElement("source", {
+-    src: fileUrl || (video === null || video === void 0 ? void 0 : video.videoSrc)
+-  })) : /*#__PURE__*/_react.default.createElement("div", {
+-    style: {
+-      width: '100%',
+-      height: '100%',
+-      backgroundImage: `url(${posterUrl})`,
+-      backgroundSize: 'cover',
+-      backgroundPosition: 'center',
+-      display: 'flex',
+-      alignItems: 'center',
+-      justifyContent: 'center'
+-    }
+-  }, /*#__PURE__*/_react.default.createElement("i", {
+-    className: youtubeId ? "fab fa-youtube" : "fas fa-play-circle",
+-    style: {
+-      color: 'white',
+-      fontSize: '2.5rem',
+-      opacity: 0.8
+-    }
+-  }))), /*#__PURE__*/_react.default.createElement(VideoName, {
+-    style: {
+-      marginTop: '8px',
+-      fontSize: '14px',
+-      height: '1.2em',
+-      lineHeight: '1.2',
+-      whiteSpace: 'nowrap',
+-      overflow: 'hidden',
+-      textOverflow: 'ellipsis',
+-      color: isSelected ? '#007bff' : 'inherit'
+-    }
+-  }, (video === null || video === void 0 ? void 0 : video.name) || "Untitled"));
+-}
+-
+-function VideoMetaGrids(props) {
+-  const {
+-    videoMetas,
+-    onChange
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridsWrapper, null, videoMetas.map(videoMeta => {
+-    var _videoMeta$video;
+-
+-    return /*#__PURE__*/_react.default.createElement(VideoMetaGrid, {
+-      key: videoMeta === null || videoMeta === void 0 ? void 0 : (_videoMeta$video = videoMeta.video) === null || _videoMeta$video === void 0 ? void 0 : _videoMeta$video.id,
+-      videoMeta: videoMeta,
+-      onChange: onChange
+-    });
+-  }));
+-}
+-
+-function VideoMetaGrid(props) {
+-  var _video$coverPhoto2, _video$coverPhoto2$re, _video$file2, _video$file3;
+-
+-  const {
+-    videoMeta,
+-    onChange
+-  } = props;
+-  const {
+-    video,
+-    desc
+-  } = videoMeta;
+-  const youtubeId = getYoutubeId(video === null || video === void 0 ? void 0 : video.videoSrc);
+-  const posterUrl = (video === null || video === void 0 ? void 0 : (_video$coverPhoto2 = video.coverPhoto) === null || _video$coverPhoto2 === void 0 ? void 0 : (_video$coverPhoto2$re = _video$coverPhoto2.resized) === null || _video$coverPhoto2$re === void 0 ? void 0 : _video$coverPhoto2$re.original) || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : "");
+-
+-  const onVideoDescriptionChange = e => {
+-    onChange({
+-      video,
+-      desc: e.target.value
+-    });
+-  };
+-
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridWrapper, null, youtubeId ? /*#__PURE__*/_react.default.createElement("iframe", {
+-    width: "100%",
+-    style: {
+-      aspectRatio: '16/9',
+-      border: 'none',
+-      backgroundColor: '#000'
+-    },
+-    src: `https://www.youtube.com/embed/${youtubeId}?rel=0&autoplay=0`,
+-    allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+-    allowFullScreen: true,
+-    loading: "lazy"
+-  }) : /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    autoPlay: true,
+-    loop: true,
+-    controls: true,
+-    poster: posterUrl,
+-    style: {
+-      width: '100%',
+-      aspectRatio: '16/9'
+-    }
+-  }, ((video === null || video === void 0 ? void 0 : video.videoSrc) || (video === null || video === void 0 ? void 0 : (_video$file2 = video.file) === null || _video$file2 === void 0 ? void 0 : _video$file2.url)) && /*#__PURE__*/_react.default.createElement("source", {
+-    src: (video === null || video === void 0 ? void 0 : video.videoSrc) || (video === null || video === void 0 ? void 0 : (_video$file3 = video.file) === null || _video$file3 === void 0 ? void 0 : _video$file3.url)
+-  })), /*#__PURE__*/_react.default.createElement(Label, null, "Video Name"), /*#__PURE__*/_react.default.createElement(VideoName, {
+-    style: {
+-      textAlign: 'left',
+-      fontSize: '14px',
+-      fontWeight: '500'
+-    }
+-  }, (video === null || video === void 0 ? void 0 : video.name) || 'Untitled'), /*#__PURE__*/_react.default.createElement(Label, {
+-    htmlFor: "description"
+-  }, "Video Description"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+-    id: "description",
+-    type: "text",
+-    placeholder: "(Optional)",
+-    defaultValue: desc,
+-    onChange: _.debounce(onVideoDescriptionChange, 300)
+-  }));
+-}
+-
+-function VideoSelector(props) {
+-  const [queryVideos, {
+-    loading,
+-    error,
+-    data: {
+-      videos = [],
+-      videosCount = 0
+-    } = {}
+-  }] = (0, _apollo.useLazyQuery)(videosQuery, {
+-    fetchPolicy: 'no-cache'
+-  });
+-  const [currentPage, setCurrentPage] = (0, _react.useState)(0); // page starts with 1, 0 is used to detect initialization
+-
+-  const [searchText, setSearchText] = (0, _react.useState)('');
+-  const [selected, setSelected] = (0, _react.useState)([]);
+-  const pageSize = 6;
+-  const {
+-    onChange
+-  } = props;
+-
+-  const onSave = () => {
+-    onChange(selected);
+-  };
+-
+-  const onCancel = () => {
+-    onChange([]);
+-  };
+-
+-  const onSearchBoxChange = async searchInput => {
+-    setSearchText(searchInput);
+-    setCurrentPage(1);
+-  };
+-
+-  const onVideoMetaChange = videoEntityWithMeta => {
+-    setSelected([videoEntityWithMeta]);
+-  };
+-
+-  const onVideosGridSelect = videoEntity => {
+-    setSelected(selected => {
+-      const filterdSelected = selected.filter(ele => {
+-        var _ele$video;
+-
+-        return ((_ele$video = ele.video) === null || _ele$video === void 0 ? void 0 : _ele$video.id) !== videoEntity.id;
+-      }); // deselect the video
+-
+-      if (filterdSelected.length !== selected.length) {
+-        return filterdSelected;
+-      } // single select
+-
+-
+-      return [{
+-        video: videoEntity,
+-        desc: ''
+-      }];
+-    });
+-  };
+-
+-  const selectedVideos = selected.map(ele => {
+-    return ele.video;
+-  });
+-  (0, _react.useEffect)(() => {
+-    if (currentPage !== 0) {
+-      queryVideos({
+-        variables: {
+-          searchText: searchText,
+-          skip: (currentPage - 1) * pageSize,
+-          take: pageSize
+-        }
+-      });
+-    }
+-  }, [currentPage, searchText]);
+-
+-  let searchResult = /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(VideosGrids, {
+-    videos: videos,
+-    selected: selectedVideos,
+-    onSelect: onVideosGridSelect
+-  }), /*#__PURE__*/_react.default.createElement(_pagination.Pagination, {
+-    currentPage: currentPage,
+-    total: videosCount,
+-    pageSize: pageSize,
+-    onChange: pageIndex => {
+-      setCurrentPage(pageIndex);
+-    }
+-  }));
+-
+-  if (loading) {
+-    searchResult = /*#__PURE__*/_react.default.createElement("p", null, "searching...");
+-  }
+-
+-  if (error) {
+-    var _videosQuery$loc;
+-
+-    searchResult = /*#__PURE__*/_react.default.createElement(ErrorWrapper, null, /*#__PURE__*/_react.default.createElement("h3", null, "Errors occurs in the `videos` query"), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Message:"), /*#__PURE__*/_react.default.createElement("div", null, error.message), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Stack:"), /*#__PURE__*/_react.default.createElement("div", null, error.stack), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Query:"), /*#__PURE__*/_react.default.createElement("pre", null, (_videosQuery$loc = videosQuery.loc) === null || _videosQuery$loc === void 0 ? void 0 : _videosQuery$loc.source.body)));
+-  }
+-
+-  return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+-    isOpen: true
+-  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+-    title: "Select video",
+-    actions: {
+-      cancel: {
+-        label: 'Cancel',
+-        action: onCancel
+-      },
+-      confirm: {
+-        label: 'Confirm',
+-        action: onSave
+-      }
+-    }
+-  }, /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(VideoSearchBox, {
+-    onChange: onSearchBoxChange
+-  }), /*#__PURE__*/_react.default.createElement(VideoSelectionWrapper, null, /*#__PURE__*/_react.default.createElement("div", null, searchResult), !!selected.length && /*#__PURE__*/_react.default.createElement(SeparationLine, null), /*#__PURE__*/_react.default.createElement(VideoMetaGrids, {
+-    videoMetas: selected,
+-    onChange: onVideoMetaChange
+-  })))));
+-}
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
-index ff465a9..43c23c7 100644
+index ff465a9..8ded7de 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer-fn.js
 @@ -9,12 +9,6 @@ var _infoBoxBlock = require("./block-renderer/info-box-block");
@@ -983,15 +3226,17 @@ index ff465a9..43c23c7 100644
  var _sideIndexBlock = require("./block-renderer/side-index-block");
  
  var _imageBlock = require("./block-renderer/image-block");
-@@ -29,7 +23,6 @@ const {
+@@ -29,8 +23,8 @@ const {
    SlideshowBlock,
    SlideshowBlockV2,
    DividerBlock,
 -  RelatedPostBlock,
    VideoBlock,
++  VideoBlockV2,
    AudioBlock
  } = _readr.default.blockRenderers;
-@@ -81,26 +74,6 @@ const AtomicBlock = props => {
+ 
+@@ -81,26 +75,6 @@ const AtomicBlock = props => {
          return (0, _tableBlock.TableEditorBlock)(props);
        }
  
@@ -1018,6 +3263,18 @@ index ff465a9..43c23c7 100644
      case 'SIDEINDEX':
        {
          return (0, _sideIndexBlock.SideIndexEditorBlock)(props);
+@@ -111,6 +85,11 @@ const AtomicBlock = props => {
+         return VideoBlock(entity);
+       }
+ 
++    case 'VIDEO-V2':
++      {
++        return VideoBlockV2(entity);
++      }
++
+     case 'AUDIO':
+       {
+         return AudioBlock(entity);
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
 index 825dc22..db4d5f3 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/color-box-block.js
@@ -1313,10 +3570,10 @@ index f4a4c88..ce9b88a 100644
      });
      return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..83a1099 100644
+index ceebcbb..96315b0 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-@@ -35,28 +35,26 @@ var _table = require("../../draft-js/buttons/table");
+@@ -35,31 +35,27 @@ var _table = require("../../draft-js/buttons/table");
  
  var _divider = require("../../draft-js/buttons/divider");
  
@@ -1344,16 +3601,19 @@ index ceebcbb..83a1099 100644
 +
  var _const = require("../../draft-js/const");
  
+-var _imageSelector = require("./selector/image-selector");
 +var _modals = require("@keystone-ui/modals");
-+
+ 
+-var _videoSelector = require("./selector/video-selector");
 +var _fields = require("@keystone-ui/fields");
 +
 +var _draftConverter = _interopRequireDefault(require("../../draft-js/draft-converter"));
 +
- var _imageSelector = require("./selector/image-selector");
++var _imageSelector = require("./selector/image-selector");
  
- var _videoSelector = require("./selector/video-selector");
-@@ -100,17 +98,42 @@ const buttonNames = {
+ var _postSelector = require("./selector/post-selector");
+ 
+@@ -100,17 +96,42 @@ const buttonNames = {
    slideshow: 'slideshow',
    table: 'table',
    textAlign: 'text-align',
@@ -1403,7 +3663,7 @@ index ceebcbb..83a1099 100644
  const buttonStyle = (0, _styledComponents.css)`
    border-radius: 6px;
    text-align: center;
-@@ -235,9 +258,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
+@@ -235,9 +256,6 @@ const longFormButtonStyle = (0, _styledComponents.css)`
  const CustomFontColorButton = (0, _styledComponents.default)(_fontColor.FontColorButton)`
    ${buttonStyle}
  `;
@@ -1413,7 +3673,7 @@ index ceebcbb..83a1099 100644
  const CustomButton = _styledComponents.default.div`
    ${buttonStyle}
  `;
-@@ -266,15 +286,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
+@@ -266,15 +284,12 @@ const CustomEmbeddedCodeButton = createButtonWithoutProps(_embeddedCode.Embedded
  const CustomTableButton = createButtonWithoutProps(_table.TableButton);
  const CustomInfoBoxButton = createButtonWithoutProps(_infoBox.InfoBoxButton);
  const CustomDividerButton = createButtonWithoutProps(_divider.DividerButton);
@@ -1430,7 +3690,7 @@ index ceebcbb..83a1099 100644
  const DraftEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-root)*/
    background: #fff;
-@@ -324,14 +341,17 @@ const DraftEditorControls = _styledComponents.default.div`
+@@ -324,14 +339,17 @@ const DraftEditorControls = _styledComponents.default.div`
    padding-top: 1rem;
    width: 100%;
    background: rgb(255, 255, 255);
@@ -1448,7 +3708,7 @@ index ceebcbb..83a1099 100644
  `;
  const TextEditorWrapper = _styledComponents.default.div`
    /* Rich-editor default setting (.RichEditor-editor)*/
-@@ -425,6 +445,7 @@ const EnlargeButtonWrapper = _styledComponents.default.div`
+@@ -425,6 +443,7 @@ const EnlargeButtonWrapper = _styledComponents.default.div`
    top: 0;
    right: 0;
    margin: 0;
@@ -1456,7 +3716,7 @@ index ceebcbb..83a1099 100644
  `;
  
  class RichTextEditor extends _react.default.Component {
-@@ -432,12 +453,21 @@ class RichTextEditor extends _react.default.Component {
+@@ -432,12 +451,21 @@ class RichTextEditor extends _react.default.Component {
      super(props);
      this.state = {
        isEnlarged: false,
@@ -1481,7 +3741,7 @@ index ceebcbb..83a1099 100644
          fontFamily: '"Inconsolata", "Menlo", "Consolas", monospace',
          fontSize: 16,
          padding: 2
-@@ -454,6 +484,20 @@ class RichTextEditor extends _react.default.Component {
+@@ -454,6 +482,20 @@ class RichTextEditor extends _react.default.Component {
    onChange = editorState => {
      this.props.onChange(editorState);
    };
@@ -1502,7 +3762,7 @@ index ceebcbb..83a1099 100644
    handleKeyCommand = (command, editorState) => {
      const newState = _draftJs.RichUtils.handleKeyCommand(editorState, command);
  
-@@ -532,10 +576,6 @@ class RichTextEditor extends _react.default.Component {
+@@ -532,10 +574,6 @@ class RichTextEditor extends _react.default.Component {
          styles['color'] = styleName.split(_const.CUSTOM_STYLE_PREFIX_FONT_COLOR)[1];
        }
  
@@ -1513,7 +3773,7 @@ index ceebcbb..83a1099 100644
        return styles;
      }, {});
    };
-@@ -573,6 +613,7 @@ class RichTextEditor extends _react.default.Component {
+@@ -573,6 +611,7 @@ class RichTextEditor extends _react.default.Component {
        case 'header-two':
        case 'header-three':
        case 'header-four':
@@ -1521,7 +3781,7 @@ index ceebcbb..83a1099 100644
        case 'blockquote':
          result += 'public-DraftStyleDefault-' + block.getType();
          break;
-@@ -627,7 +668,8 @@ class RichTextEditor extends _react.default.Component {
+@@ -627,7 +666,8 @@ class RichTextEditor extends _react.default.Component {
  
  
          this.setState({
@@ -1531,7 +3791,7 @@ index ceebcbb..83a1099 100644
          });
        }; // `onEditStart` and `onEditFinish` will be passed
        // into custom block component.
-@@ -640,6 +682,42 @@ class RichTextEditor extends _react.default.Component {
+@@ -640,6 +680,42 @@ class RichTextEditor extends _react.default.Component {
            onEditStart,
            onEditFinish,
            getMainEditorReadOnly: () => this.state.readOnly,
@@ -1574,7 +3834,7 @@ index ceebcbb..83a1099 100644
            renderBasicEditor: propsOfBasicEditor => {
              return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
                disabledButtons: disabledButtonsOnBasicEditor
-@@ -653,9 +731,89 @@ class RichTextEditor extends _react.default.Component {
+@@ -653,9 +729,89 @@ class RichTextEditor extends _react.default.Component {
      }
    };
  
@@ -1665,7 +3925,7 @@ index ceebcbb..83a1099 100644
      } = this.props;
      let {
        editorState
-@@ -667,18 +825,180 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,18 +823,180 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -1849,7 +4109,7 @@ index ceebcbb..83a1099 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -694,31 +1014,46 @@ class RichTextEditor extends _react.default.Component {
+@@ -694,31 +1012,46 @@ class RichTextEditor extends _react.default.Component {
        href: "https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css",
        rel: "stylesheet",
        type: "text/css"
@@ -1910,7 +4170,7 @@ index ceebcbb..83a1099 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
-@@ -730,7 +1065,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +1063,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -1927,7 +4187,17 @@ index ceebcbb..83a1099 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -772,53 +1115,20 @@ class RichTextEditor extends _react.default.Component {
+@@ -741,8 +1082,7 @@ class RichTextEditor extends _react.default.Component {
+       isDisabled: disabledButtons.includes(buttonNames.video),
+       readOnly: readOnly,
+       editorState: editorState,
+-      onChange: this.onChange,
+-      VideoSelector: _videoSelector.VideoSelector
++      onChange: this.onChange
+     })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAudioButton, {
+       isDisabled: disabledButtons.includes(buttonNames.audio),
+       readOnly: readOnly,
+@@ -772,53 +1112,20 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -1992,7 +4262,7 @@ index ceebcbb..83a1099 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
        isDisabled: disabledButtons.includes(buttonNames.sideIndex),
        readOnly: readOnly,
-@@ -845,9 +1155,10 @@ class RichTextEditor extends _react.default.Component {
+@@ -845,9 +1152,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
@@ -2004,7 +4274,7 @@ index ceebcbb..83a1099 100644
  }
  
  class StyleButton extends _react.default.Component {
-@@ -881,6 +1192,10 @@ const blockStyles = [{
+@@ -881,6 +1189,10 @@ const blockStyles = [{
    label: 'H4',
    style: 'header-four',
    icon: ''
@@ -2015,7 +4285,7 @@ index ceebcbb..83a1099 100644
  }, {
    label: 'Blockquote',
    style: 'blockquote',
-@@ -904,20 +1219,27 @@ const BlockStyleControls = props => {
+@@ -904,20 +1216,27 @@ const BlockStyleControls = props => {
      editorState,
      disabledButtons,
      onToggle,
@@ -2054,7 +4324,7 @@ index ceebcbb..83a1099 100644
  };
  
  const inlineStyles = [{
-@@ -947,17 +1269,25 @@ const inlineStyles = [{
+@@ -947,17 +1266,25 @@ const inlineStyles = [{
  }];
  
  const InlineStyleControls = props => {
@@ -2387,3 +4657,298 @@ index efeb120..147b542 100644
    }), enableAlignment && /*#__PURE__*/_react.default.createElement(_alignSelector.AlignSelector // @ts-ignore: align could be undefined
    , {
      align: align // @ts-ignore: option with undefined value
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/video-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/video-selector.js
+deleted file mode 100644
+index 240d150..0000000
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/video-selector.js
++++ /dev/null
+@@ -1,288 +0,0 @@
+-"use strict";
+-
+-Object.defineProperty(exports, "__esModule", {
+-  value: true
+-});
+-exports.VideoSelector = VideoSelector;
+-
+-var _react = _interopRequireWildcard(require("react"));
+-
+-var _styledComponents = _interopRequireDefault(require("styled-components"));
+-
+-var _modals = require("@keystone-ui/modals");
+-
+-var _apollo = require("@keystone-6/core/admin-ui/apollo");
+-
+-var _searchBox = require("./search-box");
+-
+-var _pagination = require("./pagination");
+-
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+-
+-function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+-
+-function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+-
+-const videosQuery = (0, _apollo.gql)`
+-  query Videos($searchText: String!, $take: Int, $skip: Int) {
+-    videosCount(where: { name: { contains: $searchText } })
+-    videos(
+-      where: { name: { contains: $searchText } }
+-      orderBy: { id: desc }
+-      take: $take
+-      skip: $skip
+-    ) {
+-      id
+-      name
+-      url
+-      file {
+-        filename
+-        filesize
+-        url
+-      }
+-      coverPhoto {
+-        id
+-        name
+-        imageFile {
+-          url
+-        }
+-        resized {
+-          original
+-        }
+-      }
+-    }
+-  }
+-`;
+-const VideoSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+-  margin-top: 10px;
+-`;
+-const VideoSelectionWrapper = _styledComponents.default.div`
+-  overflow: auto;
+-  margin-top: 10px;
+-`;
+-const VideoGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const VideoMetaGridsWrapper = _styledComponents.default.div`
+-  display: flex;
+-  flex-wrap: wrap;
+-  overflow: auto;
+-`;
+-const VideoMetaGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
+-  cursor: pointer;
+-  padding: 0 10px 10px;
+-`;
+-const Video = _styledComponents.default.video`
+-  display: block;
+-  width: 100%;
+-  aspect-ratio: 2;
+-  object-fit: cover;
+-`;
+-const SeparationLine = _styledComponents.default.div`
+-  border: #e1e5e9 1px solid;
+-  margin-top: 10px;
+-  margin-bottom: 10px;
+-`;
+-const VideoSelected = _styledComponents.default.div`
+-  height: 1.4rem;
+-`;
+-const ErrorWrapper = _styledComponents.default.div`
+-  & * {
+-    margin: 0;
+-  }
+-`;
+-const VideoName = _styledComponents.default.p`
+-  text-align: center;
+-`;
+-
+-function VideosGrids(props) {
+-  const {
+-    videos,
+-    selected,
+-    onSelect
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridsWrapper, null, videos.map(video => {
+-    return /*#__PURE__*/_react.default.createElement(VideoGrid, {
+-      key: video.id,
+-      isSelected: selected === null || selected === void 0 ? void 0 : selected.includes(video),
+-      onSelect: () => onSelect(video),
+-      video: video
+-    });
+-  }));
+-}
+-
+-function VideoGrid(props) {
+-  var _video$file;
+-
+-  const {
+-    video,
+-    onSelect,
+-    isSelected
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoGridWrapper, {
+-    key: video === null || video === void 0 ? void 0 : video.id,
+-    onClick: () => onSelect(video)
+-  }, /*#__PURE__*/_react.default.createElement(VideoSelected, null, isSelected ? /*#__PURE__*/_react.default.createElement("i", {
+-    className: "fas fa-check-circle"
+-  }) : null), /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.url
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file = video.file) === null || _video$file === void 0 ? void 0 : _video$file.url
+-  })));
+-}
+-
+-function VideoMetaGrids(props) {
+-  const {
+-    videoMetas
+-  } = props;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridsWrapper, null, videoMetas.map(videoMeta => {
+-    var _videoMeta$video;
+-
+-    return /*#__PURE__*/_react.default.createElement(VideoMetaGrid, {
+-      key: videoMeta === null || videoMeta === void 0 ? void 0 : (_videoMeta$video = videoMeta.video) === null || _videoMeta$video === void 0 ? void 0 : _videoMeta$video.id,
+-      videoMeta: videoMeta
+-    });
+-  }));
+-}
+-
+-function VideoMetaGrid(props) {
+-  var _video$file2;
+-
+-  const {
+-    videoMeta
+-  } = props;
+-  const {
+-    video
+-  } = videoMeta;
+-  return /*#__PURE__*/_react.default.createElement(VideoMetaGridWrapper, null, /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    autoPlay: true,
+-    loop: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.url
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file2 = video.file) === null || _video$file2 === void 0 ? void 0 : _video$file2.url
+-  })), /*#__PURE__*/_react.default.createElement(VideoName, null, video === null || video === void 0 ? void 0 : video.name));
+-}
+-
+-function VideoSelector(props) {
+-  const [queryVideos, {
+-    loading,
+-    error,
+-    data: {
+-      videos = [],
+-      videosCount = 0
+-    } = {}
+-  }] = (0, _apollo.useLazyQuery)(videosQuery, {
+-    fetchPolicy: 'no-cache'
+-  });
+-  const [currentPage, setCurrentPage] = (0, _react.useState)(0); // page starts with 1, 0 is used to detect initialization
+-
+-  const [searchText, setSearchText] = (0, _react.useState)('');
+-  const [selected, setSelected] = (0, _react.useState)([]);
+-  const pageSize = 6;
+-  const {
+-    onChange
+-  } = props;
+-
+-  const onSave = () => {
+-    onChange(selected);
+-  };
+-
+-  const onCancel = () => {
+-    onChange([]);
+-  };
+-
+-  const onSearchBoxChange = async searchInput => {
+-    setSearchText(searchInput);
+-    setCurrentPage(1);
+-  };
+-
+-  const onVideosGridSelect = videoEntity => {
+-    setSelected(selected => {
+-      const filterdSelected = selected.filter(ele => {
+-        var _ele$video;
+-
+-        return ((_ele$video = ele.video) === null || _ele$video === void 0 ? void 0 : _ele$video.id) !== videoEntity.id;
+-      }); // deselect the video
+-
+-      if (filterdSelected.length !== selected.length) {
+-        return filterdSelected;
+-      } // single select
+-
+-
+-      return [{
+-        video: videoEntity
+-      }];
+-    });
+-  };
+-
+-  const selectedVideos = selected.map(ele => {
+-    return ele.video;
+-  });
+-  (0, _react.useEffect)(() => {
+-    if (currentPage !== 0) {
+-      queryVideos({
+-        variables: {
+-          searchText: searchText,
+-          skip: (currentPage - 1) * pageSize,
+-          take: pageSize
+-        }
+-      });
+-    }
+-  }, [currentPage, searchText]);
+-
+-  let searchResult = /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(VideosGrids, {
+-    videos: videos,
+-    selected: selectedVideos,
+-    onSelect: onVideosGridSelect
+-  }), /*#__PURE__*/_react.default.createElement(_pagination.Pagination, {
+-    currentPage: currentPage,
+-    total: videosCount,
+-    pageSize: pageSize,
+-    onChange: pageIndex => {
+-      setCurrentPage(pageIndex);
+-    }
+-  }));
+-
+-  if (loading) {
+-    searchResult = /*#__PURE__*/_react.default.createElement("p", null, "searching...");
+-  }
+-
+-  if (error) {
+-    var _videosQuery$loc;
+-
+-    searchResult = /*#__PURE__*/_react.default.createElement(ErrorWrapper, null, /*#__PURE__*/_react.default.createElement("h3", null, "Errors occurs in the `videos` query"), /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Message:"), /*#__PURE__*/_react.default.createElement("div", null, error.message), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Stack:"), /*#__PURE__*/_react.default.createElement("div", null, error.stack), /*#__PURE__*/_react.default.createElement("br", null), /*#__PURE__*/_react.default.createElement("b", null, "Query:"), /*#__PURE__*/_react.default.createElement("pre", null, (_videosQuery$loc = videosQuery.loc) === null || _videosQuery$loc === void 0 ? void 0 : _videosQuery$loc.source.body)));
+-  }
+-
+-  return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
+-    isOpen: true
+-  }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
+-    title: "Select video",
+-    actions: {
+-      cancel: {
+-        label: 'Cancel',
+-        action: onCancel
+-      },
+-      confirm: {
+-        label: 'Confirm',
+-        action: onSave
+-      }
+-    }
+-  }, /*#__PURE__*/_react.default.createElement("div", null, /*#__PURE__*/_react.default.createElement(VideoSearchBox, {
+-    onChange: onSearchBoxChange
+-  }), /*#__PURE__*/_react.default.createElement(VideoSelectionWrapper, null, /*#__PURE__*/_react.default.createElement("div", null, searchResult), !!selected.length && /*#__PURE__*/_react.default.createElement(SeparationLine, null), /*#__PURE__*/_react.default.createElement(VideoMetaGrids, {
+-    videoMetas: selected
+-  })))));
+-}
+\ No newline at end of file

@@ -1,8 +1,8 @@
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js
-index 8f855fa..806d8a6 100644
+index 8f855fa..2745a78 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js
 +++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderer-fn.js
-@@ -17,9 +17,6 @@ const {
+@@ -17,11 +17,9 @@ const {
    DividerBlock,
    TableBlock,
    ColorBoxBlock,
@@ -11,8 +11,11 @@ index 8f855fa..806d8a6 100644
 -  RelatedPostBlock,
    SideIndexBlock,
    VideoBlock,
++  VideoBlockV2,
    AudioBlock
-@@ -77,21 +74,6 @@ const AtomicBlock = props => {
+ } = _blockRenderers.blockRenderers;
+ 
+@@ -77,21 +75,6 @@ const AtomicBlock = props => {
          return ColorBoxBlock(props);
        }
  
@@ -34,6 +37,18 @@ index 8f855fa..806d8a6 100644
      case 'SIDEINDEX':
        {
          return SideIndexBlock(props);
+@@ -102,6 +85,11 @@ const AtomicBlock = props => {
+         return VideoBlock(entity);
+       }
+ 
++    case 'VIDEO-V2':
++      {
++        return VideoBlockV2(entity);
++      }
++
+     case 'AUDIO':
+       {
+         return AudioBlock(entity);
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
 index d0dd133..babe29a 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/color-box-block.js
@@ -90,7 +105,7 @@ index d0dd133..babe29a 100644
        __html: body
      }
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
-index 634dbe1..6d8bdd5 100644
+index 634dbe1..b8abb0f 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
 +++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
 @@ -5,10 +5,6 @@ Object.defineProperty(exports, "__esModule", {
@@ -113,7 +128,7 @@ index 634dbe1..6d8bdd5 100644
  var _sideIndexBlock = require("./side-index-block");
  
  var _slideshowBlock = require("./slideshow-block");
-@@ -34,15 +28,12 @@ var _videoBlock = require("./video-block");
+@@ -34,20 +28,18 @@ var _videoBlock = require("./video-block");
  var _audioBlock = require("./audio-block");
  
  const blockRenderers = {
@@ -129,6 +144,13 @@ index 634dbe1..6d8bdd5 100644
    SideIndexBlock: _sideIndexBlock.SideIndexBlock,
    SlideshowBlock: _slideshowBlock.SlideshowBlock,
    SlideshowBlockV2: _slideshowBlock.SlideshowBlockV2,
+   TableBlock: _tableBlock.TableBlock,
+   VideoBlock: _videoBlock.VideoBlock,
++  VideoBlockV2: _videoBlock.VideoBlockV2,
+   AudioBlock: _audioBlock.AudioBlock
+ };
+ exports.blockRenderers = blockRenderers;
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
 index 5701e67..32b5916 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/info-box-block.js
@@ -247,6 +269,210 @@ index b0cc307..6ff1917 100644
      focusImageIndex: focusImageIndex,
      images: images,
      setShowLightBox: setShowLightBox,
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js
+index 57cde9d..3ca64cf 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js
+@@ -4,12 +4,15 @@ Object.defineProperty(exports, "__esModule", {
+   value: true
+ });
+ exports.VideoBlock = VideoBlock;
++exports.VideoBlockV2 = VideoBlockV2;
+ 
+ var _react = _interopRequireDefault(require("react"));
+ 
+ var _styledComponents = _interopRequireDefault(require("styled-components"));
+ 
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
++function _interopRequireDefault(obj) {
++  return obj && obj.__esModule ? obj : { default: obj };
++}
+ 
+ const Video = _styledComponents.default.video`
+   width: 100%;
+@@ -18,20 +21,169 @@ const Video = _styledComponents.default.video`
+ }) => theme.margin.default};
+ `;
+ 
++const VideoWrapper = _styledComponents.default.div`
++  width: 100%;
++  ${({
++  theme
++}) => theme.margin.default};
++`;
++
++const Caption = _styledComponents.default.div`
++  line-height: 1.43;
++  letter-spacing: 0.4px;
++  font-size: 14px;
++  color: #808080;
++  padding: 15px 15px 0 15px;
++  a {
++    color: inherit;
++    text-decoration: underline;
++  }
++`;
++
++const EmbedIframe = _styledComponents.default.iframe`
++  display: block;
++  width: 100%;
++  aspect-ratio: 16 / 9;
++  border: 0;
++`;
++
++function getYoutubeEmbedUrl(url) {
++  try {
++    const u = new URL(url);
++    const host = u.hostname.replace(/^www\./, "");
++    if (host === "youtu.be") {
++      const id = u.pathname.replace(/^\//, "").split("/")[0];
++      return id ? "https://www.youtube.com/embed/" + id : null;
++    }
++    if (host === "youtube.com" || host === "m.youtube.com") {
++      const v = u.searchParams.get("v");
++      if (v) return "https://www.youtube.com/embed/" + v;
++      const m = u.pathname.match(/\/embed\/([^/?]+)/);
++      if (m) return "https://www.youtube.com/embed/" + m[1];
++      const shortM = u.pathname.match(/\/shorts\/([^/?]+)/);
++      if (shortM) return "https://www.youtube.com/embed/" + shortM[1];
++    }
++  } catch (e) {
++    return null;
++  }
++  return null;
++}
++
+ function VideoBlock(entity) {
+   var _video$file;
+ 
+-  const {
+-    video
+-  } = entity.getData();
+-  return /*#__PURE__*/_react.default.createElement(Video, {
+-    muted: true,
+-    autoPlay: true,
+-    loop: true,
+-    controls: true
+-  }, /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : video.url
+-  }), /*#__PURE__*/_react.default.createElement("source", {
+-    src: video === null || video === void 0 ? void 0 : (_video$file = video.file) === null || _video$file === void 0 ? void 0 : _video$file.url
+-  }));
++  const { video } = entity.getData();
++  return /*#__PURE__*/ _react.default.createElement(
++    Video,
++    {
++      muted: true,
++      autoPlay: true,
++      loop: true,
++      controls: true
++    },
++    /*#__PURE__*/ _react.default.createElement("source", {
++      src: video === null || video === void 0 ? void 0 : video.url
++    }),
++    /*#__PURE__*/ _react.default.createElement("source", {
++      src:
++        video === null || video === void 0
++          ? void 0
++          : (_video$file = video.file) === null || _video$file === void 0
++            ? void 0
++            : _video$file.url
++    })
++  );
++}
++
++function VideoBlockV2(entity) {
++  var _video$file2;
++
++  const data = entity.getData();
++  const { videoUrl, captionHtml, embedMarkup, video, desc } = data;
++  const url = videoUrl && String(videoUrl).trim();
++
++  if (url) {
++    const embed = getYoutubeEmbedUrl(url);
++    return /*#__PURE__*/ _react.default.createElement(
++      VideoWrapper,
++      null,
++      embed
++        ? /*#__PURE__*/ _react.default.createElement(EmbedIframe, {
++            src: embed,
++            title: "embedded video",
++            allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
++            allowFullScreen: true
++          })
++        : /*#__PURE__*/ _react.default.createElement(
++            Video,
++            {
++              muted: false,
++              autoPlay: false,
++              loop: false,
++              controls: true
++            },
++            /*#__PURE__*/ _react.default.createElement("source", {
++              src: url
++            })
++          ),
++      captionHtml
++        ? /*#__PURE__*/ _react.default.createElement(Caption, {
++            dangerouslySetInnerHTML: {
++              __html: captionHtml
++            }
++          })
++        : null
++    );
++  }
++
++  if (embedMarkup) {
++    return /*#__PURE__*/ _react.default.createElement(
++      VideoWrapper,
++      null,
++      /*#__PURE__*/ _react.default.createElement("div", {
++        dangerouslySetInnerHTML: {
++          __html: embedMarkup
++        }
++      }),
++      captionHtml
++        ? /*#__PURE__*/ _react.default.createElement(Caption, {
++            dangerouslySetInnerHTML: {
++              __html: captionHtml
++            }
++          })
++        : null
++    );
++  }
++
++  if (video) {
++    return /*#__PURE__*/ _react.default.createElement(
++      VideoWrapper,
++      null,
++      /*#__PURE__*/ _react.default.createElement(
++        Video,
++        {
++          muted: true,
++          autoPlay: true,
++          loop: true,
++          controls: true
++        },
++        /*#__PURE__*/ _react.default.createElement("source", {
++          src: video === null || video === void 0 ? void 0 : video.videoSrc
++        }),
++        /*#__PURE__*/ _react.default.createElement("source", {
++          src:
++            video === null || video === void 0
++              ? void 0
++              : (_video$file2 = video.file) === null || _video$file2 === void 0
++                ? void 0
++                : _video$file2.url
++        })
++      ),
++      desc
++        ? /*#__PURE__*/ _react.default.createElement(Caption, null, desc)
++        : null
++    );
++  }
++
++  return null;
+ }
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
 index fc67e4f..e3b2a5b 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
