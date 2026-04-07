@@ -27,7 +27,6 @@ import Timeline from './Timeline'
 import TimelineItem from './TimelineItem'
 import Topic from './Topic'
 import User from './User'
-import Video from './Video'
 
 export const listDefinition = {
   Ad,
@@ -59,5 +58,4 @@ export const listDefinition = {
   TimelineItem,
   Topic,
   User,
-  Video,
 }

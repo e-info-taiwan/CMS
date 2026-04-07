@@ -3191,92 +3191,6 @@ input UserCreateInput {
   updatedBy: UserRelateToOneForCreateInput
 }
 
-type Video {
-  id: ID!
-  name: String
-  youtubeUrl: String
-  file: FileFieldOutput
-  coverPhoto: Photo
-  description: String
-  tags: String
-  meta: String
-  url: String
-  duration: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  createdBy: User
-  updatedBy: User
-}
-
-input VideoWhereUniqueInput {
-  id: ID
-}
-
-input VideoWhereInput {
-  AND: [VideoWhereInput!]
-  OR: [VideoWhereInput!]
-  NOT: [VideoWhereInput!]
-  id: IDFilter
-  name: StringFilter
-  youtubeUrl: StringFilter
-  coverPhoto: PhotoWhereInput
-  description: StringFilter
-  tags: StringFilter
-  meta: StringFilter
-  duration: StringFilter
-  createdAt: DateTimeNullableFilter
-  updatedAt: DateTimeNullableFilter
-  createdBy: UserWhereInput
-  updatedBy: UserWhereInput
-}
-
-input VideoOrderByInput {
-  id: OrderDirection
-  name: OrderDirection
-  youtubeUrl: OrderDirection
-  description: OrderDirection
-  tags: OrderDirection
-  meta: OrderDirection
-  duration: OrderDirection
-  createdAt: OrderDirection
-  updatedAt: OrderDirection
-}
-
-input VideoUpdateInput {
-  name: String
-  youtubeUrl: String
-  file: FileFieldInput
-  coverPhoto: PhotoRelateToOneForUpdateInput
-  description: String
-  tags: String
-  meta: String
-  duration: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  createdBy: UserRelateToOneForUpdateInput
-  updatedBy: UserRelateToOneForUpdateInput
-}
-
-input VideoUpdateArgs {
-  where: VideoWhereUniqueInput!
-  data: VideoUpdateInput!
-}
-
-input VideoCreateInput {
-  name: String
-  youtubeUrl: String
-  file: FileFieldInput
-  coverPhoto: PhotoRelateToOneForCreateInput
-  description: String
-  tags: String
-  meta: String
-  duration: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  createdBy: UserRelateToOneForCreateInput
-  updatedBy: UserRelateToOneForCreateInput
-}
-
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -3457,12 +3371,6 @@ type Mutation {
   updateUsers(data: [UserUpdateArgs!]!): [User]
   deleteUser(where: UserWhereUniqueInput!): User
   deleteUsers(where: [UserWhereUniqueInput!]!): [User]
-  createVideo(data: VideoCreateInput!): Video
-  createVideos(data: [VideoCreateInput!]!): [Video]
-  updateVideo(where: VideoWhereUniqueInput!, data: VideoUpdateInput!): Video
-  updateVideos(data: [VideoUpdateArgs!]!): [Video]
-  deleteVideo(where: VideoWhereUniqueInput!): Video
-  deleteVideos(where: [VideoWhereUniqueInput!]!): [Video]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -3574,9 +3482,6 @@ type Query {
   users(where: UserWhereInput! = {}, orderBy: [UserOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: UserWhereUniqueInput): [User!]
   user(where: UserWhereUniqueInput!): User
   usersCount(where: UserWhereInput! = {}): Int
-  videos(where: VideoWhereInput! = {}, orderBy: [VideoOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: VideoWhereUniqueInput): [Video!]
-  video(where: VideoWhereUniqueInput!): Video
-  videosCount(where: VideoWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   postsForRssTarget(rssTarget: String!): [Post]!

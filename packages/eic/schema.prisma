@@ -472,7 +472,6 @@ model Photo {
   from_Tag_heroImage            Tag[]          @relation("Tag_heroImage")
   from_TimelineItem_image       TimelineItem[] @relation("TimelineItem_image")
   from_Topic_heroImage          Topic[]        @relation("Topic_heroImage")
-  from_Video_coverPhoto         Video[]        @relation("Video_coverPhoto")
 
   @@index([createdById])
   @@index([updatedById])
@@ -828,33 +827,7 @@ model User {
   from_Topic_updatedBy              Topic[]              @relation("Topic_updatedBy")
   from_User_createdBy               User[]               @relation("User_createdBy")
   from_User_updatedBy               User[]               @relation("User_updatedBy")
-  from_Video_createdBy              Video[]              @relation("Video_createdBy")
-  from_Video_updatedBy              Video[]              @relation("Video_updatedBy")
 
-  @@index([createdById])
-  @@index([updatedById])
-}
-
-model Video {
-  id            Int       @id @default(autoincrement())
-  name          String    @default("")
-  youtubeUrl    String    @default("")
-  file_filesize Int?
-  file_filename String?
-  coverPhoto    Photo?    @relation("Video_coverPhoto", fields: [coverPhotoId], references: [id])
-  coverPhotoId  Int?      @map("coverPhoto")
-  description   String    @default("")
-  tags          String    @default("")
-  meta          String    @default("")
-  duration      String    @default("")
-  createdAt     DateTime?
-  updatedAt     DateTime?
-  createdBy     User?     @relation("Video_createdBy", fields: [createdById], references: [id])
-  createdById   Int?      @map("createdBy")
-  updatedBy     User?     @relation("Video_updatedBy", fields: [updatedById], references: [id])
-  updatedById   Int?      @map("updatedBy")
-
-  @@index([coverPhotoId])
   @@index([createdById])
   @@index([updatedById])
 }
