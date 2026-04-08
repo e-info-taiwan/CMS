@@ -96,14 +96,14 @@ export type Role = (typeof ROLES)[number]
 export const allowRoles: ListACLFunction = (...args) => {
   // 此function會返回Boolean到list.access中, true為能夠存取, false則是無存取權
   switch (accessControlStrategy) {
-    case 'gql':
-    case 'preview': {
+    case 'gql': {
       return () => true
     }
     case 'restricted': {
       // 可透過環境變數指定部分 list 的 query/update/delete 禁用
       return bypassWithRestrictions
     }
+    case 'preview':
     case 'cms':
     default: {
       return async (auth) => {

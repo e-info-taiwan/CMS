@@ -3964,25 +3964,6 @@ index ceebcbb..96315b0 100644
      const renderBasicEditor = propsOfBasicEditor => {
 +      const disabledButtonsOverride = propsOfBasicEditor.disabledButtons;
 +      const effectiveDisabledButtons = Array.isArray(disabledButtonsOverride) ? disabledButtonsOverride : disabledButtonsOnBasicEditor;
-+      // #region agent log
-+      fetch('http://127.0.0.1:7244/ingest/31db121b-62a7-49e9-866f-f390a8002c1d', {
-+        method: 'POST',
-+        headers: { 'Content-Type': 'application/json' },
-+        body: JSON.stringify({
-+          id: `log_${Date.now()}_renderBasicEditor`,
-+          runId: 'pre-fix',
-+          hypothesisId: 'H1',
-+          location: 'readr/draft-editor.js:renderBasicEditor',
-+          message: 'renderBasicEditor invocation',
-+          data: {
-+            hasOverride: Array.isArray(disabledButtonsOverride),
-+            overrideLength: Array.isArray(disabledButtonsOverride) ? disabledButtonsOverride.length : 0,
-+            effectiveLength: effectiveDisabledButtons.length
-+          },
-+          timestamp: Date.now()
-+        })
-+      }).catch(() => {});
-+      // #endregion agent log
        return /*#__PURE__*/_react.default.createElement(RichTextEditor, _extends({}, propsOfBasicEditor, {
 -        disabledButtons: disabledButtonsOnBasicEditor
 +        disabledButtons: effectiveDisabledButtons
