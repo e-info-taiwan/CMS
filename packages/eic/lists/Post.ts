@@ -119,6 +119,67 @@ const PostState = {
 
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 
+type CategoryRelateInput = {
+  connect?: { id: string | number } | { id: string | number }[]
+  disconnect?: { id: string | number } | { id: string | number }[]
+  set?: { id: string | number }[]
+}
+
+const idsFromRelateConnect = (
+  connect: CategoryRelateInput['connect']
+): number[] => {
+  if (!connect) return []
+  const list = Array.isArray(connect) ? connect : [connect]
+  return list
+    .map((x) => Number(x.id))
+    .filter((id) => Number.isFinite(id) && !Number.isNaN(id))
+}
+
+const computeFinalCategoryIds = async ({
+  operation,
+  item,
+  resolvedData,
+  context,
+}: {
+  operation: string
+  item: Record<string, unknown> | undefined
+  resolvedData: Record<string, unknown>
+  context: KeystoneContext
+}): Promise<number[]> => {
+  const raw = resolvedData.categories as CategoryRelateInput | undefined
+
+  // 僅在 GraphQL 真的傳了 set 陣列時才整組取代；避免 { set: undefined } 誤判成清空並跳過後續合併
+  if (raw && Array.isArray(raw.set)) {
+    return raw.set
+      .map((x) => Number(x.id))
+      .filter((id) => Number.isFinite(id) && !Number.isNaN(id))
+  }
+
+  let current: number[] = []
+  if (operation === 'update' && item?.id != null) {
+    const row = await context.prisma.Post.findUnique({
+      where: { id: Number(item.id) },
+      select: { categories: { select: { id: true } } },
+    })
+    current = (row?.categories ?? []).map((c: { id: number }) => c.id)
+  }
+
+  if (!raw) return current
+
+  const next = new Set(current)
+  if (raw.disconnect) {
+    for (const id of idsFromRelateConnect(raw.disconnect)) {
+      next.delete(id)
+    }
+  }
+  if (raw.connect) {
+    for (const id of idsFromRelateConnect(raw.connect)) {
+      next.add(id)
+    }
+  }
+  return [...next]
+}
+
 /**
  * 依 accessControlStrategy 與角色過濾文章。
  * - gql: 僅暴露 published、invisible
@@ -385,9 +446,10 @@ const listConfigurations = list({
         views: './lists/views/post/sections',
       },
     }),
-    category: relationship({
+    categories: relationship({
       ref: 'Category.posts',
       label: '中分類',
+      many: true,
       ui: {
         views: './lists/views/post/categories',
       },
@@ -757,32 +819,61 @@ const listConfigurations = list({
         }
       }
 
-      // 驗證：中分類必須屬於所選大分類
-      // 1. 取得此次操作後最終的 sectionId / categoryId
-      const finalSectionId =
-        (resolvedData.section && resolvedData.section.connect?.id) ||
-        (item && (item as any).sectionId)
+      // 驗證：每一個中分類必須屬於所選大分類（最終 category id 集合）
+      const sectionInput = resolvedData.section as
+        | {
+            connect?: { id?: string | number }
+            set?: { id: string | number }[]
+            disconnect?: boolean
+          }
+        | undefined
 
-      const finalCategoryId: unknown =
-        resolvedData.category && 'connect' in resolvedData.category
-          ? resolvedData.category.connect?.id
-          : resolvedData.category && 'disconnect' in resolvedData.category
-          ? null
-          : item && (item as any).categoryId
+      let finalSectionId: number | null | undefined
+      if (
+        sectionInput?.disconnect === true &&
+        !sectionInput?.connect &&
+        !(sectionInput?.set && sectionInput.set.length > 0)
+      ) {
+        finalSectionId = null
+      } else if (sectionInput?.set && sectionInput.set.length > 0) {
+        finalSectionId = Number(sectionInput.set[0].id)
+      } else if (
+        sectionInput?.connect?.id != null &&
+        sectionInput.connect.id !== ''
+      ) {
+        finalSectionId = Number(sectionInput.connect.id)
+      } else if (operation === 'update' && item != null) {
+        const sid = (item as { sectionId?: number | null }).sectionId
+        finalSectionId = sid != null ? Number(sid) : null
+      } else {
+        finalSectionId = undefined
+      }
 
-      // 2. 若兩者都有值，檢查 Category.sectionId 是否等於 Post.sectionId
-      if (finalSectionId && finalCategoryId) {
-        const category = await context.prisma.Category.findUnique({
-          where: { id: Number(finalCategoryId) },
-          select: { sectionId: true },
-        })
+      const finalCategoryIds = await computeFinalCategoryIds({
+        operation,
+        item: item as Record<string, unknown> | undefined,
+        resolvedData: resolvedData as Record<string, unknown>,
+        context,
+      })
 
-        if (
-          !category ||
-          category.sectionId === null ||
-          Number(category.sectionId) !== Number(finalSectionId)
-        ) {
-          addValidationError('中分類必須屬於所選的大分類')
+      if (finalCategoryIds.length > 0) {
+        if (finalSectionId == null) {
+          addValidationError('已選擇中分類時，必須先選擇大分類')
+        } else {
+          for (const categoryId of finalCategoryIds) {
+            const category = await context.prisma.Category.findUnique({
+              where: { id: categoryId },
+              select: { sectionId: true },
+            })
+            if (
+              !category ||
+              category.sectionId === null ||
+              Number(category.sectionId) !== Number(finalSectionId)
+            ) {
+              addValidationError('中分類必須屬於所選的大分類')
+              break
+            }
+          }
         }
       }
 

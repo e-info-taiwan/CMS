@@ -39,7 +39,7 @@ const listConfigurations = list({
       label: '首圖圖說',
     }),
     posts: relationship({
-      ref: 'Post.category',
+      ref: 'Post.categories',
       many: true,
       label: '相關文章',
       ui: {
