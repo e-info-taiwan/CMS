@@ -3570,7 +3570,7 @@ index f4a4c88..ce9b88a 100644
      });
      return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..96315b0 100644
+index ceebcbb..dc880c5 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 @@ -35,31 +35,27 @@ var _table = require("../../draft-js/buttons/table");
@@ -3925,7 +3925,7 @@ index ceebcbb..96315b0 100644
      } = this.props;
      let {
        editorState
-@@ -667,18 +823,180 @@ class RichTextEditor extends _react.default.Component {
+@@ -667,18 +823,161 @@ class RichTextEditor extends _react.default.Component {
  
      const {
        isEnlarged,
@@ -4090,7 +4090,7 @@ index ceebcbb..96315b0 100644
        theme: _theme.default
      }, /*#__PURE__*/_react.default.createElement(DraftEditorContainer, {
        isEnlarged: Boolean(isEnlarged)
-@@ -694,31 +1012,46 @@ class RichTextEditor extends _react.default.Component {
+@@ -694,31 +993,46 @@ class RichTextEditor extends _react.default.Component {
        href: "https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css",
        rel: "stylesheet",
        type: "text/css"
@@ -4151,7 +4151,7 @@ index ceebcbb..96315b0 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomDividerButton, {
        isDisabled: disabledButtons.includes(buttonNames.divider),
        editorState: editorState,
-@@ -730,7 +1063,15 @@ class RichTextEditor extends _react.default.Component {
+@@ -730,7 +1044,15 @@ class RichTextEditor extends _react.default.Component {
        editorState: editorState,
        onChange: this.onChange,
        renderBasicEditor: renderBasicEditor,
@@ -4168,7 +4168,7 @@ index ceebcbb..96315b0 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomImageButton, {
        isDisabled: disabledButtons.includes(buttonNames.image),
        readOnly: readOnly,
-@@ -741,8 +1082,7 @@ class RichTextEditor extends _react.default.Component {
+@@ -741,8 +1063,7 @@ class RichTextEditor extends _react.default.Component {
        isDisabled: disabledButtons.includes(buttonNames.video),
        readOnly: readOnly,
        editorState: editorState,
@@ -4178,7 +4178,7 @@ index ceebcbb..96315b0 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAudioButton, {
        isDisabled: disabledButtons.includes(buttonNames.audio),
        readOnly: readOnly,
-@@ -772,53 +1112,20 @@ class RichTextEditor extends _react.default.Component {
+@@ -772,53 +1093,20 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -4243,7 +4243,7 @@ index ceebcbb..96315b0 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
        isDisabled: disabledButtons.includes(buttonNames.sideIndex),
        readOnly: readOnly,
-@@ -845,9 +1152,10 @@ class RichTextEditor extends _react.default.Component {
+@@ -845,9 +1133,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,
        readOnly: readOnly
@@ -4255,7 +4255,7 @@ index ceebcbb..96315b0 100644
  }
  
  class StyleButton extends _react.default.Component {
-@@ -881,6 +1189,10 @@ const blockStyles = [{
+@@ -881,6 +1170,10 @@ const blockStyles = [{
    label: 'H4',
    style: 'header-four',
    icon: ''
@@ -4266,7 +4266,7 @@ index ceebcbb..96315b0 100644
  }, {
    label: 'Blockquote',
    style: 'blockquote',
-@@ -904,20 +1216,27 @@ const BlockStyleControls = props => {
+@@ -904,20 +1197,27 @@ const BlockStyleControls = props => {
      editorState,
      disabledButtons,
      onToggle,
@@ -4305,7 +4305,7 @@ index ceebcbb..96315b0 100644
  };
  
  const inlineStyles = [{
-@@ -947,17 +1266,25 @@ const inlineStyles = [{
+@@ -947,17 +1247,25 @@ const inlineStyles = [{
  }];
  
  const InlineStyleControls = props => {
