@@ -2285,7 +2285,8 @@ type Post {
   locations(where: LocationWhereInput! = {}, orderBy: [LocationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: LocationWhereUniqueInput): [Location!]
   locationsCount(where: LocationWhereInput! = {}): Int
   section: Section
-  category: Category
+  categories(where: CategoryWhereInput! = {}, orderBy: [CategoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CategoryWhereUniqueInput): [Category!]
+  categoriesCount(where: CategoryWhereInput! = {}): Int
   classify: Classify
   topic: Topic
   style: String
@@ -2351,7 +2352,7 @@ input PostWhereInput {
   otherByline: StringFilter
   locations: LocationManyRelationFilter
   section: SectionWhereInput
-  category: CategoryWhereInput
+  categories: CategoryManyRelationFilter
   classify: ClassifyWhereInput
   topic: TopicWhereInput
   style: StringNullableFilter
@@ -2382,6 +2383,12 @@ input LocationManyRelationFilter {
   every: LocationWhereInput
   some: LocationWhereInput
   none: LocationWhereInput
+}
+
+input CategoryManyRelationFilter {
+  every: CategoryWhereInput
+  some: CategoryWhereInput
+  none: CategoryWhereInput
 }
 
 input AttachmentManyRelationFilter {
@@ -2435,7 +2442,7 @@ input PostUpdateInput {
   otherByline: String
   locations: LocationRelateToManyForUpdateInput
   section: SectionRelateToOneForUpdateInput
-  category: CategoryRelateToOneForUpdateInput
+  categories: CategoryRelateToManyForUpdateInput
   classify: ClassifyRelateToOneForUpdateInput
   topic: TopicRelateToOneForUpdateInput
   style: String
@@ -2480,6 +2487,13 @@ input LocationRelateToManyForUpdateInput {
   set: [LocationWhereUniqueInput!]
   create: [LocationCreateInput!]
   connect: [LocationWhereUniqueInput!]
+}
+
+input CategoryRelateToManyForUpdateInput {
+  disconnect: [CategoryWhereUniqueInput!]
+  set: [CategoryWhereUniqueInput!]
+  create: [CategoryCreateInput!]
+  connect: [CategoryWhereUniqueInput!]
 }
 
 input ClassifyRelateToOneForUpdateInput {
@@ -2542,7 +2556,7 @@ input PostCreateInput {
   otherByline: String
   locations: LocationRelateToManyForCreateInput
   section: SectionRelateToOneForCreateInput
-  category: CategoryRelateToOneForCreateInput
+  categories: CategoryRelateToManyForCreateInput
   classify: ClassifyRelateToOneForCreateInput
   topic: TopicRelateToOneForCreateInput
   style: String
@@ -2583,6 +2597,11 @@ input AuthorRelateToManyForCreateInput {
 input LocationRelateToManyForCreateInput {
   create: [LocationCreateInput!]
   connect: [LocationWhereUniqueInput!]
+}
+
+input CategoryRelateToManyForCreateInput {
+  create: [CategoryCreateInput!]
+  connect: [CategoryWhereUniqueInput!]
 }
 
 input ClassifyRelateToOneForCreateInput {
@@ -2714,12 +2733,6 @@ input SectionWhereInput {
   updatedBy: UserWhereInput
 }
 
-input CategoryManyRelationFilter {
-  every: CategoryWhereInput
-  some: CategoryWhereInput
-  none: CategoryWhereInput
-}
-
 input SectionOrderByInput {
   id: OrderDirection
   slug: OrderDirection
@@ -2748,13 +2761,6 @@ input SectionUpdateInput {
   updatedBy: UserRelateToOneForUpdateInput
 }
 
-input CategoryRelateToManyForUpdateInput {
-  disconnect: [CategoryWhereUniqueInput!]
-  set: [CategoryWhereUniqueInput!]
-  create: [CategoryCreateInput!]
-  connect: [CategoryWhereUniqueInput!]
-}
-
 input SectionUpdateArgs {
   where: SectionWhereUniqueInput!
   data: SectionUpdateInput!
@@ -2774,11 +2780,6 @@ input SectionCreateInput {
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
   updatedBy: UserRelateToOneForCreateInput
-}
-
-input CategoryRelateToManyForCreateInput {
-  create: [CategoryCreateInput!]
-  connect: [CategoryWhereUniqueInput!]
 }
 
 type Tag {
