@@ -354,6 +354,7 @@ type Category {
   name: String
   description: String
   sortOrder: Int
+  style: String
   heroImage: Photo
   heroImageCaption: String
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
@@ -361,6 +362,8 @@ type Category {
   section: Section
   classifies(where: ClassifyWhereInput! = {}, orderBy: [ClassifyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ClassifyWhereUniqueInput): [Classify!]
   classifiesCount(where: ClassifyWhereInput! = {}): Int
+  columnClassifyTags(where: ClassifyWhereInput! = {}, orderBy: [ClassifyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ClassifyWhereUniqueInput): [Classify!]
+  columnClassifyTagsCount(where: ClassifyWhereInput! = {}): Int
   featuredPosts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   featuredPostsCount(where: PostWhereInput! = {}): Int
   manualOrderOfFeaturedPosts: JSON
@@ -384,11 +387,13 @@ input CategoryWhereInput {
   name: StringFilter
   description: StringFilter
   sortOrder: IntNullableFilter
+  style: StringNullableFilter
   heroImage: PhotoWhereInput
   heroImageCaption: StringFilter
   posts: PostManyRelationFilter
   section: SectionWhereInput
   classifies: ClassifyManyRelationFilter
+  columnClassifyTags: ClassifyManyRelationFilter
   featuredPosts: PostManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
@@ -407,6 +412,35 @@ input IntNullableFilter {
   not: IntNullableFilter
 }
 
+input StringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  mode: QueryMode
+  not: NestedStringNullableFilter
+}
+
+input NestedStringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  not: NestedStringNullableFilter
+}
+
 input ClassifyManyRelationFilter {
   every: ClassifyWhereInput
   some: ClassifyWhereInput
@@ -419,6 +453,7 @@ input CategoryOrderByInput {
   name: OrderDirection
   description: OrderDirection
   sortOrder: OrderDirection
+  style: OrderDirection
   heroImageCaption: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -429,11 +464,13 @@ input CategoryUpdateInput {
   name: String
   description: String
   sortOrder: Int
+  style: String
   heroImage: PhotoRelateToOneForUpdateInput
   heroImageCaption: String
   posts: PostRelateToManyForUpdateInput
   section: SectionRelateToOneForUpdateInput
   classifies: ClassifyRelateToManyForUpdateInput
+  columnClassifyTags: ClassifyRelateToManyForUpdateInput
   featuredPosts: PostRelateToManyForUpdateInput
   manualOrderOfFeaturedPosts: JSON
   createdAt: DateTime
@@ -465,11 +502,13 @@ input CategoryCreateInput {
   name: String
   description: String
   sortOrder: Int
+  style: String
   heroImage: PhotoRelateToOneForCreateInput
   heroImageCaption: String
   posts: PostRelateToManyForCreateInput
   section: SectionRelateToOneForCreateInput
   classifies: ClassifyRelateToManyForCreateInput
+  columnClassifyTags: ClassifyRelateToManyForCreateInput
   featuredPosts: PostRelateToManyForCreateInput
   manualOrderOfFeaturedPosts: JSON
   createdAt: DateTime
@@ -608,35 +647,6 @@ input ConfigWhereInput {
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
-}
-
-input StringNullableFilter {
-  equals: String
-  in: [String!]
-  notIn: [String!]
-  lt: String
-  lte: String
-  gt: String
-  gte: String
-  contains: String
-  startsWith: String
-  endsWith: String
-  mode: QueryMode
-  not: NestedStringNullableFilter
-}
-
-input NestedStringNullableFilter {
-  equals: String
-  in: [String!]
-  notIn: [String!]
-  lt: String
-  lte: String
-  gt: String
-  gte: String
-  contains: String
-  startsWith: String
-  endsWith: String
-  not: NestedStringNullableFilter
 }
 
 input ConfigOrderByInput {
@@ -2701,6 +2711,8 @@ type Section {
   sortOrder: Int
   categories(where: CategoryWhereInput! = {}, orderBy: [CategoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CategoryWhereUniqueInput): [Category!]
   categoriesCount(where: CategoryWhereInput! = {}): Int
+  columnCategoryTags(where: CategoryWhereInput! = {}, orderBy: [CategoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CategoryWhereUniqueInput): [Category!]
+  columnCategoryTagsCount(where: CategoryWhereInput! = {}): Int
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
   createdAt: DateTime
@@ -2726,6 +2738,7 @@ input SectionWhereInput {
   showInHeader: BooleanFilter
   sortOrder: IntNullableFilter
   categories: CategoryManyRelationFilter
+  columnCategoryTags: CategoryManyRelationFilter
   posts: PostManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
@@ -2754,6 +2767,7 @@ input SectionUpdateInput {
   showInHeader: Boolean
   sortOrder: Int
   categories: CategoryRelateToManyForUpdateInput
+  columnCategoryTags: CategoryRelateToManyForUpdateInput
   posts: PostRelateToManyForUpdateInput
   createdAt: DateTime
   updatedAt: DateTime
@@ -2775,6 +2789,7 @@ input SectionCreateInput {
   showInHeader: Boolean
   sortOrder: Int
   categories: CategoryRelateToManyForCreateInput
+  columnCategoryTags: CategoryRelateToManyForCreateInput
   posts: PostRelateToManyForCreateInput
   createdAt: DateTime
   updatedAt: DateTime

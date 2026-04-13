@@ -78,27 +78,30 @@ model Author {
 }
 
 model Category {
-  id                         Int            @id @default(autoincrement())
-  slug                       String         @default("")
-  name                       String         @default("")
-  description                String         @default("")
-  sortOrder                  Int?           @default(1)
-  heroImage                  Photo?         @relation("Category_heroImage", fields: [heroImageId], references: [id])
-  heroImageId                Int?           @map("heroImage")
-  heroImageCaption           String         @default("")
-  posts                      Post[]         @relation("Category_posts")
-  section                    Section?       @relation("Category_section", fields: [sectionId], references: [id])
-  sectionId                  Int?           @map("section")
-  classifies                 Classify[]     @relation("Classify_category")
-  featuredPosts              Post[]         @relation("Category_featuredPosts")
-  manualOrderOfFeaturedPosts Json?
-  createdAt                  DateTime?
-  updatedAt                  DateTime?
-  createdBy                  User?          @relation("Category_createdBy", fields: [createdById], references: [id])
-  createdById                Int?           @map("createdBy")
-  updatedBy                  User?          @relation("Category_updatedBy", fields: [updatedById], references: [id])
-  updatedById                Int?           @map("updatedBy")
-  from_HomepagePick_category HomepagePick[] @relation("HomepagePick_category")
+  id                              Int            @id @default(autoincrement())
+  slug                            String         @default("")
+  name                            String         @default("")
+  description                     String         @default("")
+  sortOrder                       Int?           @default(1)
+  style                           String?        @default("default")
+  heroImage                       Photo?         @relation("Category_heroImage", fields: [heroImageId], references: [id])
+  heroImageId                     Int?           @map("heroImage")
+  heroImageCaption                String         @default("")
+  posts                           Post[]         @relation("Category_posts")
+  section                         Section?       @relation("Category_section", fields: [sectionId], references: [id])
+  sectionId                       Int?           @map("section")
+  classifies                      Classify[]     @relation("Classify_category")
+  columnClassifyTags              Classify[]     @relation("Category_columnClassifyTags")
+  featuredPosts                   Post[]         @relation("Category_featuredPosts")
+  manualOrderOfFeaturedPosts      Json?
+  createdAt                       DateTime?
+  updatedAt                       DateTime?
+  createdBy                       User?          @relation("Category_createdBy", fields: [createdById], references: [id])
+  createdById                     Int?           @map("createdBy")
+  updatedBy                       User?          @relation("Category_updatedBy", fields: [updatedById], references: [id])
+  updatedById                     Int?           @map("updatedBy")
+  from_HomepagePick_category      HomepagePick[] @relation("HomepagePick_category")
+  from_Section_columnCategoryTags Section[]      @relation("Section_columnCategoryTags")
 
   @@index([heroImageId])
   @@index([sectionId])
@@ -107,19 +110,20 @@ model Category {
 }
 
 model Classify {
-  id          Int       @id @default(autoincrement())
-  slug        String    @default("")
-  name        String    @default("")
-  sortOrder   Int?      @default(1)
-  posts       Post[]    @relation("Post_classify")
-  category    Category? @relation("Classify_category", fields: [categoryId], references: [id])
-  categoryId  Int?      @map("category")
-  createdAt   DateTime?
-  updatedAt   DateTime?
-  createdBy   User?     @relation("Classify_createdBy", fields: [createdById], references: [id])
-  createdById Int?      @map("createdBy")
-  updatedBy   User?     @relation("Classify_updatedBy", fields: [updatedById], references: [id])
-  updatedById Int?      @map("updatedBy")
+  id                               Int        @id @default(autoincrement())
+  slug                             String     @default("")
+  name                             String     @default("")
+  sortOrder                        Int?       @default(1)
+  posts                            Post[]     @relation("Post_classify")
+  category                         Category?  @relation("Classify_category", fields: [categoryId], references: [id])
+  categoryId                       Int?       @map("category")
+  createdAt                        DateTime?
+  updatedAt                        DateTime?
+  createdBy                        User?      @relation("Classify_createdBy", fields: [createdById], references: [id])
+  createdById                      Int?       @map("createdBy")
+  updatedBy                        User?      @relation("Classify_updatedBy", fields: [updatedById], references: [id])
+  updatedById                      Int?       @map("updatedBy")
+  from_Category_columnClassifyTags Category[] @relation("Category_columnClassifyTags")
 
   @@index([categoryId])
   @@index([createdById])
@@ -654,6 +658,7 @@ model Section {
   showInHeader                   Boolean    @default(false)
   sortOrder                      Int?
   categories                     Category[] @relation("Category_section")
+  columnCategoryTags             Category[] @relation("Section_columnCategoryTags")
   posts                          Post[]     @relation("Post_section")
   createdAt                      DateTime?
   updatedAt                      DateTime?
