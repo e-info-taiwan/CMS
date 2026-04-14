@@ -52,7 +52,7 @@ export default {
   memoryCacheSize: Number.isNaN(Number(MEMORY_CACHE_SIZE))
     ? 300
     : Number(MEMORY_CACHE_SIZE),
-  accessControlStrategy: ACCESS_CONTROL_STRATEGY || 'cms', // the value could be one of 'cms', 'gql' or 'preview'
+  accessControlStrategy: ACCESS_CONTROL_STRATEGY || 'cms', // the value could be one of 'cms', 'gql', 'preview' or 'restricted'
   previewServer: {
     origin: PREVIEW_SERVER_ORIGIN || 'http://localhost:3001',
     path: PREVIEW_SERVER_PATH || '/preview-server',

@@ -80,6 +80,20 @@ const allowRolesForUsers = (...args) => {
   // （陷入沒辦法登入進CMS的窘境）
   // 因此在user的access control需要多判斷「如果db中沒有user存在，就暫時關閉access control用以新增user」
 
+  switch (accessControlStrategy) {
+    case 'gql':
+    case 'preview':
+      {
+        return () => true;
+      }
+    case 'restricted':
+      {
+        return bypassWithRestrictions;
+      }
+    case 'cms':
+    default:
+      break;
+  }
   return async auth => {
     const newArgs = [...args, isNeedToTurnOffAccessControl];
     return await checkAccessControl(newArgs, auth);

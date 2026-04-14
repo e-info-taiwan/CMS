@@ -184,6 +184,7 @@ const computeFinalCategoryIds = async ({
  * 依 accessControlStrategy 與角色過濾文章。
  * - gql: 僅暴露 published、invisible
  * - preview: 暴露全部
+ * - restricted: 暴露全部，list operation restrictions 由 allowRoles 控制
  * - cms: 依角色；admin/moderator 全部，editor 在 mutation/單筆查詢時全部否則僅自己建立，contributor 僅自己建立
  */
 const filterPostsForAccess = ({
@@ -202,6 +203,9 @@ const filterPostsForAccess = ({
       }
     }
     case 'preview': {
+      return true
+    }
+    case 'restricted': {
       return true
     }
     case 'cms':
