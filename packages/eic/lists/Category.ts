@@ -1,9 +1,60 @@
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
 import { list } from '@keystone-6/core'
-import { integer, relationship, text } from '@keystone-6/core/fields'
+import { integer, relationship, select, text } from '@keystone-6/core/fields'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
+
+async function computeFinalRelationshipIds({
+  operation,
+  item,
+  resolvedData,
+  fieldKey,
+  listKey,
+  context,
+}: {
+  operation: 'create' | 'update' | 'delete'
+  item: Record<string, unknown> | undefined
+  resolvedData: Record<string, unknown>
+  fieldKey: 'classifies' | 'columnClassifyTags'
+  listKey: 'classifies' | 'columnClassifyTags'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Keystone list hooks context
+  context: any
+}): Promise<number[]> {
+  const input = resolvedData[fieldKey] as
+    | {
+        set?: Array<{ id: string | number }>
+        connect?: Array<{ id: string | number }>
+        disconnect?: Array<{ id: string | number }>
+      }
+    | undefined
+
+  if (input?.set) {
+    return input.set
+      .map(({ id }) => Number(id))
+      .filter((id) => !Number.isNaN(id))
+  }
+
+  let existingIds: number[] = []
+  if (operation === 'update' && item?.id != null) {
+    const category = await context.prisma.Category.findUnique({
+      where: { id: Number(item.id) },
+      select: { [listKey]: { select: { id: true } } },
+    })
+    existingIds = ((category?.[listKey] as Array<{ id: number }>) || []).map(
+      ({ id }) => Number(id)
+    )
+  }
+
+  const result = new Set(existingIds)
+  for (const rel of input?.connect || []) {
+    result.add(Number(rel.id))
+  }
+  for (const rel of input?.disconnect || []) {
+    result.delete(Number(rel.id))
+  }
+  return [...result].filter((id) => !Number.isNaN(id))
+}
 
 const listConfigurations = list({
   fields: {
@@ -31,6 +82,14 @@ const listConfigurations = list({
       label: '排序',
       defaultValue: 1,
     }),
+    style: select({
+      label: '列表頁樣式',
+      defaultValue: 'default',
+      options: [
+        { label: '一般文章列表頁', value: 'default' },
+        { label: '專欄列表頁', value: 'column' },
+      ],
+    }),
     heroImage: relationship({
       ref: 'Photo',
       label: 'Photos 首圖',
@@ -57,6 +116,19 @@ const listConfigurations = list({
       ref: 'Classify.category',
       many: true,
       label: '包含的小分類',
+      ui: {
+        labelField: 'name',
+        views: './lists/views/category/classifies-broadcast',
+      },
+    }),
+    columnClassifyTags: relationship({
+      ref: 'Classify',
+      many: true,
+      label: '專欄列表標籤顯示（只適用於專欄列表頁樣式）',
+      ui: {
+        labelField: 'name',
+        views: './lists/views/category/column-classify-tags',
+      },
     }),
     featuredPosts: relationship({
       ref: 'Post',
@@ -89,6 +161,38 @@ const listConfigurations = list({
   },
   graphql: {
     cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
+  },
+  hooks: {
+    validateInput: async ({
+      operation,
+      item,
+      resolvedData,
+      addValidationError,
+      context,
+    }) => {
+      const finalClassifyIds = await computeFinalRelationshipIds({
+        operation,
+        item: item as Record<string, unknown> | undefined,
+        resolvedData: resolvedData as Record<string, unknown>,
+        fieldKey: 'classifies',
+        listKey: 'classifies',
+        context,
+      })
+      const finalTagIds = await computeFinalRelationshipIds({
+        operation,
+        item: item as Record<string, unknown> | undefined,
+        resolvedData: resolvedData as Record<string, unknown>,
+        fieldKey: 'columnClassifyTags',
+        listKey: 'columnClassifyTags',
+        context,
+      })
+
+      if (finalTagIds.some((id) => !finalClassifyIds.includes(id))) {
+        addValidationError(
+          '「專欄列表標籤顯示」裡的小分類，必須都已出現在「包含的小分類」中。'
+        )
+      }
+    },
   },
 })
 

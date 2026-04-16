@@ -22,7 +22,9 @@ import {
   ListMeta,
 } from '@keystone-6/core/types'
 import { Link } from '@keystone-6/core/admin-ui/router'
+import { gql, useQuery } from '@keystone-6/core/admin-ui/apollo'
 import { useKeystone, useList } from '@keystone-6/core/admin-ui/context'
+import { RelationshipSelect as CoreRelationshipSelect } from '@keystone-6/core/fields/types/relationship/views/RelationshipSelect'
 import {
   CellContainer,
   CreateItemDrawer,
@@ -67,7 +69,13 @@ function LinkToRelatedItems({
   if (value.kind === 'many') {
     const query = constructQuery({ refFieldKey, value, itemId })
     return (
-      <Button {...commonProps} as={Link as any} href={`/${list.path}?${query}`}>
+      <Button
+        {...commonProps}
+        // Keystone Button `as` polymorphism
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        as={Link as any}
+        href={`/${list.path}?${query}`}
+      >
         View related {list.plural}
       </Button>
     )
@@ -76,6 +84,7 @@ function LinkToRelatedItems({
   return (
     <Button
       {...commonProps}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       as={Link as any}
       href={`/${list.path}/${value.value?.id}`}
     >
@@ -412,9 +421,9 @@ export const controller = (
       if (config.fieldMeta.many) {
         const sourceData = data[config.path] || []
         const value = (Array.isArray(sourceData) ? sourceData : []).map(
-          (x: any) => ({
+          (x: { id: string; [key: string]: unknown }) => ({
             id: x.id,
-            label: x[refLabelField] || x.id,
+            label: (x[refLabelField] as string | undefined) || x.id,
           })
         )
         return {
@@ -439,10 +448,82 @@ export const controller = (
       }
     },
     filter: {
-      Filter: () => null,
-      graphql: () => ({}),
-      Label: () => '',
-      types: {},
+      // @ts-ignore: filter UI component props are looser than our typed config
+      Filter: ({ onChange, value }) => {
+        const foreignList = useList(config.fieldMeta.refListKey)
+        const { filterValues, loading } = useRelationshipFilterValues({
+          value,
+          list: foreignList,
+        })
+        const state: {
+          kind: 'many'
+          value: Value[]
+          onChange: (newItems: Value[]) => void
+        } = {
+          kind: 'many',
+          value: filterValues,
+          onChange(newItems) {
+            onChange(newItems.map((item) => item.id).join(','))
+          },
+        }
+        return (
+          <CoreRelationshipSelect
+            controlShouldRenderValue
+            list={foreignList}
+            labelField={refLabelField}
+            searchFields={refSearchFields}
+            isLoading={loading}
+            isDisabled={onChange === undefined}
+            state={state}
+          />
+        )
+      },
+      graphql: ({ value }) => {
+        const foreignIds = getForeignIds(value)
+        if (config.fieldMeta.many) {
+          return {
+            [config.path]: {
+              some: {
+                id: {
+                  in: foreignIds,
+                },
+              },
+            },
+          }
+        }
+        return {
+          [config.path]: {
+            id: {
+              in: foreignIds,
+            },
+          },
+        }
+      },
+      Label({ value }) {
+        const foreignList = useList(config.fieldMeta.refListKey)
+        const { filterValues } = useRelationshipFilterValues({
+          value,
+          list: foreignList,
+        })
+
+        if (!filterValues.length) {
+          return `has no value`
+        }
+        if (filterValues.length > 1) {
+          const values = filterValues
+            .map((i: { label: string }) => i.label)
+            .join(', ')
+          return `is in [${values}]`
+        }
+        const optionLabel = filterValues[0].label
+        return `is ${optionLabel}`
+      },
+      types: {
+        matches: {
+          label: 'Matches',
+          initialValue: '',
+        },
+      },
     },
     validate() {
       return true
@@ -458,7 +539,10 @@ export const controller = (
           .filter((x) => !initialIds.has(x.id))
           .map((x) => ({ id: x.id }))
         if (disconnect.length || connect.length) {
-          const output: any = {}
+          const output: {
+            disconnect?: { id: string }[]
+            connect?: { id: string }[]
+          } = {}
 
           if (disconnect.length) {
             output.disconnect = disconnect
@@ -488,4 +572,48 @@ export const controller = (
       return {}
     },
   }
+}
+
+function useRelationshipFilterValues({
+  value,
+  list,
+}: {
+  value: string
+  list: ListMeta
+}) {
+  const foreignIds = getForeignIds(value)
+  const where = { id: { in: foreignIds } }
+
+  const query = gql`
+    query FOREIGNLIST_QUERY($where: ${list.gqlNames.whereInputName}!) {
+      items: ${list.gqlNames.listQueryName}(where: $where) {
+        id
+        ${list.labelField}
+      }
+    }
+  `
+
+  const { data, loading } = useQuery(query, {
+    variables: {
+      where,
+    },
+  })
+
+  return {
+    filterValues:
+      data?.items?.map((item: { id: string } & Record<string, string>) => {
+        return {
+          id: item.id,
+          label: item[list.labelField] || item.id,
+        }
+      }) || foreignIds.map((f) => ({ label: f, id: f })),
+    loading: loading,
+  }
+}
+
+function getForeignIds(value: string) {
+  if (typeof value === 'string' && value.length > 0) {
+    return value.split(',')
+  }
+  return []
 }

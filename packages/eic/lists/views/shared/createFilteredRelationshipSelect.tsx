@@ -1,6 +1,4 @@
-/** @jsxRuntime classic */
-/** @jsx jsx */
-
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic GraphQL where and select state */
 import 'intersection-observer'
 import {
   RefObject,
@@ -11,8 +9,6 @@ import {
   useContext,
   useRef,
 } from 'react'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { jsx } from '@keystone-ui/core'
 import { MultiSelect, Select, selectComponents } from '@keystone-ui/fields'
 import { validate as validateUUID } from 'uuid'
 import { IdFieldConfig, ListMeta } from '@keystone-6/core/types'
@@ -26,10 +22,15 @@ import {
 } from '@keystone-6/core/admin-ui/apollo'
 import { fieldFilterManager } from './fieldFilterManager'
 
-type FilterConfig = {
+export type FilterConfig = {
   sourceField: string
   filterByField: string
   emptyMessage?: string
+  /**
+   * relationMany: foreign list 以 `filterByField: { some: { id: { in } } }` 過濾（既有行為）
+   * idIn: 以 `id: { in: selectedSourceIds }` 過濾（用於「子集合」僅能選父欄位已選 id）
+   */
+  filterStyle?: 'relationMany' | 'idIn'
 }
 
 function useIntersectionObserver(
@@ -240,14 +241,20 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
         Object.assign(conditions, searchFilter)
       }
 
+      const filterStyle = config.filterStyle ?? 'relationMany'
+
       // 如果有選中的源欄位值，只顯示相關的項目
       if (selectedSourceIds.length > 0) {
-        conditions[config.filterByField] = {
-          some: {
-            id: {
-              in: selectedSourceIds,
+        if (filterStyle === 'idIn') {
+          conditions.id = { in: selectedSourceIds }
+        } else {
+          conditions[config.filterByField] = {
+            some: {
+              id: {
+                in: selectedSourceIds,
+              },
             },
-          },
+          }
         }
       }
 
@@ -271,7 +278,10 @@ export function createFilteredRelationshipSelect(config: FilterConfig) {
                       { args }
                     ) => {
                       const merged = existing ? existing.slice() : []
-                      const { skip } = args!
+                      const skip = args?.skip
+                      if (typeof skip !== 'number') {
+                        return incoming
+                      }
                       for (let i = 0; i < incoming.length; ++i) {
                         merged[skip + i] = incoming[i]
                       }

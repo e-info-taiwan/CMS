@@ -1,8 +1,6 @@
-/** @jsxRuntime classic */
-/** @jsx jsx */
-
-import { Fragment, useState, useEffect } from 'react'
-import { jsx, Stack, useTheme } from '@keystone-ui/core'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Keystone admin relationship FieldProps and item shapes */
+import { Fragment, useState } from 'react'
+import { Stack, useTheme } from '@keystone-ui/core'
 import {
   FieldContainer,
   FieldDescription,
@@ -14,7 +12,6 @@ import { DrawerController } from '@keystone-ui/modals'
 import {
   CardValueComponent,
   CellComponent,
-  FieldController,
   FieldControllerConfig,
   FieldProps,
   ListMeta,
@@ -25,33 +22,19 @@ import {
   CellContainer,
   CreateItemDrawer,
 } from '@keystone-6/core/admin-ui/components'
-import { fieldFilterManager } from './fieldFilterManager'
-import { createFilteredRelationshipSelect } from './createFilteredRelationshipSelect'
+import {
+  createFilteredRelationshipSelect,
+  type FilterConfig,
+} from './createFilteredRelationshipSelect'
 
-type FilterConfig = {
-  /**
-   * 要監聽的源欄位名稱（例如：'sections'）
-   */
-  sourceField: string
-  
-  /**
-   * 目標欄位的 GraphQL 關係名稱（例如：'sections'）
-   * 用於在 where 查詢中過濾
-   */
-  filterByField: string
-  
-  /**
-   * 當沒有選擇源欄位時顯示的提示訊息
-   */
-  emptyMessage?: string
-}
+export type { FilterConfig }
 
 /**
  * 創建一個具有過濾功能的關係欄位組件
  * @param config 過濾配置
  */
-export function createFilteredRelationship(config: FilterConfig) {
-  const RelationshipSelect = createFilteredRelationshipSelect(config)
+export function createFilteredRelationship(filterConfig: FilterConfig) {
+  const RelationshipSelect = createFilteredRelationshipSelect(filterConfig)
 
   function LinkToRelatedItems({
     itemId,
@@ -90,7 +73,11 @@ export function createFilteredRelationship(config: FilterConfig) {
     if (value.kind === 'many') {
       const query = constructQuery({ refFieldKey, value, itemId })
       return (
-        <Button {...commonProps} as={Link as any} href={`/${list.path}?${query}`}>
+        <Button
+          {...commonProps}
+          as={Link as any}
+          href={`/${list.path}?${query}`}
+        >
           View related {list.plural}
         </Button>
       )
@@ -107,20 +94,15 @@ export function createFilteredRelationship(config: FilterConfig) {
     )
   }
 
-  const Field = ({
-    field,
-    autoFocus,
-    value,
-    onChange,
-    forceValidation,
-  }: FieldProps<any>) => {
+  const Field = ({ field, autoFocus, value, onChange }: FieldProps<any>) => {
     const keystone = useKeystone()
     const foreignList = useList(field.refListKey)
     const localList = useList(field.listKey)
     const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
     // 從 value 中獲取源欄位的數據
-    const sourceFieldIds = (value as any)[`${config.sourceField}Ids`] || []
+    const sourceFieldIds =
+      (value as any)[`${filterConfig.sourceField}Ids`] || []
 
     if (value.kind === 'count') {
       return (
@@ -206,8 +188,9 @@ export function createFilteredRelationship(config: FilterConfig) {
                 authenticatedItem.state === 'authenticated' &&
                 authenticatedItem.listKey === field.refListKey &&
                 (value.kind === 'many'
-                  ? value.value.find((x: any) => x.id === authenticatedItem.id) ===
-                    undefined
+                  ? value.value.find(
+                      (x: any) => x.id === authenticatedItem.id
+                    ) === undefined
                   : value.value?.id !== authenticatedItem.id) && (
                   <Button
                     size="small"
@@ -274,7 +257,7 @@ export function createFilteredRelationship(config: FilterConfig) {
     )
   }
 
-  // @ts-ignore
+  // @ts-ignore: Keystone CellComponent generic is incompatible with our controller type
   const Cell: CellComponent<any> = ({ field, item }) => {
     const list = useList(field.refListKey)
     const { colors } = useTheme()
@@ -306,7 +289,7 @@ export function createFilteredRelationship(config: FilterConfig) {
         {displayItems.map((item, index) => (
           <Fragment key={item.id}>
             {index ? ', ' : ''}
-            {/* @ts-ignore */}
+            {/* @ts-ignore: admin UI Link typing is not fully compatible here */}
             <Link href={`/${list.path}/${item.id}`} css={styles}>
               {item.label || item.id}
             </Link>
@@ -317,7 +300,7 @@ export function createFilteredRelationship(config: FilterConfig) {
     )
   }
 
-  // @ts-ignore
+  // @ts-ignore: Keystone CardValueComponent generic is incompatible with our controller type
   const CardValue: CardValueComponent<any> = ({ field, item }) => {
     const list = useList(field.refListKey)
     const data = item[field.path]
@@ -329,7 +312,7 @@ export function createFilteredRelationship(config: FilterConfig) {
           .map((item, index) => (
             <Fragment key={item.id}>
               {index ? ', ' : ''}
-              {/* @ts-ignore */}
+              {/* @ts-ignore: admin UI Link typing is not fully compatible here */}
               <Link href={`/${list.path}/${item.id}`}>
                 {item.label || item.id}
               </Link>
@@ -339,17 +322,17 @@ export function createFilteredRelationship(config: FilterConfig) {
     )
   }
 
-  type Value = { label: string; id: string }
-
   const controller = (
-    config: FieldControllerConfig<{
-      refFieldKey?: string
-      refListKey: string
-      many: boolean
-      hideCreate: boolean
-      refLabelField: string
-      refSearchFields: string[]
-    } & ({ displayMode: 'select' } | { displayMode: 'count' })>
+    config: FieldControllerConfig<
+      {
+        refFieldKey?: string
+        refListKey: string
+        many: boolean
+        hideCreate: boolean
+        refLabelField: string
+        refSearchFields: string[]
+      } & ({ displayMode: 'select' } | { displayMode: 'count' })
+    >
   ): any => {
     const refLabelField = config.fieldMeta.refLabelField
     const refSearchFields = config.fieldMeta.refSearchFields
@@ -368,9 +351,12 @@ export function createFilteredRelationship(config: FilterConfig) {
       graphqlSelection:
         config.fieldMeta.displayMode === 'count'
           ? `${config.path}Count`
-          : `${config.path}InInputOrder {
+          : `${config.path} {
               id
-              label: ${refLabelField}
+              ${refLabelField}
+            }
+            ${filterConfig.sourceField} {
+              id
             }`,
       hideCreate: config.fieldMeta.hideCreate,
       defaultValue: config.fieldMeta.many
@@ -390,22 +376,27 @@ export function createFilteredRelationship(config: FilterConfig) {
           }
         }
         if (config.fieldMeta.many) {
-          const value = (data[`${config.path}InInputOrder`] || []).map((x: any) => ({
+          const raw = data[config.path] || []
+          const value = (Array.isArray(raw) ? raw : []).map((x: any) => ({
             id: x.id,
-            label: x.label || x.id,
+            label: x[refLabelField] || x.label || x.id,
           }))
+          const sourceIds = (data[filterConfig.sourceField] || []).map(
+            (x: any) => String(x.id)
+          )
           return {
             kind: 'many',
             id: data.id,
             initialValue: value,
             value,
+            [`${filterConfig.sourceField}Ids`]: sourceIds,
           }
         }
-        let value = data[`${config.path}InInputOrder`]
+        let value = data[config.path]
         if (value) {
           value = {
             id: value.id,
-            label: value.label || value.id,
+            label: value[refLabelField] || value.label || value.id,
           }
         }
         return {
@@ -421,7 +412,7 @@ export function createFilteredRelationship(config: FilterConfig) {
         Label: () => '',
         types: {},
       },
-      validate(value: any) {
+      validate() {
         return true
       },
       serialize: (state: any) => {
@@ -466,4 +457,3 @@ export function createFilteredRelationship(config: FilterConfig) {
 
   return { Field, Cell, CardValue, controller }
 }
-
