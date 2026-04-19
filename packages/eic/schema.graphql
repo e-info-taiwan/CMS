@@ -3043,7 +3043,7 @@ type Topic {
   id: ID!
   title: String
   status: String
-  content: String
+  content: JSON
   authorInfo: String
   redirectUrl: String
   heroImage: Photo
@@ -3069,7 +3069,6 @@ input TopicWhereInput {
   id: IDFilter
   title: StringFilter
   status: StringFilter
-  content: StringFilter
   authorInfo: StringFilter
   redirectUrl: StringFilter
   heroImage: PhotoWhereInput
@@ -3087,7 +3086,6 @@ input TopicOrderByInput {
   id: OrderDirection
   title: OrderDirection
   status: OrderDirection
-  content: OrderDirection
   authorInfo: OrderDirection
   redirectUrl: OrderDirection
   isPinned: OrderDirection
@@ -3100,7 +3098,7 @@ input TopicOrderByInput {
 input TopicUpdateInput {
   title: String
   status: String
-  content: String
+  content: JSON
   authorInfo: String
   redirectUrl: String
   heroImage: PhotoRelateToOneForUpdateInput
@@ -3122,7 +3120,7 @@ input TopicUpdateArgs {
 input TopicCreateInput {
   title: String
   status: String
-  content: String
+  content: JSON
   authorInfo: String
   redirectUrl: String
   heroImage: PhotoRelateToOneForCreateInput

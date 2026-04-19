@@ -3570,7 +3570,7 @@ index f4a4c88..ce9b88a 100644
      });
      return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
-index ceebcbb..dc880c5 100644
+index ceebcbb..a4b7f4a 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor.js
 @@ -35,31 +35,27 @@ var _table = require("../../draft-js/buttons/table");
@@ -4098,7 +4098,7 @@ index ceebcbb..dc880c5 100644
 +    }), /*#__PURE__*/_react.default.createElement(DraftEditorControls, {
 +      compact: compact,
 +      'data-draft-controls': 'true'
-+    }, /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, {
++    }, /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(DraftEditorControlsWrapper, {
 +      compact: compact
 +    }, /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(BlockStyleControls, {
        readOnly: readOnly,
@@ -4178,7 +4178,7 @@ index ceebcbb..dc880c5 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomAudioButton, {
        isDisabled: disabledButtons.includes(buttonNames.audio),
        readOnly: readOnly,
-@@ -772,53 +1093,20 @@ class RichTextEditor extends _react.default.Component {
+@@ -772,59 +1093,26 @@ class RichTextEditor extends _react.default.Component {
        readOnly: readOnly,
        editorState: editorState,
        onChange: this.onChange
@@ -4243,6 +4243,13 @@ index ceebcbb..dc880c5 100644
      })), /*#__PURE__*/_react.default.createElement(ButtonGroup, null, /*#__PURE__*/_react.default.createElement(CustomSideIndexButton, {
        isDisabled: disabledButtons.includes(buttonNames.sideIndex),
        readOnly: readOnly,
+       editorState: editorState,
+       onChange: this.onChange
+-    })))), /*#__PURE__*/_react.default.createElement(TextEditorWrapper, {
++    }))))), /*#__PURE__*/_react.default.createElement(TextEditorWrapper, {
+       onClick: () => {
+         var _this$refs$editor;
+ 
 @@ -845,9 +1133,10 @@ class RichTextEditor extends _react.default.Component {
        ref: "editor",
        spellCheck: true,

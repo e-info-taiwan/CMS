@@ -737,7 +737,7 @@ model Topic {
   id                       Int            @id @default(autoincrement())
   title                    String         @default("")
   status                   String         @default("draft")
-  content                  String         @default("")
+  content                  Json?
   authorInfo               String         @default("")
   redirectUrl              String         @default("")
   heroImage                Photo?         @relation("Topic_heroImage", fields: [heroImageId], references: [id])

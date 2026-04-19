@@ -7,7 +7,10 @@ import {
   integer,
   timestamp,
 } from '@keystone-6/core/fields'
-import { utils } from '@mirrormedia/lilith-core'
+import { Prisma } from '@prisma/client'
+// @ts-ignore: no definition
+import { buttonNames } from '@mirrormedia/lilith-draft-editor/lib/website/readr/draft-editor'
+import { customFields, utils } from '@mirrormedia/lilith-core'
 import envVar from '../environment-variables'
 import {
   invalidateByRoutes,
@@ -15,6 +18,10 @@ import {
 } from '../services/invalidate-cdn-cache'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
+
+/** 專題內容：compact + 僅啟用超連結（與 Post citations 同一套 disabledButtons 模式） */
+const TOPIC_CONTENT_ENABLED_BUTTONS = ['link']
+const allReadrButtons: string[] = Object.values(buttonNames)
 
 const listConfigurations = list({
   fields: {
@@ -34,11 +41,14 @@ const listConfigurations = list({
       defaultValue: 'draft',
       validation: { isRequired: true },
     }),
-    content: text({
+    content: customFields.richTextEditor({
       label: '專題內容',
-      ui: {
-        displayMode: 'textarea',
-      },
+      website: 'readr',
+      compact: true,
+      disabledButtons: allReadrButtons.filter(
+        (b: string) => !TOPIC_CONTENT_ENABLED_BUTTONS.includes(b)
+      ),
+      defaultValue: null,
     }),
     authorInfo: text({
       label: '專題作者資訊',
@@ -96,6 +106,17 @@ const listConfigurations = list({
   },
   graphql: {
     cacheHint: { maxAge: 1200, scope: 'PUBLIC' },
+  },
+  hooks: {
+    resolveInput: ({ resolvedData }) => {
+      if (
+        Object.prototype.hasOwnProperty.call(resolvedData, 'content') &&
+        resolvedData.content === null
+      ) {
+        resolvedData.content = Prisma.DbNull
+      }
+      return resolvedData
+    },
   },
 })
 
