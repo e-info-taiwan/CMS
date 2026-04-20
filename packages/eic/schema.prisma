@@ -403,6 +403,7 @@ model Newsletter {
   sendDate                   DateTime
   showMenu                   Boolean      @default(false)
   showReadingRank            Boolean      @default(false)
+  newsletterType             String?      @default("daily")
   focusPosts                 Post[]       @relation("Newsletter_focusPosts")
   relatedPosts               Post[]       @relation("Newsletter_relatedPosts")
   ads                        Ad[]         @relation("Newsletter_ads")
