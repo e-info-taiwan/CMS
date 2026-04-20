@@ -14,6 +14,10 @@ const listConfigurations = list({
     image: relationship({
       label: '作者照片',
       ref: 'Photo',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: '（建議圖片比例 180x180）',
+      },
     }),
     bio: text({
       label: '簡介',

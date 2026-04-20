@@ -10,6 +10,8 @@ import {
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
+const pollOptionIconImageHint = '（建議圖片比例 50x50，去背透明底）'
+
 const listConfigurations = list({
   fields: {
     name: text({
@@ -29,6 +31,10 @@ const listConfigurations = list({
     option1Image: relationship({
       ref: 'Photo',
       label: '投票選項1圖示',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: pollOptionIconImageHint,
+      },
     }),
     option2: text({
       label: '投票選項2',
@@ -36,6 +42,10 @@ const listConfigurations = list({
     option2Image: relationship({
       ref: 'Photo',
       label: '投票選項2圖示',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: pollOptionIconImageHint,
+      },
     }),
     option3: text({
       label: '投票選項3',
@@ -43,6 +53,10 @@ const listConfigurations = list({
     option3Image: relationship({
       ref: 'Photo',
       label: '投票選項3圖示',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: pollOptionIconImageHint,
+      },
     }),
     option4: text({
       label: '投票選項4',
@@ -50,6 +64,10 @@ const listConfigurations = list({
     option4Image: relationship({
       ref: 'Photo',
       label: '投票選項4圖示',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: pollOptionIconImageHint,
+      },
     }),
     option5: text({
       label: '投票選項5',
@@ -57,6 +75,10 @@ const listConfigurations = list({
     option5Image: relationship({
       ref: 'Photo',
       label: '投票選項5圖示',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: pollOptionIconImageHint,
+      },
     }),
     posts: relationship({
       ref: 'Post.poll',

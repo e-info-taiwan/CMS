@@ -34,6 +34,10 @@ const listConfigurations = list({
     image: relationship({
       ref: 'Photo',
       label: '圖片',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: '（Light box 類型建議圖片比例 216x270）',
+      },
     }),
     state: select({
       label: '狀態',

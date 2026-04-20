@@ -27,6 +27,10 @@ const listConfigurations = list({
     image: relationship({
       ref: 'Photo',
       label: '圖片',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: '（建議圖片比例 420x180）',
+      },
     }),
     imageUrl: text({
       label: '圖片連結',
