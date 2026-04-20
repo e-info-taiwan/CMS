@@ -65,6 +65,10 @@ const listConfigurations = list({
     heroImage: relationship({
       ref: 'Photo',
       label: '首圖',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: '（建議圖片比例 960x480）',
+      },
     }),
     posts: relationship({
       ref: 'Post.topic',

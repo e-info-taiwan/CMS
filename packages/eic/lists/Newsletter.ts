@@ -721,6 +721,10 @@ const listConfigurations = list({
     heroImage: relationship({
       ref: 'Photo',
       label: '首圖',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: '（建議圖片比例 159x105）',
+      },
     }),
     sendDate: timestamp({
       label: '發送日期',

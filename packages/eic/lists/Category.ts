@@ -93,6 +93,10 @@ const listConfigurations = list({
     heroImage: relationship({
       ref: 'Photo',
       label: 'Photos 首圖',
+      ui: {
+        views: './lists/views/relationship-inline-hint',
+        description: '（建議圖片比例 1200x420）',
+      },
     }),
     heroImageCaption: text({
       label: '首圖圖說',
