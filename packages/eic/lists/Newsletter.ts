@@ -3,6 +3,7 @@ import {
   text,
   relationship,
   checkbox,
+  select,
   timestamp,
   virtual,
 } from '@keystone-6/core/fields'
@@ -48,12 +49,17 @@ const formatDateHeader = (dateString: string | null): string => {
 }
 
 const CONFIGS_JSON_URL = `${envVariables.images.gcsBaseUrl}/json/configs.json`
+type NewsletterType = 'daily' | 'weekly'
 
 /**
  * 從 configs.json 獲取電子報訂閱人數
- * 尋找 id 為 2、name 為 "電子報訂閱人數" 的 content 欄位
+ * daily: id=2
+ * weekly: id=4
  */
-const fetchSubscriberCount = async (): Promise<string> => {
+const fetchSubscriberCount = async (
+  newsletterType: NewsletterType = 'daily'
+): Promise<string> => {
+  const configId = newsletterType === 'weekly' ? '4' : '2'
   try {
     const response = await fetch(CONFIGS_JSON_URL)
     if (!response.ok) return '—'
@@ -61,8 +67,7 @@ const fetchSubscriberCount = async (): Promise<string> => {
     const items = json?.items
     if (!Array.isArray(items)) return '—'
     const item = items.find(
-      (i: { id?: number | string; name?: string }) =>
-        String(i?.id) === '2' && i?.name === '電子報訂閱人數'
+      (i: { id?: number | string }) => String(i?.id) === configId
     )
     return typeof item?.content === 'string' ? item.content : '—'
   } catch (error) {
@@ -162,6 +167,7 @@ const generateNewsletterHtml = async (
   sendDate: string | null,
   showMenu: boolean,
   showReadingRank: boolean,
+  newsletterType: NewsletterType,
   readerResponseText: string,
   readerResponseTitle: string,
   readerResponseLink: string,
@@ -172,7 +178,7 @@ const generateNewsletterHtml = async (
   eventIds: string[],
   jobIds: string[]
 ) => {
-  const subscriberCount = await fetchSubscriberCount()
+  const subscriberCount = await fetchSubscriberCount(newsletterType)
 
   // 使用 Promise.all 並行查詢所有資料，提升效能
   const [relatedPostsRaw, focusPostsRaw, ads, events, jobs] = await Promise.all(
@@ -738,6 +744,15 @@ const listConfigurations = list({
       label: '顯示閱讀排名',
       defaultValue: false,
     }),
+    newsletterType: select({
+      label: '電子報類型',
+      type: 'string',
+      options: [
+        { label: '日報', value: 'daily' },
+        { label: '週報', value: 'weekly' },
+      ],
+      defaultValue: 'daily',
+    }),
     focusPosts: relationship({
       ref: 'Post',
       many: true,
@@ -914,6 +929,7 @@ const listConfigurations = list({
               sendDate
               showMenu
               showReadingRank
+              newsletterType
               readerResponseText
               readerResponseTitle
               readerResponseLink
@@ -937,6 +953,9 @@ const listConfigurations = list({
           resolvedData.showMenu ?? existingData?.showMenu ?? false
         const showReadingRank =
           resolvedData.showReadingRank ?? existingData?.showReadingRank ?? false
+        const newsletterType = (resolvedData.newsletterType ??
+          existingData?.newsletterType ??
+          'daily') as NewsletterType
         const readerResponseText =
           resolvedData.readerResponseText ??
           existingData?.readerResponseText ??
@@ -1067,6 +1086,7 @@ const listConfigurations = list({
           sendDate ?? null,
           showMenu,
           showReadingRank,
+          newsletterType,
           readerResponseText,
           readerResponseTitle,
           readerResponseLink,

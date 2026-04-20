@@ -1736,6 +1736,7 @@ type Newsletter {
   sendDate: DateTime
   showMenu: Boolean
   showReadingRank: Boolean
+  newsletterType: String
   focusPosts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   focusPostsCount(where: PostWhereInput! = {}): Int
   relatedPosts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
@@ -1780,6 +1781,7 @@ input NewsletterWhereInput {
   sendDate: DateTimeFilter
   showMenu: BooleanFilter
   showReadingRank: BooleanFilter
+  newsletterType: StringNullableFilter
   focusPosts: PostManyRelationFilter
   relatedPosts: PostManyRelationFilter
   ads: AdManyRelationFilter
@@ -1823,6 +1825,7 @@ input NewsletterOrderByInput {
   sendDate: OrderDirection
   showMenu: OrderDirection
   showReadingRank: OrderDirection
+  newsletterType: OrderDirection
   readerResponseTitle: OrderDirection
   readerResponseLink: OrderDirection
   originalUrl: OrderDirection
@@ -1839,6 +1842,7 @@ input NewsletterUpdateInput {
   sendDate: DateTime
   showMenu: Boolean
   showReadingRank: Boolean
+  newsletterType: String
   focusPosts: PostRelateToManyForUpdateInput
   relatedPosts: PostRelateToManyForUpdateInput
   ads: AdRelateToManyForUpdateInput
@@ -1898,6 +1902,7 @@ input NewsletterCreateInput {
   sendDate: DateTime
   showMenu: Boolean
   showReadingRank: Boolean
+  newsletterType: String
   focusPosts: PostRelateToManyForCreateInput
   relatedPosts: PostRelateToManyForCreateInput
   ads: AdRelateToManyForCreateInput
