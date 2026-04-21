@@ -41,6 +41,7 @@ const ALLOWED_EVENT_ROLES = ['admin', 'moderator', 'editor'] as const
  * 依 accessControlStrategy 與角色過濾活動，與 Lilith Post filter 邏輯一致。
  * - gql: 僅暴露 published
  * - preview: 暴露全部
+ * - restricted: 暴露全部，list operation restrictions 由 allowRoles 控制
  * - cms: admin/moderator 全部，editor 在 mutation/單筆查詢時全部否則僅自己建立
  */
 const filterEventsForAccess = ({
@@ -57,6 +58,9 @@ const filterEventsForAccess = ({
       }
     }
     case 'preview': {
+      return true
+    }
+    case 'restricted': {
       return true
     }
     case 'cms':

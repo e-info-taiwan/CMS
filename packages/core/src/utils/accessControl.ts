@@ -96,14 +96,14 @@ export type Role = (typeof ROLES)[number]
 export const allowRoles: ListACLFunction = (...args) => {
   // 此function會返回Boolean到list.access中, true為能夠存取, false則是無存取權
   switch (accessControlStrategy) {
-    case 'gql': {
+    case 'gql':
+    case 'preview': {
       return () => true
     }
     case 'restricted': {
       // 可透過環境變數指定部分 list 的 query/update/delete 禁用
       return bypassWithRestrictions
     }
-    case 'preview':
     case 'cms':
     default: {
       return async (auth) => {
@@ -119,6 +119,19 @@ export const allowRolesForUsers: ListACLFunction = (...args) => {
   // 若user的create access control受到限制,則adminUI將會沒有權限幫我們新增
   // （陷入沒辦法登入進CMS的窘境）
   // 因此在user的access control需要多判斷「如果db中沒有user存在，就暫時關閉access control用以新增user」
+
+  switch (accessControlStrategy) {
+    case 'gql':
+    case 'preview': {
+      return () => true
+    }
+    case 'restricted': {
+      return bypassWithRestrictions
+    }
+    case 'cms':
+    default:
+      break
+  }
 
   return async (auth) => {
     const newArgs = [...args, isNeedToTurnOffAccessControl]

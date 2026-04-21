@@ -19,6 +19,7 @@ export enum ACL {
   GraphQL = 'gql',
   Preview = 'preview',
   CMS = 'cms',
+  Restricted = 'restricted',
 }
 
 export type Session = {
