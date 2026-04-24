@@ -104,6 +104,86 @@ index d0dd133..babe29a 100644
      dangerouslySetInnerHTML: {
        __html: body
      }
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/image-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/image-block.js
+index 320dc10..f82efdb 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/image-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/image-block.js
+@@ -11,6 +11,10 @@ var _styledComponents = _interopRequireDefault(require("styled-components"));
+ 
+ var _reactImage = _interopRequireDefault(require("@readr-media/react-image"));
+ 
++var _draftJs = require("draft-js");
++
++var _draftConvert = require("draft-convert");
++
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
+ const defaultImage = "https://unpkg.com/@mirrormedia/lilith-draft-renderer@1.4.5/lib/public/722f90c535fa64c27555ec6ee5f22393.png";
+@@ -40,6 +44,11 @@ const FigureCaption = _styledComponents.default.figcaption`
+   theme
+ }) => theme.fontSize.sm};
+   }
++
++  a {
++    color: inherit;
++    text-decoration: underline;
++  }
+ `;
+ const Anchor = _styledComponents.default.a`
+   text-decoration: none;
+@@ -54,11 +63,43 @@ function ImageBlock(props) {
+   const entity = contentState.getEntity(entityKey);
+   const {
+     desc,
++    captionRichText,
+     name,
+     resized = {},
+     resizedWebp = {},
+     url
+   } = entity.getData();
++  let captionNode = desc || '';
++
++  if (captionRichText && typeof captionRichText === 'object') {
++    try {
++      const captionHtml = (0, _draftConvert.convertToHTML)({
++        entityToHTML: (entity, originalText) => {
++          if ((entity === null || entity === void 0 ? void 0 : entity.type) === 'LINK') {
++            var _entity$data;
++
++            const linkUrl = (entity === null || entity === void 0 ? void 0 : (_entity$data = entity.data) === null || _entity$data === void 0 ? void 0 : _entity$data.url) || '';
++
++            if (!linkUrl) {
++              return originalText;
++            }
++
++            return `<a target="_blank" rel="noopener noreferrer" href="${linkUrl}">${originalText}</a>`;
++          }
++
++          return originalText;
++        }
++      })((0, _draftJs.convertFromRaw)(captionRichText));
++
++      if (captionHtml) {
++        captionNode = /*#__PURE__*/_react.default.createElement("span", {
++          dangerouslySetInnerHTML: {
++            __html: captionHtml
++          }
++        });
++      }
++    } catch (error) {}
++  }
+ 
+   let imgBlock = /*#__PURE__*/_react.default.createElement(Figure, null, /*#__PURE__*/_react.default.createElement(_reactImage.default, {
+     images: resized,
+@@ -72,7 +113,7 @@ function ImageBlock(props) {
+       default: '100%'
+     },
+     priority: true
+-  }), /*#__PURE__*/_react.default.createElement(FigureCaption, null, desc));
++  }), /*#__PURE__*/_react.default.createElement(FigureCaption, null, captionNode));
+ 
+   if (url) {
+     imgBlock = /*#__PURE__*/_react.default.createElement(Anchor, {
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js
 index 634dbe1..b8abb0f 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/index.js

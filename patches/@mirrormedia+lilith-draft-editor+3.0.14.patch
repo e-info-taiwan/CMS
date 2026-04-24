@@ -401,7 +401,7 @@ index 0925f4e..094edcb 100644
 +  );
  }
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
-index 5ffdb99..e203af6 100644
+index 5ffdb99..1373973 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
 @@ -18,6 +18,8 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
@@ -447,7 +447,7 @@ index 5ffdb99..e203af6 100644
      }
    }, [isOpen]);
    const basicEditorJsx = renderBasicEditor({
-@@ -78,6 +86,37 @@ function ColorBoxInput(props) {
+@@ -78,6 +86,38 @@ function ColorBoxInput(props) {
        });
      }
    });
@@ -465,7 +465,8 @@ index 5ffdb99..e203af6 100644
 +        name: selectedImage.image.name || '',
 +        resized: selectedImage.image.resized || null,
 +        imageFile: selectedImage.image.imageFile || null,
-+        caption: selectedImage.desc || ''
++        caption: selectedImage.desc || '',
++        captionRichText: selectedImage.captionRichText || null
 +      });
 +    }
 +    // 關閉選擇器，但不清除已選擇的圖片（除非用戶明確選擇了新的圖片）
@@ -485,7 +486,7 @@ index 5ffdb99..e203af6 100644
    return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
      isOpen: isOpen
    }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
-@@ -96,7 +135,8 @@ function ColorBoxInput(props) {
+@@ -96,7 +136,8 @@ function ColorBoxInput(props) {
            onChange({
              color: inputValue.color,
              // convert `contentState` of the `editorState` into raw content state object
@@ -495,7 +496,7 @@ index 5ffdb99..e203af6 100644
            });
            clearInputValue();
          }
-@@ -110,7 +150,64 @@ function ColorBoxInput(props) {
+@@ -110,7 +151,64 @@ function ColorBoxInput(props) {
      type: "text",
      placeholder: "Color",
      value: inputValue.color
@@ -561,7 +562,7 @@ index 5ffdb99..e203af6 100644
  }
  
  function ColorBoxButton(props) {
-@@ -124,14 +221,16 @@ function ColorBoxButton(props) {
+@@ -124,14 +222,16 @@ function ColorBoxButton(props) {
  
    const onChange = ({
      color,
@@ -860,10 +861,18 @@ index 0000000..beb8c78
 +  }, /*#__PURE__*/_react.default.createElement("span", null, "Footnote")));
 +}
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js
-index 3a9b3bc..45361d1 100644
+index 3a9b3bc..cb946e0 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/image.js
-@@ -60,7 +60,7 @@ function ImageButton(props) {
+@@ -39,6 +39,7 @@ function ImageButton(props) {
+       const contentState = newEditorState.getCurrentContent();
+       const contentStateWithEntity = contentState.createEntity('image', 'IMMUTABLE', { ...selectedImage.image,
+         desc: selectedImage.desc,
++        captionRichText: selectedImage.captionRichText || null,
+         url: selectedImage.url,
+         alignment: align
+       });
+@@ -60,7 +61,7 @@ function ImageButton(props) {
      enableCaption: true,
      enableUrl: true,
      enableAlignment: true,
@@ -873,7 +882,7 @@ index 3a9b3bc..45361d1 100644
      className: className,
      onClick: promptForImageSelector
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
-index 2a73a12..e09a57f 100644
+index 2a73a12..73d61da 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/info-box.js
 @@ -18,6 +18,38 @@ var _draftConverter = _interopRequireDefault(require("../draft-converter"));
@@ -947,7 +956,7 @@ index 2a73a12..e09a57f 100644
  
  function InfoBoxInput(props) {
    const {
-@@ -37,32 +94,139 @@ function InfoBoxInput(props) {
+@@ -37,32 +94,143 @@ function InfoBoxInput(props) {
      title,
      rawContentStateForInfoBoxEditor,
      renderBasicEditor,
@@ -967,24 +976,25 @@ index 2a73a12..e09a57f 100644
 -    // create an `editorState` from raw content state object
 -    editorStateOfBasicEditor: _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(rawContentState), decorators)
 +
-+  const createParagraphStateFromRaw = (raw, image, caption) => {
++  const createParagraphStateFromRaw = (raw, image, caption, captionRichText) => {
 +    const safeRaw = raw || emptyRaw;
 +    const contentState = (0, _draftJs.convertFromRaw)(safeRaw);
 +    return {
 +      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
 +      editorState: _draftJs.EditorState.createWithContent(contentState, decorators),
 +      image: image || null,
-+      caption: caption || ''
++      caption: caption || '',
++      captionRichText: captionRichText || null
 +    };
    };
 -  const [inputValue, setInputValue] = (0, _react.useState)(initialInputValue);
 +
 +  let derivedParagraphs = [];
 +  if (Array.isArray(initialParagraphs) && initialParagraphs.length > 0) {
-+    derivedParagraphs = initialParagraphs.map(p => createParagraphStateFromRaw(p.rawContentState, p.image, p.caption));
++    derivedParagraphs = initialParagraphs.map(p => createParagraphStateFromRaw(p.rawContentState, p.image, p.caption, p.captionRichText));
 +  } else {
 +    const legacyRaw = rawContentStateForInfoBoxEditor || emptyRaw;
-+    derivedParagraphs = [createParagraphStateFromRaw(legacyRaw, initialImage, '')];
++    derivedParagraphs = [createParagraphStateFromRaw(legacyRaw, initialImage, '', null)];
 +  }
 +
 +  const [inputValue, setInputValue] = (0, _react.useState)({
@@ -1034,7 +1044,8 @@ index 2a73a12..e09a57f 100644
 +              resized: selectedImage.image.resized || null,
 +              imageFile: selectedImage.image.imageFile || null
 +            },
-+            caption: selectedImage.desc || ''
++            caption: selectedImage.desc || '',
++            captionRichText: selectedImage.captionRichText || null
 +          });
 +        });
 +        return Object.assign({}, prev, {
@@ -1060,7 +1071,8 @@ index 2a73a12..e09a57f 100644
 +  const updateParagraphCaption = (id, caption) => {
 +    setInputValue(prev => {
 +      const paragraphs = prev.paragraphs.map(p => p.id === id ? Object.assign({}, p, {
-+        caption
++        caption,
++        captionRichText: null
 +      }) : p);
 +      return Object.assign({}, prev, {
 +        paragraphs
@@ -1069,7 +1081,7 @@ index 2a73a12..e09a57f 100644
 +  };
 +
 +  const addParagraph = () => {
-+    const newParagraph = createParagraphStateFromRaw(emptyRaw, null, '');
++    const newParagraph = createParagraphStateFromRaw(emptyRaw, null, '', null);
 +    setInputValue(prev => Object.assign({}, prev, {
 +      paragraphs: [...prev.paragraphs, newParagraph]
 +    }));
@@ -1093,7 +1105,8 @@ index 2a73a12..e09a57f 100644
 +        rawContentState: raw,
 +        body: _draftConverter.default.convertToHtml(raw),
 +        image: p.image || null,
-+        caption: p.caption || ''
++        caption: p.caption || '',
++        captionRichText: p.captionRichText || null
 +      };
 +    });
 +  };
@@ -1101,7 +1114,7 @@ index 2a73a12..e09a57f 100644
    return /*#__PURE__*/_react.default.createElement(_modals.DrawerController, {
      isOpen: isOpen
    }, /*#__PURE__*/_react.default.createElement(_modals.Drawer, {
-@@ -80,22 +244,98 @@ function InfoBoxInput(props) {
+@@ -80,22 +248,98 @@ function InfoBoxInput(props) {
          action: () => {
            onChange({
              title: inputValue.title,
@@ -1207,7 +1220,7 @@ index 2a73a12..e09a57f 100644
  }
  
  function InfoBoxButton(props) {
-@@ -109,15 +349,17 @@ function InfoBoxButton(props) {
+@@ -109,15 +353,17 @@ function InfoBoxButton(props) {
  
    const onChange = ({
      title,
@@ -1901,10 +1914,10 @@ index 26044ef..af7e742 100644
 +  );
  }
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
-index e579193..3f70ab8 100644
+index e579193..3efd5fc 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
-@@ -58,14 +58,40 @@ const processor = {
+@@ -58,14 +58,42 @@ const processor = {
      switch (type && type.toUpperCase()) {
        case _entities.default.INFOBOX.type:
          {
@@ -1929,7 +1942,8 @@ index e579193..3f70ab8 100644
 +              paragraphs: paragraphs.map(p => ({
 +                body: p.body,
 +                image: p.image || null,
-+                caption: p.caption || ''
++                caption: p.caption || '',
++                captionRichText: p.captionRichText || null
 +              }))
 +            }];
 +          } else {
@@ -1943,7 +1957,8 @@ index e579193..3f70ab8 100644
 +              paragraphs: [{
 +                body: legacyBody,
 +                image: legacyImage,
-+                caption: ''
++                caption: '',
++                captionRichText: null
 +              }]
 +            }];
 +          }
@@ -3315,7 +3330,7 @@ index 825dc22..db4d5f3 100644
      onCancel: () => {
        onEditFinish({});
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
-index d74d67e..0431ff9 100644
+index d74d67e..fd4e40d 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/block-renderer/image-block.js
 @@ -23,16 +23,33 @@ const {
@@ -3356,7 +3371,31 @@ index d74d67e..0431ff9 100644
  `;
  
  function ImageEditorBlock(props) {
-@@ -95,14 +112,14 @@ function ImageEditorBlock(props) {
+@@ -55,6 +72,7 @@ function ImageEditorBlock(props) {
+     resized,
+     resizedWebp,
+     desc,
++    captionRichText,
+     url,
+     alignment
+   } = entity.getData();
+@@ -67,6 +85,7 @@ function ImageEditorBlock(props) {
+       resizedWebp
+     },
+     desc,
++    captionRichText: captionRichText || null,
+     url
+   };
+ 
+@@ -79,6 +98,7 @@ function ImageEditorBlock(props) {
+         entityKey,
+         entityData: { ...imageEntity.image,
+           desc: imageEntity.desc,
++          captionRichText: imageEntity.captionRichText || null,
+           url: imageEntity.url,
+           alignment: align
+         }
+@@ -95,14 +115,14 @@ function ImageEditorBlock(props) {
      enableAlignment: true,
      initialAlign: alignment,
      initialSelected: [imageWithMeta]
@@ -4440,10 +4479,23 @@ index 0000000..091080f
 +};
 +exports.footnoteDecorator = footnoteDecorator;
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-index efeb120..147b542 100644
+index efeb120..d3ae414 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-@@ -69,27 +69,37 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+@@ -23,6 +23,12 @@ var _searchBox = require("./search-box");
+ 
+ var _pagination = require("./pagination");
+ 
++var _draftJs = require("draft-js");
++
++var _link = require("../../../draft-js/buttons/link");
++
++var _readr = _interopRequireDefault(require("@mirrormedia/lilith-draft-renderer/lib/website/readr"));
++
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
+ function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+@@ -69,28 +75,39 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
    margin-top: 10px;
  `;
  const ImageSelectionWrapper = _styledComponents.default.div`
@@ -4476,12 +4528,165 @@ index efeb120..147b542 100644
    overflow: auto;
  `;
  const ImageMetaGridWrapper = _styledComponents.default.div`
+-  flex: 0 0 33.3333%;
 +  box-sizing: border-box;
 +  overflow: hidden;
-   flex: 0 0 33.3333%;
++  flex: ${props => props.$fullWidth ? '0 0 100%' : '0 0 33.3333%'};
++  max-width: ${props => props.$fullWidth ? '100%' : '33.3333%'};
    cursor: pointer;
    padding: 0 10px 10px;
-@@ -249,6 +259,72 @@ function DelayInput(props) {
+ `;
+@@ -118,6 +135,49 @@ const ErrorWrapper = _styledComponents.default.div`
+     margin: 0;
+   }
+ `;
++const CaptionEditorWrap = _styledComponents.default.div`
++  border: 1px solid #c1c7d0;
++  border-radius: 4px;
++  padding: 8px;
++  min-height: 72px;
++`;
++const CaptionToolbar = _styledComponents.default.div`
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  margin-bottom: 6px;
++`;
++const captionDecorators = new _draftJs.CompositeDecorator([_readr.default.entityDecorators.linkDecorator]);
++const emptyCaptionRaw = {
++  blocks: [],
++  entityMap: {}
++};
++
++function toCaptionEditorState(captionRichText, desc) {
++  if (captionRichText && typeof captionRichText === 'object') {
++    try {
++      return _draftJs.EditorState.createWithContent((0, _draftJs.convertFromRaw)(captionRichText), captionDecorators);
++    } catch (error) {}
++  }
++
++  const text = typeof desc === 'string' ? desc : '';
++  if (!text) {
++    return _draftJs.EditorState.createEmpty(captionDecorators);
++  }
++
++  return _draftJs.EditorState.createWithContent(_draftJs.ContentState.createFromText(text), captionDecorators);
++}
++
++function toPlainText(captionRichText, fallbackText = '') {
++  if (captionRichText && Array.isArray(captionRichText.blocks)) {
++    const text = captionRichText.blocks.map(block => (block === null || block === void 0 ? void 0 : block.text) || '').join('\n').trim();
++    if (text) {
++      return text;
++    }
++  }
++
++  return typeof fallbackText === 'string' ? fallbackText : '';
++}
+ const ImageName = _styledComponents.default.p`
+   text-align: center;
+ `;
+@@ -166,7 +226,8 @@ function ImageMetaGrids(props) {
+     imageMetas,
+     onChange,
+     enableCaption,
+-    enableUrl
++    enableUrl,
++    fullWidth = false
+   } = props;
+   return /*#__PURE__*/_react.default.createElement(ImageMetaGridsWrapper, null, imageMetas.map(imageMeta => {
+     var _imageMeta$image;
+@@ -176,6 +237,7 @@ function ImageMetaGrids(props) {
+       imageMeta: imageMeta,
+       enableCaption: enableCaption,
+       enableUrl: enableUrl,
++      fullWidth: fullWidth,
+       onChange: onChange
+     });
+   }));
+@@ -188,14 +250,37 @@ function ImageMetaGrid(props) {
+     imageMeta,
+     enableCaption,
+     enableUrl,
++    fullWidth = false,
+     onChange
+   } = props;
++  const captionWrapRef = (0, _react.useRef)(null);
++  const containerRef = (0, _react.useRef)(null);
+   const {
+     image,
+     desc,
+-    url
++    url,
++    captionRichText
+   } = imageMeta;
+-  return /*#__PURE__*/_react.default.createElement(ImageMetaGridWrapper, null, /*#__PURE__*/_react.default.createElement(Image, {
++  const [captionState, setCaptionState] = (0, _react.useState)(() => toCaptionEditorState(captionRichText, desc));
++  (0, _react.useEffect)(() => {
++    setCaptionState(toCaptionEditorState(captionRichText, desc));
++  }, [image === null || image === void 0 ? void 0 : image.id]);
++
++  const onCaptionStateChange = editorState => {
++    setCaptionState(editorState);
++    const nextCaptionRichText = (0, _draftJs.convertToRaw)(editorState.getCurrentContent());
++    onChange({
++      image,
++      desc: toPlainText(nextCaptionRichText, desc),
++      captionRichText: nextCaptionRichText,
++      url
++    });
++  };
++
++  return /*#__PURE__*/_react.default.createElement(ImageMetaGridWrapper, {
++    $fullWidth: fullWidth,
++    ref: containerRef
++  }, /*#__PURE__*/_react.default.createElement(Image, {
+     src: image === null || image === void 0 ? void 0 : (_image$resized2 = image.resized) === null || _image$resized2 === void 0 ? void 0 : _image$resized2.w800,
+     onError: e => {
+       var _image$imageFile2;
+@@ -204,29 +289,27 @@ function ImageMetaGrid(props) {
+     }
+   }), /*#__PURE__*/_react.default.createElement(ImageName, null, image === null || image === void 0 ? void 0 : image.name), enableCaption && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(Label, {
+     htmlFor: "caption"
+-  }, "Image Caption:"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+-    id: "caption",
+-    type: "text",
+-    placeholder: image === null || image === void 0 ? void 0 : image.name,
+-    defaultValue: desc,
+-    onChange: _.debounce(e => {
+-      onChange({
+-        image,
+-        desc: e.target.value,
+-        url
+-      });
+-    })
+-  })), enableUrl && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(Label, {
++  }, "Image Caption:"), /*#__PURE__*/_react.default.createElement(CaptionToolbar, null, /*#__PURE__*/_react.default.createElement(_link.LinkButton, {
++    editorState: captionState,
++    onChange: onCaptionStateChange
++  })), /*#__PURE__*/_react.default.createElement(CaptionEditorWrap, {
++    ref: captionWrapRef
++  }, /*#__PURE__*/_react.default.createElement(_draftJs.Editor, {
++    editorState: captionState,
++    onChange: onCaptionStateChange,
++    placeholder: "\u5716\u8AAA\uFF08\u9078\u586B\uFF09"
++  }))), enableUrl && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(Label, {
+     htmlFor: "url"
+   }, "Url:"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+     id: "url",
+     type: "text",
+-    placeholder: "(Optional)",
++    placeholder: "(選填)",
+     defaultValue: url,
+     onChange: _.debounce(e => {
+       onChange({
+         image,
+         desc,
++          captionRichText: captionRichText || emptyCaptionRaw,
+         url: e.target.value
+       });
+     })
+@@ -249,6 +332,72 @@ function DelayInput(props) {
      }
    }));
  }
@@ -4554,7 +4759,7 @@ index efeb120..147b542 100644
  
  function ImageSelector(props) {
    const {
-@@ -259,7 +335,12 @@ function ImageSelector(props) {
+@@ -259,7 +408,12 @@ function ImageSelector(props) {
      enableDelay = false,
      onChange,
      initialSelected = [],
@@ -4568,7 +4773,7 @@ index efeb120..147b542 100644
    } = props;
    const [queryImages, {
      loading,
-@@ -275,7 +356,11 @@ function ImageSelector(props) {
+@@ -275,7 +429,11 @@ function ImageSelector(props) {
  
    const [searchText, setSearchText] = (0, _react.useState)('');
    const [selected, setSelected] = (0, _react.useState)(initialSelected);
@@ -4581,7 +4786,7 @@ index efeb120..147b542 100644
    const [align, setAlign] = (0, _react.useState)(initialAlign);
    const contentWrapperRef = (0, _react.useRef)(null);
    const pageSize = 6;
-@@ -296,7 +381,20 @@ function ImageSelector(props) {
+@@ -296,7 +454,19 @@ function ImageSelector(props) {
    const onSave = () => {
      let adjustedDelay = +delay;
      adjustedDelay = adjustedDelay < 1 ? 1 : adjustedDelay;
@@ -4598,12 +4803,11 @@ index efeb120..147b542 100644
 +      const num = +normalizedMaxImagesPerRow;
 +      normalizedMaxImagesPerRow = Number.isNaN(num) ? '' : String(num);
 +    }
-+
 +    onChange(selected, align, adjustedDelay, overallCaption, normalizedWidthPercentage === '' ? undefined : +normalizedWidthPercentage, normalizedMaxImagesPerRow === '' ? undefined : +normalizedMaxImagesPerRow, lightboxEnabled);
    };
  
    const onCancel = () => {
-@@ -312,6 +410,22 @@ function ImageSelector(props) {
+@@ -312,6 +482,22 @@ function ImageSelector(props) {
      setDelay(delay);
    };
  
@@ -4626,7 +4830,32 @@ index efeb120..147b542 100644
    const onAlignSelectChange = align => {
      setAlign(align);
    };
-@@ -437,6 +551,18 @@ function ImageSelector(props) {
+@@ -361,14 +547,16 @@ function ImageSelector(props) {
+       if (enableMultiSelect) {
+         return selected.concat([{
+           image: imageEntity,
+-          desc: ''
++          desc: '',
++          captionRichText: emptyCaptionRaw
+         }]);
+       } // single select
+ 
+ 
+       return [{
+         image: imageEntity,
+-        desc: ''
++        desc: '',
++        captionRichText: emptyCaptionRaw
+       }];
+     });
+   };
+@@ -433,10 +621,23 @@ function ImageSelector(props) {
+     imageMetas: selected,
+     onChange: onImageMetaChange,
+     enableCaption: enableCaption,
+-    enableUrl: enableUrl
++    enableUrl: enableUrl,
++    fullWidth: !enableMultiSelect
    })), /*#__PURE__*/_react.default.createElement(ImageBlockMetaWrapper, null, (enableDelay || enableAlignment) && /*#__PURE__*/_react.default.createElement(SeparationLine, null), enableDelay && /*#__PURE__*/_react.default.createElement(DelayInput, {
      delay: delay,
      onChange: onDealyChange
