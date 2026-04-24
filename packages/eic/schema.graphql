@@ -3507,6 +3507,7 @@ type Query {
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   postsForRssTarget(rssTarget: String!): [Post]!
+  similarPhotos(id: ID!): [Photo]!
 }
 
 union AuthenticatedItem = User
