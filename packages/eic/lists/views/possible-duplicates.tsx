@@ -25,15 +25,34 @@ export function Field({ value }: FieldProps<any>) {
       ? window.location.pathname.split('/').pop()
       : null
 
-  const { data, loading } = useQuery(SIMILAR_PHOTOS_QUERY, {
+  const { data, loading, error } = useQuery(SIMILAR_PHOTOS_QUERY, {
     variables: { id: itemId },
     skip: isCreate || !itemId,
   })
 
-  const pHashDuplicates = value && Array.isArray(value) ? value : []
+  let parsedValue = value
+  if (typeof value === 'string') {
+    try {
+      parsedValue = JSON.parse(value)
+    } catch (e) {
+      console.error('Failed to parse possibleDuplicates', e)
+    }
+  }
+
+  const pHashDuplicates =
+    parsedValue && Array.isArray(parsedValue) ? parsedValue : []
   const vectorSimilar = data?.similarPhotos || []
 
   if (pHashDuplicates.length === 0 && vectorSimilar.length === 0 && !loading) {
+    // If there is an error in the query, we should still show it instead of disappearing
+    if (error) {
+      return (
+        <FieldContainer>
+          <FieldLabel>可能重複的圖片 ID (Error)</FieldLabel>
+          <div style={{ color: 'red' }}>AI 相似度查詢失敗: {error.message}</div>
+        </FieldContainer>
+      )
+    }
     return null
   }
 
