@@ -70,6 +70,36 @@ export default withAuth(
             return posts
           },
         }),
+        similarPhotos: graphql.field({
+          type: graphql.nonNull(graphql.list(base.object('Photo'))),
+          args: {
+            id: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { id }, context) => {
+            const SIMILAR_LIMIT = 10
+            const rows = (await context.prisma.$queryRaw`
+              SELECT id FROM "Photo"
+              WHERE id != ${Number(id)} AND "imageVector" IS NOT NULL
+              ORDER BY "imageVector" <=> (SELECT "imageVector" FROM "Photo" WHERE id = ${Number(
+                id
+              )})
+              LIMIT ${SIMILAR_LIMIT}
+            `) as { id: number }[]
+            const ids = rows.map((r) => r.id)
+            if (ids.length === 0) {
+              return []
+            }
+            const photos = await context.db.Photo.findMany({
+              where: { id: { in: ids } },
+            })
+            // Map the results to maintain the order returned by pgvector
+            return ids
+              .map((queryId) => photos.find((p) => p.id === queryId.toString()))
+              .filter(Boolean)
+          },
+        }),
       },
     })),
     storage: {

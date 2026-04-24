@@ -1956,6 +1956,7 @@ type Photo {
   file: FileFieldOutput
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
+  possibleDuplicates: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2032,6 +2033,7 @@ input PhotoUpdateInput {
   exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForUpdateInput
+  possibleDuplicates: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2055,6 +2057,7 @@ input PhotoCreateInput {
   exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForCreateInput
+  possibleDuplicates: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput

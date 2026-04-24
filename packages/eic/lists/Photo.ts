@@ -1,6 +1,7 @@
 import config from '../config'
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
+import { Storage } from '@google-cloud/storage'
 import { list, graphql } from '@keystone-6/core'
 import {
   file,
@@ -181,6 +182,15 @@ const listConfigurations = list({
         createView: { fieldMode: 'hidden' },
       },
     }),
+    possibleDuplicates: json({
+      label: '可能重複的圖片 ID',
+      ui: {
+        views: './lists/views/possible-duplicates',
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
   },
   ui: {
     listView: {
@@ -205,72 +215,45 @@ const listConfigurations = list({
     },
   },
   hooks: {
-    resolveInput: async ({ resolvedData, item }) => {
-      // Check if this is a create or update operation that provides a new imageFile
-      // We also check if it's uploaded recently
-      const imageFileId = resolvedData?.imageFile?.id || item?.imageFile_id
-      const imageFileExtension =
-        resolvedData?.imageFile?.extension || item?.imageFile_extension
+    beforeOperation: async ({ operation, item }) => {
+      if (operation === 'delete' && item?.imageFile_id) {
+        // Delete original and resized files from GCS
+        const filename = item.imageFile_id
+        const extension = item.imageFile_extension
+          ? `.${item.imageFile_extension}`
+          : ''
+        const resizedTargets = ['w480', 'w800', 'w1200', 'w1600', 'w2400']
 
-      // If a new image is provided, fetch phash and exif
-      if (resolvedData.imageFile && imageFileId) {
-        const processorUrl = process.env.IMAGE_PROCESS_ENDPOINT
-        if (!processorUrl) {
-          console.warn(
-            '[Warning] IMAGE_PROCESS_ENDPOINT is not set. Skipping phash generation.'
-          )
-          return resolvedData
-        }
+        const filesToDelete = [
+          `${filename}${extension}`,
+          `${filename}.webP`,
+          ...resizedTargets.map((t) => `${filename}-${t}${extension}`),
+          ...resizedTargets.map((t) => `${filename}-${t}.webP`),
+        ]
 
         try {
-          const extension = imageFileExtension ? `.${imageFileExtension}` : ''
-          const imageUrl = `${config.images.gcsBaseUrl}/images/${imageFileId}${extension}`
-
-          const response = await fetch(processorUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image_url: imageUrl }),
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            if (data.phash) {
-              resolvedData.phash = data.phash
-            }
-            if (data.exif) {
-              resolvedData.exif = data.exif
-            }
+          const gcs = new Storage()
+          const bucketName = config.googleCloudStorage.bucket
+          if (bucketName) {
+            const bucket = gcs.bucket(bucketName)
+            await Promise.all(
+              filesToDelete.map((f) =>
+                bucket.file(`images/${f}`).delete({ ignoreNotFound: true })
+              )
+            )
+            console.log(
+              `[Photo hook] Successfully deleted GCS files:`,
+              filesToDelete
+            )
           } else {
-            console.error(`Failed to fetch phash. Status: ${response.status}`)
+            console.error(
+              `[Photo hook] Bucket name not found in config.googleCloudStorage.bucket`
+            )
           }
         } catch (error) {
-          console.error('Failed to fetch phash and exif: ', error)
-        }
-      }
-      return resolvedData
-    },
-    validateInput: async ({
-      resolvedData,
-      item,
-      context,
-      addValidationError,
-    }) => {
-      // Validate against duplicates
-      const phash = resolvedData.phash || item?.phash
-      if (phash && resolvedData.imageFile) {
-        const id = item?.id
-        const whereClause = { phash: { equals: phash } }
-
-        const duplicates = await context.db.Photo.findMany({
-          // @ts-ignore: TS checking might complain about dynamic where clause
-          where: id
-            ? { ...whereClause, id: { not: { equals: id } } }
-            : whereClause,
-        })
-
-        if (duplicates && duplicates.length > 0) {
-          addValidationError(
-            `This image appears to be a duplicate. A similar image already exists (檔案名稱: ${duplicates[0].name}).`
+          console.error(
+            `Failed to delete GCS files for Photo ${item.id}`,
+            error
           )
         }
       }

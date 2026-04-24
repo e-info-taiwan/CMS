@@ -450,6 +450,7 @@ model Photo {
   file_filesize                 Int?
   file_filename                 String?
   posts                         Post[]         @relation("Photo_posts")
+  possibleDuplicates            Json?
   createdAt                     DateTime?
   updatedAt                     DateTime?
   createdBy                     User?          @relation("Photo_createdBy", fields: [createdById], references: [id])
