@@ -22,6 +22,8 @@ const {
   GEMINI_API_KEY,
   GEMINI_MODEL,
   WEB_URL_BASE,
+  DATA_SERVICES_ORIGIN,
+  DATA_SERVICES_TAG_EMBEDDING_PATH,
 } = process.env
 
 const parseRoutePrefixConfig = () => {
@@ -96,6 +98,10 @@ export default {
       apiKey: GEMINI_API_KEY || '',
       model: GEMINI_MODEL || 'gemini-2.5-flash',
     },
+  },
+  dataServices: {
+    origin: DATA_SERVICES_ORIGIN || '',
+    tagEmbeddingPath: DATA_SERVICES_TAG_EMBEDDING_PATH || '/embeddings',
   },
   webUrlBase:
     WEB_URL_BASE || 'https://eic-web-dev-1090198686704.asia-east1.run.app',

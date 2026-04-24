@@ -22,6 +22,22 @@ const { withAuth } = createAuth({
 
 const session = statelessSessions(appConfig.session)
 
+const extendPrismaSchemaWithTagVectors = (schema: string) => {
+  if (
+    schema.includes('textEmbedding3Small Unsupported("vector(1536)")?') &&
+    schema.includes('bgeM3Embedding     Unsupported("vector(1024)")?')
+  ) {
+    return schema
+  }
+
+  return schema.replace(
+    /(model Tag \{[\s\S]*?heroImageId\s+Int\?\s+@map\("heroImage"\))/,
+    `$1
+  textEmbedding3Small Unsupported("vector(1536)")?
+  bgeM3Embedding     Unsupported("vector(1024)")?`
+  )
+}
+
 export default withAuth(
   config({
     db: {
@@ -30,6 +46,7 @@ export default withAuth(
       idField: {
         kind: 'autoincrement',
       },
+      extendPrismaSchema: extendPrismaSchemaWithTagVectors,
     },
     ui: {
       // If `isDisabled` is set to `true` then the Admin UI will be completely disabled.

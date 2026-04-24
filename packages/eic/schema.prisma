@@ -676,20 +676,22 @@ model Section {
 }
 
 model Tag {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique @default("")
-  brief       String    @default("")
-  heroImage   Photo?    @relation("Tag_heroImage", fields: [heroImageId], references: [id])
-  heroImageId Int?      @map("heroImage")
-  isFeatured  Boolean   @default(false)
-  sortOrder   Int?
-  posts       Post[]    @relation("Post_tags")
-  createdAt   DateTime?
-  updatedAt   DateTime?
-  createdBy   User?     @relation("Tag_createdBy", fields: [createdById], references: [id])
-  createdById Int?      @map("createdBy")
-  updatedBy   User?     @relation("Tag_updatedBy", fields: [updatedById], references: [id])
-  updatedById Int?      @map("updatedBy")
+  id                  Int                          @id @default(autoincrement())
+  name                String                       @unique @default("")
+  brief               String                       @default("")
+  heroImage           Photo?                       @relation("Tag_heroImage", fields: [heroImageId], references: [id])
+  heroImageId         Int?                         @map("heroImage")
+  textEmbedding3Small Unsupported("vector(1536)")?
+  bgeM3Embedding      Unsupported("vector(1024)")?
+  isFeatured          Boolean                      @default(false)
+  sortOrder           Int?
+  posts               Post[]                       @relation("Post_tags")
+  createdAt           DateTime?
+  updatedAt           DateTime?
+  createdBy           User?                        @relation("Tag_createdBy", fields: [createdById], references: [id])
+  createdById         Int?                         @map("createdBy")
+  updatedBy           User?                        @relation("Tag_updatedBy", fields: [updatedById], references: [id])
+  updatedById         Int?                         @map("updatedBy")
 
   @@index([heroImageId])
   @@index([createdById])
