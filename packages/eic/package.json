@@ -11,6 +11,7 @@
     "start": "keystone start",
     "start-http2-proxy-server": "node http2-proxy-server",
     "db-migrate": "keystone prisma migrate deploy",
+    "backfill-tag-embeddings": "node scripts/backfill-tag-embeddings.js",
     "build": "keystone build",
     "postinstall": "test -n \"$WINDOWS_ONLY\" || patch-package && keystone postinstall --fix"
   },

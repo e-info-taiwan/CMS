@@ -32,6 +32,53 @@ cloud runs:
 
 > 若 `INVALID_CDN_CACHE_SERVER_URL` 有設定，會優先使用 HTTP invalidation；否則改用 GCP URL map invalidation。
 
+### Tag embedding and similarity check
+
+Tag 會使用 Vertex AI 產生文字向量，用於避免新增語意上太接近的標籤。
+
+目前採用的模型與欄位：
+
+- Model：`gemini-embedding-001`
+- Dimension：`1536`
+- DB 欄位：`Tag.textEmbedding3Small`，型別為 `vector(1536)`
+- 距離計算：PostgreSQL pgvector cosine distance `<=>`
+
+雖然欄位名稱仍為 `textEmbedding3Small`，實際內容會由 Vertex AI `gemini-embedding-001` 產生。暫時沿用此欄位是為了避免再新增 migration；未來若要整理命名，可另外規劃欄位 rename / data migration。
+
+相關環境變數：
+
+```
+TAG_VERTEX_PROJECT=your-gcp-project
+TAG_VERTEX_LOCATION=us-central1
+TAG_VERTEX_EMBEDDING_MODEL=gemini-embedding-001
+TAG_VERTEX_EMBEDDING_DIMENSION=1536
+TAG_SIMILARITY_DISTANCE_THRESHOLD=0.08
+TAG_SIMILARITY_CHECK_LIMIT=5
+```
+
+`TAG_VERTEX_PROJECT` / `TAG_VERTEX_LOCATION` 未設定時，會 fallback 到 `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION`。執行環境的 service account 需具備呼叫 Vertex AI 的權限。
+
+`TAG_SIMILARITY_CHECK_ENABLED` 預設為關閉。原因是 similarity check 依賴既有 tags 都已有 embedding；第一次部署或重算 embedding 前，應先完成 backfill，再開啟：
+
+```
+TAG_SIMILARITY_CHECK_ENABLED=true
+```
+
+Backfill 現有 tags：
+
+```
+yarn workspace @mirrormedia/lilith-eic run backfill-tag-embeddings --dry-run
+yarn workspace @mirrormedia/lilith-eic run backfill-tag-embeddings
+```
+
+預設只補 `textEmbedding3Small IS NULL` 的 tags。若需要重算全部 tags：
+
+```
+yarn workspace @mirrormedia/lilith-eic run backfill-tag-embeddings --force
+```
+
+目前 tags 數量約數千筆，適合直接用 `gemini-embedding-001` 線上逐筆 backfill。若未來資料量成長到數十萬筆以上，需重新評估是否改用支援 batch prediction 的 embedding model 或另外設計分片式 backfill worker。
+
 ## Getting started on local environment
 ### Start postgres instance
 在起 lilith-readr 服務前，需要在 local 端先起 postgres database。

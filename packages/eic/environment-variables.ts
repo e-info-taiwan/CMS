@@ -24,6 +24,13 @@ const {
   WEB_URL_BASE,
   DATA_SERVICES_ORIGIN,
   DATA_SERVICES_TAG_EMBEDDING_PATH,
+  TAG_VERTEX_PROJECT,
+  TAG_VERTEX_LOCATION,
+  TAG_VERTEX_EMBEDDING_MODEL,
+  TAG_VERTEX_EMBEDDING_DIMENSION,
+  TAG_SIMILARITY_CHECK_ENABLED,
+  TAG_SIMILARITY_DISTANCE_THRESHOLD,
+  TAG_SIMILARITY_CHECK_LIMIT,
 } = process.env
 
 const parseRoutePrefixConfig = () => {
@@ -39,6 +46,11 @@ const parseRoutePrefixConfig = () => {
     )
     return undefined
   }
+}
+
+const numberFromEnv = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
 }
 
 enum DatabaseProvider {
@@ -102,6 +114,22 @@ export default {
   dataServices: {
     origin: DATA_SERVICES_ORIGIN || '',
     tagEmbeddingPath: DATA_SERVICES_TAG_EMBEDDING_PATH || '/embeddings',
+  },
+  tagEmbedding: {
+    vertex: {
+      project: TAG_VERTEX_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || '',
+      location:
+        TAG_VERTEX_LOCATION ||
+        process.env.GOOGLE_CLOUD_LOCATION ||
+        'us-central1',
+      model: TAG_VERTEX_EMBEDDING_MODEL || 'gemini-embedding-001',
+      outputDimensionality: numberFromEnv(TAG_VERTEX_EMBEDDING_DIMENSION, 1536),
+    },
+    similarityCheck: {
+      enabled: TAG_SIMILARITY_CHECK_ENABLED === 'true',
+      distanceThreshold: numberFromEnv(TAG_SIMILARITY_DISTANCE_THRESHOLD, 0.08),
+      limit: numberFromEnv(TAG_SIMILARITY_CHECK_LIMIT, 5),
+    },
   },
   webUrlBase:
     WEB_URL_BASE || 'https://eic-web-dev-1090198686704.asia-east1.run.app',

@@ -3,16 +3,25 @@ import { utils } from '@mirrormedia/lilith-core'
 import { list } from '@keystone-6/core'
 import { Prisma } from '@prisma/client'
 import { relationship, checkbox, integer, text } from '@keystone-6/core/fields'
-import { tagEmbeddingService } from '../services/tag-embedding'
+import {
+  tagEmbeddingService,
+  toVectorLiteral,
+  SimilarTag,
+} from '../services/tag-embedding'
+import envVar from '../environment-variables'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
-const toVectorLiteral = (values: number[] | null) => {
-  if (!values) {
-    return null
-  }
+const formatSimilarTagMessage = (tags: SimilarTag[]) => {
+  const tagNames = tags
+    .slice(0, 3)
+    .map(
+      (tag) =>
+        `「${tag.name}」（相似度 ${Math.round(tag.similarity * 1000) / 10}%）`
+    )
+    .join('、')
 
-  return `[${values.join(',')}]`
+  return `已有相似標籤：${tagNames}。請優先使用既有標籤，或調整標籤名稱後再新增。`
 }
 
 const listConfigurations = list({
@@ -60,11 +69,94 @@ const listConfigurations = list({
 
 const extendedListConfigurations = utils.addTrackingFields(listConfigurations)
 
+const originalValidateInput = extendedListConfigurations.hooks?.validateInput
 const originalAfterOperation = extendedListConfigurations.hooks?.afterOperation
+type TagHookContext = {
+  prisma: {
+    $queryRawUnsafe<T = unknown>(
+      query: string,
+      ...values: unknown[]
+    ): Promise<T>
+    $executeRawUnsafe(query: string, ...values: unknown[]): Promise<unknown>
+  }
+}
+type ValidateInputArgs = {
+  operation: string
+  item?: Record<string, unknown>
+  resolvedData: Record<string, unknown>
+  addValidationError: (message: string) => void
+  context: TagHookContext
+}
+type AfterOperationArgs = {
+  operation: string
+  item?: Record<string, unknown>
+  originalItem?: Record<string, unknown>
+  context: TagHookContext
+}
 
 extendedListConfigurations.hooks = {
   ...extendedListConfigurations.hooks,
-  afterOperation: async ({ operation, item, originalItem, context }) => {
+  validateInput: async (args: ValidateInputArgs) => {
+    const { operation, item, resolvedData, addValidationError, context } = args
+    await originalValidateInput?.({
+      operation,
+      item,
+      resolvedData,
+      addValidationError,
+      context,
+    } as Parameters<NonNullable<typeof originalValidateInput>>[0])
+
+    if (
+      !envVar.tagEmbedding.similarityCheck.enabled ||
+      (operation !== 'create' && operation !== 'update')
+    ) {
+      return
+    }
+
+    const hasNameInput = Object.prototype.hasOwnProperty.call(
+      resolvedData,
+      'name'
+    )
+    if (operation === 'update' && !hasNameInput) {
+      return
+    }
+
+    const currentName = String(resolvedData.name ?? item?.name ?? '').trim()
+    const previousName = String(item?.name ?? '').trim()
+    const shouldCheckSimilarity =
+      operation === 'create' || currentName !== previousName
+
+    if (!currentName || !shouldCheckSimilarity) {
+      return
+    }
+
+    try {
+      const embedding = await tagEmbeddingService.generateVertexEmbedding(
+        currentName
+      )
+      const tagId = Number(item?.id)
+      const similarTags = await tagEmbeddingService.findSimilarTags({
+        prisma: context.prisma,
+        embedding,
+        excludeId: Number.isFinite(tagId) ? tagId : undefined,
+      })
+      const tooSimilarTags = similarTags.filter(
+        (tag) =>
+          tag.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
+      )
+
+      if (tooSimilarTags.length > 0) {
+        addValidationError(formatSimilarTagMessage(tooSimilarTags))
+      }
+    } catch (error) {
+      console.error('[Tag embedding] failed to validate similar tags', error)
+      addValidationError(
+        '無法檢查相似標籤，請稍後再試；若持續發生，請聯繫管理員確認 Vertex AI 設定。'
+      )
+    }
+  },
+  afterOperation: async (args: AfterOperationArgs) => {
+    const { operation, item, originalItem, context } = args
     await originalAfterOperation?.({
       operation,
       item,
@@ -88,7 +180,7 @@ extendedListConfigurations.hooks = {
 
     if (!currentName) {
       await context.prisma.$executeRawUnsafe(
-        'UPDATE "Tag" SET "textEmbedding3Small" = NULL, "bgeM3Embedding" = NULL WHERE id = $1',
+        'UPDATE "Tag" SET "textEmbedding3Small" = NULL WHERE id = $1',
         tagId
       )
       return
@@ -99,11 +191,9 @@ extendedListConfigurations.hooks = {
 
       await context.prisma.$executeRawUnsafe(
         `UPDATE "Tag"
-         SET "textEmbedding3Small" = CAST($1 AS vector),
-             "bgeM3Embedding" = CAST($2 AS vector)
-         WHERE id = $3`,
+         SET "textEmbedding3Small" = CAST($1 AS vector)
+         WHERE id = $2`,
         toVectorLiteral(embeddings.textEmbedding3Small),
-        toVectorLiteral(embeddings.bgeM3Embedding),
         tagId
       )
     } catch (error) {
