@@ -31,6 +31,13 @@ const listConfigurations = list({
       label: '標籤名稱',
       validation: { isRequired: true },
     }),
+    checkSimilarity: checkbox({
+      label: '檢查相似標籤',
+      defaultValue: true,
+      ui: {
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
     brief: text({
       label: '標籤內容',
     }),
@@ -113,6 +120,10 @@ extendedListConfigurations.hooks = {
       return
     }
 
+    if (resolvedData.checkSimilarity === false) {
+      return
+    }
+
     const hasNameInput = Object.prototype.hasOwnProperty.call(
       resolvedData,
       'name'
@@ -173,8 +184,20 @@ extendedListConfigurations.hooks = {
     const previousName = String(originalItem?.name ?? '').trim()
     const shouldRefreshEmbedding =
       operation === 'create' || currentName !== previousName
+    const shouldResetSimilarityCheck = item?.checkSimilarity === false
 
-    if (!Number.isFinite(tagId) || !shouldRefreshEmbedding) {
+    if (!Number.isFinite(tagId)) {
+      return
+    }
+
+    if (shouldResetSimilarityCheck) {
+      await context.prisma.$executeRawUnsafe(
+        'UPDATE "Tag" SET "checkSimilarity" = true WHERE id = $1',
+        tagId
+      )
+    }
+
+    if (!shouldRefreshEmbedding) {
       return
     }
 

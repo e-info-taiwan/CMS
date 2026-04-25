@@ -679,6 +679,7 @@ model Tag {
   id                  Int                          @id @default(autoincrement())
   name                String                       @unique @default("")
   brief               String                       @default("")
+  checkSimilarity     Boolean                      @default(true)
   heroImage           Photo?                       @relation("Tag_heroImage", fields: [heroImageId], references: [id])
   heroImageId         Int?                         @map("heroImage")
   textEmbedding3Small Unsupported("vector(1536)")?

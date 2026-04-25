@@ -36,6 +36,8 @@ cloud runs:
 
 Tag 會使用 Vertex AI 產生文字向量，用於避免新增語意上太接近的標籤。
 
+在 CMS 建立或修改 Tag 名稱時，Create/Edit form 會有「檢查相似標籤」checkbox，預設勾選。若系統判斷已有極度相似的 tag，但編輯者確認仍需新增或改名，可以取消勾選後送出；這只會略過當次 similarity check，儲存後欄位會自動回到勾選狀態。
+
 目前採用的模型與欄位：
 
 - Model：`gemini-embedding-001`
