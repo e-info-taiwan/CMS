@@ -1243,6 +1243,18 @@ index 2a73a12..73d61da 100644
      const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
  
      const newEditorState = _draftJs.EditorState.set(editorState, {
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/link.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/link.js
+index d434938..a0c238d 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/link.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/link.js
+@@ -65,7 +65,6 @@ function LinkButton(props) {
+ 
+     const selection = newEditorState.getSelection(); // RichUtils.toggleLink will reset selection back to first block and cause
+     // the editor scroll to top. Use `forceSelection` to hold the selection.
+-
+     onChange(_draftJs.EditorState.forceSelection(_draftJs.RichUtils.toggleLink(newEditorState, selection, entityKey), selection));
+     setToShowUrlInput(false);
+   };
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
 index a8aafa5..511efc6 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/selector/image-selector.js
@@ -4479,10 +4491,10 @@ index 0000000..091080f
 +};
 +exports.footnoteDecorator = footnoteDecorator;
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-index efeb120..d3ae414 100644
+index efeb120..41760b4 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/website/readr/selector/image-selector.js
-@@ -23,6 +23,12 @@ var _searchBox = require("./search-box");
+@@ -23,6 +23,10 @@ var _searchBox = require("./search-box");
  
  var _pagination = require("./pagination");
  
@@ -4490,12 +4502,10 @@ index efeb120..d3ae414 100644
 +
 +var _link = require("../../../draft-js/buttons/link");
 +
-+var _readr = _interopRequireDefault(require("@mirrormedia/lilith-draft-renderer/lib/website/readr"));
-+
  function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
  
  function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
-@@ -69,28 +75,39 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
+@@ -69,28 +73,39 @@ const ImageSearchBox = (0, _styledComponents.default)(_searchBox.SearchBox)`
    margin-top: 10px;
  `;
  const ImageSelectionWrapper = _styledComponents.default.div`
@@ -4536,7 +4546,7 @@ index efeb120..d3ae414 100644
    cursor: pointer;
    padding: 0 10px 10px;
  `;
-@@ -118,6 +135,49 @@ const ErrorWrapper = _styledComponents.default.div`
+@@ -118,6 +133,70 @@ const ErrorWrapper = _styledComponents.default.div`
      margin: 0;
    }
  `;
@@ -4552,7 +4562,28 @@ index efeb120..d3ae414 100644
 +  gap: 6px;
 +  margin-bottom: 6px;
 +`;
-+const captionDecorators = new _draftJs.CompositeDecorator([_readr.default.entityDecorators.linkDecorator]);
++const CaptionLink = _styledComponents.default.span`
++  border-bottom: 2px solid #ebf02c;
++  letter-spacing: 0.01em;
++  color: rgba(0, 9, 40, 0.87);
++  padding-bottom: 1px;
++`;
++
++function findCaptionLinkEntities(contentBlock, callback, contentState) {
++  contentBlock.findEntityRanges(character => {
++    const entityKey = character.getEntity();
++    return entityKey !== null && contentState.getEntity(entityKey).getType() === 'LINK';
++  }, callback);
++}
++
++function CaptionLinkDecorator(props) {
++  return /*#__PURE__*/_react.default.createElement(CaptionLink, null, props.children);
++}
++
++const captionDecorators = new _draftJs.CompositeDecorator([{
++  strategy: findCaptionLinkEntities,
++  component: CaptionLinkDecorator
++}]);
 +const emptyCaptionRaw = {
 +  blocks: [],
 +  entityMap: {}
@@ -4586,7 +4617,7 @@ index efeb120..d3ae414 100644
  const ImageName = _styledComponents.default.p`
    text-align: center;
  `;
-@@ -166,7 +226,8 @@ function ImageMetaGrids(props) {
+@@ -166,7 +245,8 @@ function ImageMetaGrids(props) {
      imageMetas,
      onChange,
      enableCaption,
@@ -4596,7 +4627,7 @@ index efeb120..d3ae414 100644
    } = props;
    return /*#__PURE__*/_react.default.createElement(ImageMetaGridsWrapper, null, imageMetas.map(imageMeta => {
      var _imageMeta$image;
-@@ -176,6 +237,7 @@ function ImageMetaGrids(props) {
+@@ -176,6 +256,7 @@ function ImageMetaGrids(props) {
        imageMeta: imageMeta,
        enableCaption: enableCaption,
        enableUrl: enableUrl,
@@ -4604,7 +4635,7 @@ index efeb120..d3ae414 100644
        onChange: onChange
      });
    }));
-@@ -188,14 +250,37 @@ function ImageMetaGrid(props) {
+@@ -188,14 +269,37 @@ function ImageMetaGrid(props) {
      imageMeta,
      enableCaption,
      enableUrl,
@@ -4644,7 +4675,7 @@ index efeb120..d3ae414 100644
      src: image === null || image === void 0 ? void 0 : (_image$resized2 = image.resized) === null || _image$resized2 === void 0 ? void 0 : _image$resized2.w800,
      onError: e => {
        var _image$imageFile2;
-@@ -204,29 +289,27 @@ function ImageMetaGrid(props) {
+@@ -204,29 +308,27 @@ function ImageMetaGrid(props) {
      }
    }), /*#__PURE__*/_react.default.createElement(ImageName, null, image === null || image === void 0 ? void 0 : image.name), enableCaption && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement(Label, {
      htmlFor: "caption"
@@ -4686,7 +4717,7 @@ index efeb120..d3ae414 100644
          url: e.target.value
        });
      })
-@@ -249,6 +332,72 @@ function DelayInput(props) {
+@@ -249,6 +351,72 @@ function DelayInput(props) {
      }
    }));
  }
@@ -4759,7 +4790,7 @@ index efeb120..d3ae414 100644
  
  function ImageSelector(props) {
    const {
-@@ -259,7 +408,12 @@ function ImageSelector(props) {
+@@ -259,7 +427,12 @@ function ImageSelector(props) {
      enableDelay = false,
      onChange,
      initialSelected = [],
@@ -4773,7 +4804,7 @@ index efeb120..d3ae414 100644
    } = props;
    const [queryImages, {
      loading,
-@@ -275,7 +429,11 @@ function ImageSelector(props) {
+@@ -275,7 +448,11 @@ function ImageSelector(props) {
  
    const [searchText, setSearchText] = (0, _react.useState)('');
    const [selected, setSelected] = (0, _react.useState)(initialSelected);
@@ -4786,7 +4817,7 @@ index efeb120..d3ae414 100644
    const [align, setAlign] = (0, _react.useState)(initialAlign);
    const contentWrapperRef = (0, _react.useRef)(null);
    const pageSize = 6;
-@@ -296,7 +454,19 @@ function ImageSelector(props) {
+@@ -296,7 +473,19 @@ function ImageSelector(props) {
    const onSave = () => {
      let adjustedDelay = +delay;
      adjustedDelay = adjustedDelay < 1 ? 1 : adjustedDelay;
@@ -4807,7 +4838,7 @@ index efeb120..d3ae414 100644
    };
  
    const onCancel = () => {
-@@ -312,6 +482,22 @@ function ImageSelector(props) {
+@@ -312,6 +501,22 @@ function ImageSelector(props) {
      setDelay(delay);
    };
  
@@ -4830,7 +4861,7 @@ index efeb120..d3ae414 100644
    const onAlignSelectChange = align => {
      setAlign(align);
    };
-@@ -361,14 +547,16 @@ function ImageSelector(props) {
+@@ -361,14 +566,16 @@ function ImageSelector(props) {
        if (enableMultiSelect) {
          return selected.concat([{
            image: imageEntity,
@@ -4849,7 +4880,7 @@ index efeb120..d3ae414 100644
        }];
      });
    };
-@@ -433,10 +621,23 @@ function ImageSelector(props) {
+@@ -433,10 +640,23 @@ function ImageSelector(props) {
      imageMetas: selected,
      onChange: onImageMetaChange,
      enableCaption: enableCaption,
