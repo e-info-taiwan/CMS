@@ -3,6 +3,7 @@ import { listDefinition as lists } from './lists'
 import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
+import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
 import express from 'express'
 import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
@@ -115,6 +116,19 @@ export default withAuth(
             return ids
               .map((queryId) => photos.find((p) => p.id === queryId.toString()))
               .filter(Boolean)
+          },
+        }),
+      },
+      mutation: {
+        suggestPostTagsWithAi: graphql.field({
+          type: graphql.nonNull(graphql.JSON),
+          args: {
+            postId: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { postId }, context) => {
+            return suggestAndApplyPostTags(context, postId as string)
           },
         }),
       },

@@ -571,6 +571,19 @@ const listConfigurations = list({
       label: '標籤',
       many: true,
     }),
+    aiTagSuggestionButton: virtual({
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve() {
+          return { kind: 'aiTagSuggestion' }
+        },
+      }),
+      ui: {
+        views: './lists/views/post/ai-tag-suggestion-button',
+        createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
     rssTargets: multiselect({
       label: '送出RSS',
       type: 'string',
