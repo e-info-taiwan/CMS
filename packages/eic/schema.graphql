@@ -2323,6 +2323,7 @@ type Post {
   ad: Ad
   tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
+  aiTagSuggestionButton: JSON
   rssTargets: [String!]
   poll: Poll
   pollResults(where: PollResultWhereInput! = {}, orderBy: [PollResultOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PollResultWhereUniqueInput): [PollResult!]
@@ -2330,6 +2331,7 @@ type Post {
   preview: JSON
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  aiPossibleTypos: String
   isNewsletter: Boolean
   manualOrderOfReporters: JSON
   reportersInInputOrder: [Author]
@@ -2384,6 +2386,7 @@ input PostWhereInput {
   pollResults: PollResultManyRelationFilter
   aiPollHelper: BooleanFilter
   aiPollHelperResult: StringFilter
+  aiPossibleTypos: StringFilter
   isNewsletter: BooleanFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
@@ -2439,6 +2442,7 @@ input PostOrderByInput {
   contentPreview: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
+  aiPossibleTypos: OrderDirection
   isNewsletter: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -2481,6 +2485,7 @@ input PostUpdateInput {
   pollResults: PollResultRelateToManyForUpdateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  aiPossibleTypos: String
   isNewsletter: Boolean
   manualOrderOfReporters: JSON
   manualOrderOfTranslators: JSON
@@ -2595,6 +2600,7 @@ input PostCreateInput {
   pollResults: PollResultRelateToManyForCreateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  aiPossibleTypos: String
   isNewsletter: Boolean
   manualOrderOfReporters: JSON
   manualOrderOfTranslators: JSON
@@ -2808,6 +2814,7 @@ input SectionCreateInput {
 type Tag {
   id: ID!
   name: String
+  checkSimilarity: Boolean
   brief: String
   heroImage: Photo
   isFeatured: Boolean
@@ -2831,6 +2838,7 @@ input TagWhereInput {
   NOT: [TagWhereInput!]
   id: IDFilter
   name: StringFilter
+  checkSimilarity: BooleanFilter
   brief: StringFilter
   heroImage: PhotoWhereInput
   isFeatured: BooleanFilter
@@ -2845,6 +2853,7 @@ input TagWhereInput {
 input TagOrderByInput {
   id: OrderDirection
   name: OrderDirection
+  checkSimilarity: OrderDirection
   brief: OrderDirection
   isFeatured: OrderDirection
   sortOrder: OrderDirection
@@ -2854,6 +2863,7 @@ input TagOrderByInput {
 
 input TagUpdateInput {
   name: String
+  checkSimilarity: Boolean
   brief: String
   heroImage: PhotoRelateToOneForUpdateInput
   isFeatured: Boolean
@@ -2872,6 +2882,7 @@ input TagUpdateArgs {
 
 input TagCreateInput {
   name: String
+  checkSimilarity: Boolean
   brief: String
   heroImage: PhotoRelateToOneForCreateInput
   isFeatured: Boolean
@@ -3396,6 +3407,7 @@ type Mutation {
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
+  suggestPostTagsWithAi(postId: ID!): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure

@@ -10,6 +10,7 @@ const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 export type SuggestPostTagsResult = {
   tags: { id: string; name: string }[]
   geminiSuggestions: string[]
+  possibleTypos: { original: string; suggested: string }[]
 }
 
 export function extractDraftToPlainParagraphs(
@@ -71,17 +72,99 @@ function parseTagJsonArray(text: string): string[] {
   return unique.slice(0, 5)
 }
 
+type GeminiTagAndTypoResponse = {
+  tags: string[]
+  possibleTypos: { original: string; suggested: string }[]
+}
+
+function parseGeminiTagAndTypoJson(text: string): GeminiTagAndTypoResponse {
+  const trimmed = text.trim()
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```$/i)
+  const jsonSource = fenceMatch ? fenceMatch[1].trim() : trimmed
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(jsonSource)
+  } catch {
+    throw new Error('GEMINI_TAG_TYPO_JSON_PARSE_ERROR')
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('GEMINI_TAG_TYPO_JSON_NOT_OBJECT')
+  }
+
+  const payload = parsed as {
+    tags?: unknown
+    possibleTypos?: unknown
+  }
+
+  const tags = parseTagJsonArray(JSON.stringify(payload.tags ?? []))
+  if (tags.length === 0) {
+    throw new Error('GEMINI_TAG_COUNT_ZERO')
+  }
+
+  const rawTypos = Array.isArray(payload.possibleTypos)
+    ? payload.possibleTypos
+    : []
+  const typoCandidates = rawTypos
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const original = String(
+        (item as { original?: unknown }).original ?? ''
+      ).trim()
+      const suggested = String(
+        (item as { suggested?: unknown }).suggested ?? ''
+      ).trim()
+      if (!original || !suggested || original === suggested) return null
+      return { original, suggested }
+    })
+    .filter((x): x is { original: string; suggested: string } => Boolean(x))
+
+  const uniqueTypos: { original: string; suggested: string }[] = []
+  const seenTypo = new Set<string>()
+  for (const typo of typoCandidates) {
+    const key = `${typo.original}__${typo.suggested}`.toLowerCase()
+    if (seenTypo.has(key)) continue
+    seenTypo.add(key)
+    uniqueTypos.push(typo)
+  }
+
+  return {
+    tags,
+    possibleTypos: uniqueTypos.slice(0, 20),
+  }
+}
+
+function formatTypoCandidatesForStorage(
+  possibleTypos: { original: string; suggested: string }[]
+): string {
+  if (possibleTypos.length === 0) {
+    return ''
+  }
+  return possibleTypos
+    .map((item, idx) => `${idx + 1}. ${item.original} -> ${item.suggested}`)
+    .join('\n')
+}
+
 async function callGeminiForTagSuggestions(
   plainText: string
-): Promise<string[]> {
+): Promise<GeminiTagAndTypoResponse> {
   if (!envVar.ai.gemini.apiKey) {
     throw new Error('GEMINI_API_KEY_NOT_CONFIGURED')
   }
 
   const ai = new GoogleGenAI({})
-  const prompt = `你是關心環境與公共議題的媒體編輯助理。請閱讀以下文章（已轉成純文字、段落以空行分隔），從中歸納 3 到 5 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
+  const prompt = `你是關心環境與公共議題的媒體編輯助理。請閱讀以下文章（已轉成純文字、段落以空行分隔），完成兩件事：
+1) 從文章歸納 3 到 5 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
+2) 盡可能找出文內「可能的錯字」或明顯不自然用詞，列出原文與建議改寫（如果沒有就回傳空陣列）。
 
-請只輸出一個 JSON 陣列字串，元素為標籤文字，例如：["再生能源","政策"]
+請只輸出一個 JSON 物件，格式如下（不要輸出任何額外文字）：
+{
+  "tags": ["再生能源", "政策"],
+  "possibleTypos": [
+    { "original": "錯字原文", "suggested": "建議寫法" }
+  ]
+}
 
 文章：
 ${plainText}`
@@ -96,11 +179,7 @@ ${plainText}`
     throw new Error('SERVER_ERROR')
   }
 
-  const tags = parseTagJsonArray(text)
-  if (tags.length === 0) {
-    throw new Error('GEMINI_TAG_COUNT_ZERO')
-  }
-  return tags
+  return parseGeminiTagAndTypoJson(text)
 }
 
 async function assertUserCanSuggestTagsForPost(
@@ -229,8 +308,11 @@ export async function suggestAndApplyPostTags(
   }
 
   let geminiSuggestions: string[]
+  let possibleTypos: { original: string; suggested: string }[]
   try {
-    geminiSuggestions = await callGeminiForTagSuggestions(plain)
+    const aiResult = await callGeminiForTagSuggestions(plain)
+    geminiSuggestions = aiResult.tags
+    possibleTypos = aiResult.possibleTypos
   } catch (error) {
     console.error('[ai-post-tags-suggestion] Gemini error', error)
     if (error instanceof GraphQLError) {
@@ -244,6 +326,8 @@ export async function suggestAndApplyPostTags(
           })
         case 'GEMINI_TAG_JSON_PARSE_ERROR':
         case 'GEMINI_TAG_JSON_NOT_ARRAY':
+        case 'GEMINI_TAG_TYPO_JSON_PARSE_ERROR':
+        case 'GEMINI_TAG_TYPO_JSON_NOT_OBJECT':
         case 'GEMINI_TAG_COUNT_ZERO':
           throw new GraphQLError('AI 回傳的標籤格式異常，請再試一次', {
             extensions: { code: 'GEMINI_PARSE_ERROR' },
@@ -278,11 +362,12 @@ export async function suggestAndApplyPostTags(
   await context.prisma.Post.update({
     where: { id: postId },
     data: {
+      aiPossibleTypos: formatTypoCandidatesForStorage(possibleTypos),
       tags: {
         connect: resolved.map((t) => ({ id: Number(t.id) })),
       },
     },
   })
 
-  return { tags: resolved, geminiSuggestions }
+  return { tags: resolved, geminiSuggestions, possibleTypos }
 }

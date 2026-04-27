@@ -594,6 +594,7 @@ model Post {
   pollResults                        PollResult[]     @relation("PollResult_post")
   aiPollHelper                       Boolean          @default(false)
   aiPollHelperResult                 String           @default("")
+  aiPossibleTypos                    String           @default("")
   isNewsletter                       Boolean          @default(false)
   manualOrderOfReporters             Json?
   manualOrderOfTranslators           Json?
@@ -678,8 +679,8 @@ model Section {
 model Tag {
   id                  Int                          @id @default(autoincrement())
   name                String                       @unique @default("")
-  brief               String                       @default("")
   checkSimilarity     Boolean                      @default(true)
+  brief               String                       @default("")
   heroImage           Photo?                       @relation("Tag_heroImage", fields: [heroImageId], references: [id])
   heroImageId         Int?                         @map("heroImage")
   textEmbedding3Small Unsupported("vector(1536)")?

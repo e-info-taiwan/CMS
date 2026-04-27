@@ -636,6 +636,12 @@ const listConfigurations = list({
         displayMode: 'textarea',
       },
     }),
+    aiPossibleTypos: text({
+      label: 'AI 可能錯字',
+      ui: {
+        displayMode: 'textarea',
+      },
+    }),
     isNewsletter: checkbox({
       label: '是否為電子報',
       defaultValue: false,
