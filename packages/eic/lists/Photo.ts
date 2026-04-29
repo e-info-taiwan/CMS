@@ -147,15 +147,21 @@ const listConfigurations = list({
       label: 'pHash',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
-        listView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
+        listView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
       },
     }),
     exif: json({
       label: 'EXIF',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
