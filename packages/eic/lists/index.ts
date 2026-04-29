@@ -21,6 +21,7 @@ import Poll from './Poll'
 import PollResult from './PollResult'
 import Post from './Post'
 import ReadingHistory from './ReadingHistory'
+import RssArticle from './RssArticle'
 import Section from './Section'
 import Tag from './Tag'
 import Timeline from './Timeline'
@@ -52,6 +53,7 @@ export const listDefinition = {
   PollResult,
   Post,
   ReadingHistory,
+  RssArticle,
   Section,
   Tag,
   Timeline,

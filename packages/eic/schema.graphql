@@ -2324,6 +2324,7 @@ type Post {
   tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
   aiTagSuggestionButton: JSON
+  titleSimilarPosts: JSON
   rssTargets: [String!]
   poll: Poll
   pollResults(where: PollResultWhereInput! = {}, orderBy: [PollResultOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PollResultWhereUniqueInput): [PollResult!]
@@ -2708,6 +2709,90 @@ input ReadingHistoryUpdateArgs {
 input ReadingHistoryCreateInput {
   member: MemberRelateToOneForCreateInput
   post: PostRelateToOneForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForCreateInput
+  updatedBy: UserRelateToOneForCreateInput
+}
+
+type RssArticle {
+  id: ID!
+  source: String
+  title: String
+  link: String
+  guid: String
+  publishedAt: DateTime
+  fetchedAt: DateTime
+  summary: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: User
+  updatedBy: User
+}
+
+input RssArticleWhereUniqueInput {
+  id: ID
+  link: String
+}
+
+input RssArticleWhereInput {
+  AND: [RssArticleWhereInput!]
+  OR: [RssArticleWhereInput!]
+  NOT: [RssArticleWhereInput!]
+  id: IDFilter
+  source: StringFilter
+  title: StringFilter
+  link: StringFilter
+  guid: StringNullableFilter
+  publishedAt: DateTimeNullableFilter
+  fetchedAt: DateTimeFilter
+  summary: StringFilter
+  createdAt: DateTimeNullableFilter
+  updatedAt: DateTimeNullableFilter
+  createdBy: UserWhereInput
+  updatedBy: UserWhereInput
+}
+
+input RssArticleOrderByInput {
+  id: OrderDirection
+  source: OrderDirection
+  title: OrderDirection
+  link: OrderDirection
+  guid: OrderDirection
+  publishedAt: OrderDirection
+  fetchedAt: OrderDirection
+  summary: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RssArticleUpdateInput {
+  source: String
+  title: String
+  link: String
+  guid: String
+  publishedAt: DateTime
+  fetchedAt: DateTime
+  summary: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForUpdateInput
+  updatedBy: UserRelateToOneForUpdateInput
+}
+
+input RssArticleUpdateArgs {
+  where: RssArticleWhereUniqueInput!
+  data: RssArticleUpdateInput!
+}
+
+input RssArticleCreateInput {
+  source: String
+  title: String
+  link: String
+  guid: String
+  publishedAt: DateTime
+  fetchedAt: DateTime
+  summary: String
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
@@ -3368,6 +3453,12 @@ type Mutation {
   updateReadingHistories(data: [ReadingHistoryUpdateArgs!]!): [ReadingHistory]
   deleteReadingHistory(where: ReadingHistoryWhereUniqueInput!): ReadingHistory
   deleteReadingHistories(where: [ReadingHistoryWhereUniqueInput!]!): [ReadingHistory]
+  createRssArticle(data: RssArticleCreateInput!): RssArticle
+  createRssArticles(data: [RssArticleCreateInput!]!): [RssArticle]
+  updateRssArticle(where: RssArticleWhereUniqueInput!, data: RssArticleUpdateInput!): RssArticle
+  updateRssArticles(data: [RssArticleUpdateArgs!]!): [RssArticle]
+  deleteRssArticle(where: RssArticleWhereUniqueInput!): RssArticle
+  deleteRssArticles(where: [RssArticleWhereUniqueInput!]!): [RssArticle]
   createSection(data: SectionCreateInput!): Section
   createSections(data: [SectionCreateInput!]!): [Section]
   updateSection(where: SectionWhereUniqueInput!, data: SectionUpdateInput!): Section
@@ -3498,6 +3589,9 @@ type Query {
   readingHistories(where: ReadingHistoryWhereInput! = {}, orderBy: [ReadingHistoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReadingHistoryWhereUniqueInput): [ReadingHistory!]
   readingHistory(where: ReadingHistoryWhereUniqueInput!): ReadingHistory
   readingHistoriesCount(where: ReadingHistoryWhereInput! = {}): Int
+  rssArticles(where: RssArticleWhereInput! = {}, orderBy: [RssArticleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RssArticleWhereUniqueInput): [RssArticle!]
+  rssArticle(where: RssArticleWhereUniqueInput!): RssArticle
+  rssArticlesCount(where: RssArticleWhereInput! = {}): Int
   sections(where: SectionWhereInput! = {}, orderBy: [SectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SectionWhereUniqueInput): [Section!]
   section(where: SectionWhereUniqueInput!): Section
   sectionsCount(where: SectionWhereInput! = {}): Int
@@ -3520,6 +3614,7 @@ type Query {
   authenticatedItem: AuthenticatedItem
   postsForRssTarget(rssTarget: String!): [Post]!
   similarPhotos(id: ID!): [Photo]!
+  similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
 }
 
 union AuthenticatedItem = User

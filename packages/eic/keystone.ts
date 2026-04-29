@@ -4,6 +4,7 @@ import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
 import express from 'express'
 import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
@@ -24,19 +25,42 @@ const { withAuth } = createAuth({
 const session = statelessSessions(appConfig.session)
 
 const extendPrismaSchemaWithTagVectors = (schema: string) => {
-  if (
-    schema.includes('textEmbedding3Small Unsupported("vector(1536)")?') &&
-    schema.includes('bgeM3Embedding     Unsupported("vector(1024)")?')
-  ) {
-    return schema
-  }
+  let nextSchema = schema
 
-  return schema.replace(
-    /(model Tag \{[\s\S]*?heroImageId\s+Int\?\s+@map\("heroImage"\))/,
-    `$1
+  if (
+    !nextSchema.includes('textEmbedding3Small Unsupported("vector(1536)")?') ||
+    !nextSchema.includes('bgeM3Embedding     Unsupported("vector(1024)")?')
+  ) {
+    nextSchema = nextSchema.replace(
+      /(model Tag \{[\s\S]*?heroImageId\s+Int\?\s+@map\("heroImage"\))/,
+      `$1
   textEmbedding3Small Unsupported("vector(1536)")?
   bgeM3Embedding     Unsupported("vector(1024)")?`
-  )
+    )
+  }
+
+  if (!nextSchema.includes('titleEmbedding Unsupported("vector(1536)")?')) {
+    nextSchema = nextSchema.replace(
+      /(model Post \{[\s\S]*?title\s+String\s+@default\(""\))/,
+      `$1
+  titleEmbedding                     Unsupported("vector(1536)")?`
+    )
+  }
+
+  if (
+    !nextSchema.includes('model RssArticle {') ||
+    !nextSchema.includes(
+      'titleEmbedding                     Unsupported("vector(1536)")?'
+    )
+  ) {
+    nextSchema = nextSchema.replace(
+      /(model RssArticle \{[\s\S]*?title\s+String\s+@default\(""\))/,
+      `$1
+  titleEmbedding                     Unsupported("vector(1536)")?`
+    )
+  }
+
+  return nextSchema
 }
 
 export default withAuth(
@@ -116,6 +140,17 @@ export default withAuth(
             return ids
               .map((queryId) => photos.find((p) => p.id === queryId.toString()))
               .filter(Boolean)
+          },
+        }),
+        similarRssArticlesByPostTitle: graphql.field({
+          type: graphql.nonNull(graphql.list(base.object('RssArticle'))),
+          args: {
+            id: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { id }, context) => {
+            return findSimilarRssArticlesByPostTitle(context, id as string)
           },
         }),
       },

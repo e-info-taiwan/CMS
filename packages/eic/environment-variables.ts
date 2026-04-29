@@ -31,6 +31,8 @@ const {
   TAG_SIMILARITY_CHECK_ENABLED,
   TAG_SIMILARITY_DISTANCE_THRESHOLD,
   TAG_SIMILARITY_CHECK_LIMIT,
+  POST_TITLE_SIMILARITY_MAX_DISTANCE,
+  POST_TITLE_SIMILARITY_RESULT_LIMIT,
 } = process.env
 
 const parseRoutePrefixConfig = () => {
@@ -130,6 +132,10 @@ export default {
       distanceThreshold: numberFromEnv(TAG_SIMILARITY_DISTANCE_THRESHOLD, 0.08),
       limit: numberFromEnv(TAG_SIMILARITY_CHECK_LIMIT, 5),
     },
+  },
+  postTitleSimilarity: {
+    maxDistance: numberFromEnv(POST_TITLE_SIMILARITY_MAX_DISTANCE, 0.28),
+    resultLimit: numberFromEnv(POST_TITLE_SIMILARITY_RESULT_LIMIT, 8),
   },
   webUrlBase:
     WEB_URL_BASE || 'https://eic-web-dev-1090198686704.asia-east1.run.app',

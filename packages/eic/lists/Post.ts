@@ -17,6 +17,7 @@ import {
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 import { aiPollHelperService } from '../services/ai-poll-helper'
+import { tagEmbeddingService, toVectorLiteral } from '../services/tag-embedding'
 
 const CITATIONS_ENABLED_BUTTONS = ['unordered-list-item', 'link']
 const BRIEF_ENABLED_BUTTONS = ['bold', 'italic', 'link', 'font-color']
@@ -584,6 +585,19 @@ const listConfigurations = list({
         listView: { fieldMode: 'hidden' },
       },
     }),
+    titleSimilarPosts: virtual({
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve() {
+          return { kind: 'titleSimilarity' }
+        },
+      }),
+      ui: {
+        views: './lists/views/post/title-similar-posts',
+        createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
     rssTargets: multiselect({
       label: '送出RSS',
       type: 'string',
@@ -905,6 +919,51 @@ const listConfigurations = list({
         if (!content) {
           addValidationError('啟用 AI 投票小幫手時，內文欄位不能為空')
         }
+      }
+    },
+    afterOperation: async ({ operation, item, originalItem, context }) => {
+      if (operation !== 'create' && operation !== 'update') {
+        return
+      }
+
+      const postId = Number(item?.id ?? originalItem?.id)
+      if (!Number.isFinite(postId)) {
+        return
+      }
+
+      const currentTitle = String(item?.title ?? '').trim()
+      const previousTitle = String(originalItem?.title ?? '').trim()
+      const shouldRefreshEmbedding =
+        operation === 'create' || currentTitle !== previousTitle
+
+      if (!shouldRefreshEmbedding) {
+        return
+      }
+
+      if (!currentTitle) {
+        await context.prisma.$executeRawUnsafe(
+          'UPDATE "Post" SET "titleEmbedding" = NULL WHERE id = $1',
+          postId
+        )
+        return
+      }
+
+      try {
+        const embedding = await tagEmbeddingService.generateVertexEmbedding(
+          currentTitle
+        )
+        await context.prisma.$executeRawUnsafe(
+          `UPDATE "Post"
+           SET "titleEmbedding" = CAST($1 AS vector)
+           WHERE id = $2`,
+          toVectorLiteral(embedding),
+          postId
+        )
+      } catch (error) {
+        console.error(
+          `[Post title embedding] failed to refresh embedding for Post ${postId}`,
+          error
+        )
       }
     },
   },
