@@ -120,6 +120,9 @@ export default withAuth(
             }),
           },
           resolve: async (_source, { id }, context) => {
+            if (!envVar.featureToggle.photoVector) {
+              return []
+            }
             const SIMILAR_LIMIT = 10
             const rows = (await context.prisma.$queryRaw`
               SELECT id FROM "Photo"
@@ -150,6 +153,9 @@ export default withAuth(
             }),
           },
           resolve: async (_source, { id }, context) => {
+            if (!envVar.featureToggle.postVector) {
+              return []
+            }
             return findSimilarRssArticlesByPostTitle(context, id as string)
           },
         }),
@@ -163,6 +169,12 @@ export default withAuth(
             }),
           },
           resolve: async (_source, { postId }, context) => {
+            if (
+              !envVar.featureToggle.postVector ||
+              !envVar.featureToggle.tagVector
+            ) {
+              throw new Error('AI 標籤建議功能目前已停用')
+            }
             return suggestAndApplyPostTags(context, postId as string)
           },
         }),

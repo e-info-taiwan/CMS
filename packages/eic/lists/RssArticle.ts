@@ -2,6 +2,7 @@ import { list } from '@keystone-6/core'
 import { text, timestamp } from '@keystone-6/core/fields'
 import { utils } from '@mirrormedia/lilith-core'
 import { tagEmbeddingService, toVectorLiteral } from '../services/tag-embedding'
+import envVar from '../environment-variables'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
@@ -69,6 +70,10 @@ extendedListConfigurations.hooks = {
     } as Parameters<NonNullable<typeof originalAfterOperation>>[0])
 
     if (operation !== 'create' && operation !== 'update') {
+      return
+    }
+
+    if (!envVar.featureToggle.postVector) {
       return
     }
 

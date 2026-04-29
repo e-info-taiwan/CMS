@@ -35,6 +35,12 @@ const listConfigurations = list({
       label: '檢查相似標籤',
       defaultValue: true,
       ui: {
+        createView: {
+          fieldMode: envVar.featureToggle.tagVector ? 'edit' : 'hidden',
+        },
+        itemView: {
+          fieldMode: envVar.featureToggle.tagVector ? 'edit' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -114,6 +120,7 @@ extendedListConfigurations.hooks = {
     } as Parameters<NonNullable<typeof originalValidateInput>>[0])
 
     if (
+      !envVar.featureToggle.tagVector ||
       !envVar.tagEmbedding.similarityCheck.enabled ||
       (operation !== 'create' && operation !== 'update')
     ) {
@@ -176,6 +183,10 @@ extendedListConfigurations.hooks = {
     } as Parameters<NonNullable<typeof originalAfterOperation>>[0])
 
     if (operation !== 'create' && operation !== 'update') {
+      return
+    }
+
+    if (!envVar.featureToggle.tagVector) {
       return
     }
 

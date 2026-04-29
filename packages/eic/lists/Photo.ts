@@ -1,4 +1,5 @@
 import config from '../config'
+import envVar from '../environment-variables'
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
 import { Storage } from '@google-cloud/storage'
@@ -187,7 +188,9 @@ const listConfigurations = list({
       ui: {
         views: './lists/views/possible-duplicates',
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),

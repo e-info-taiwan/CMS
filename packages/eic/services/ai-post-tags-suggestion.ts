@@ -284,6 +284,12 @@ export async function suggestAndApplyPostTags(
   context: KeystoneContext,
   postIdInput: string | number
 ): Promise<SuggestPostTagsResult> {
+  if (!envVar.featureToggle.postVector || !envVar.featureToggle.tagVector) {
+    throw new GraphQLError('AI 標籤建議功能目前已停用', {
+      extensions: { code: 'FEATURE_DISABLED' },
+    })
+  }
+
   const postId = Number(postIdInput)
   if (!Number.isFinite(postId)) {
     throw new GraphQLError('文章 id 無效', {

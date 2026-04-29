@@ -29,6 +29,10 @@ export async function findSimilarRssArticlesByPostTitle(
   context: KeystoneContext,
   postIdInput: string | number
 ) {
+  if (!envVar.featureToggle.postVector) {
+    return []
+  }
+
   const postId = Number(postIdInput)
   if (!Number.isFinite(postId)) {
     throw new GraphQLError('文章 id 無效', {

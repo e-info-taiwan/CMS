@@ -33,6 +33,9 @@ const {
   TAG_SIMILARITY_CHECK_LIMIT,
   POST_TITLE_SIMILARITY_MAX_DISTANCE,
   POST_TITLE_SIMILARITY_RESULT_LIMIT,
+  FEATURE_TOGGLE_PHOTO_VECTOR,
+  FEATURE_TOGGLE_TAG_VECTOR,
+  FEATURE_TOGGLE_POST_VECTOR,
 } = process.env
 
 const parseRoutePrefixConfig = () => {
@@ -136,6 +139,11 @@ export default {
   postTitleSimilarity: {
     maxDistance: numberFromEnv(POST_TITLE_SIMILARITY_MAX_DISTANCE, 0.28),
     resultLimit: numberFromEnv(POST_TITLE_SIMILARITY_RESULT_LIMIT, 8),
+  },
+  featureToggle: {
+    photoVector: FEATURE_TOGGLE_PHOTO_VECTOR === 'true',
+    tagVector: FEATURE_TOGGLE_TAG_VECTOR === 'true',
+    postVector: FEATURE_TOGGLE_POST_VECTOR === 'true',
   },
   webUrlBase:
     WEB_URL_BASE || 'https://eic-web-dev-1090198686704.asia-east1.run.app',

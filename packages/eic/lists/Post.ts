@@ -583,6 +583,12 @@ const listConfigurations = list({
         views: './lists/views/post/ai-tag-suggestion-button',
         createView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
+        itemView: {
+          fieldMode:
+            envVar.featureToggle.postVector && envVar.featureToggle.tagVector
+              ? 'edit'
+              : 'hidden',
+        },
       },
     }),
     titleSimilarPosts: virtual({
@@ -596,6 +602,9 @@ const listConfigurations = list({
         views: './lists/views/post/title-similar-posts',
         createView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
+        itemView: {
+          fieldMode: envVar.featureToggle.postVector ? 'edit' : 'hidden',
+        },
       },
     }),
     rssTargets: multiselect({
@@ -923,6 +932,10 @@ const listConfigurations = list({
     },
     afterOperation: async ({ operation, item, originalItem, context }) => {
       if (operation !== 'create' && operation !== 'update') {
+        return
+      }
+
+      if (!envVar.featureToggle.postVector) {
         return
       }
 
