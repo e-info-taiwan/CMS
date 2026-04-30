@@ -436,6 +436,14 @@ const listConfigurations = list({
         views: './lists/views/sorted-relationship',
       },
     }),
+    stringers: relationship({
+      ref: 'Author',
+      label: '特約記者',
+      many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
+    }),
     otherByline: text({
       label: '作者（其他）',
     }),
@@ -1016,6 +1024,13 @@ const postListWithManualOrder = utils.addManualOrderRelationshipFields(
       fieldName: 'manualOrderOfSources',
       fieldLabel: '稿源（按新增順序）',
       targetFieldName: 'sources',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+    {
+      fieldName: 'manualOrderOfStringers',
+      fieldLabel: '特約記者（按新增順序）',
+      targetFieldName: 'stringers',
       targetListName: 'Author',
       targetListLabelField: 'name',
     },

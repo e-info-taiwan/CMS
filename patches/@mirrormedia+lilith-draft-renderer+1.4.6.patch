@@ -304,6 +304,30 @@ index 5701e67..32b5916 100644
      dangerouslySetInnerHTML: {
        __html: body
      }
+diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/side-index-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/side-index-block.js
+index ac8ceae..20883ae 100644
+--- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/side-index-block.js
++++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/side-index-block.js
+@@ -17,8 +17,8 @@ const sideIndexDefaultSpacing = 32;
+ const SideIndexBlockWrapper = _styledComponents.default.div`
+   margin-top: ${sideIndexDefaultSpacing}px;
+ 
+-  h2 {
+-    ${_sharedStyle.defaultH2Style}
++  h3 {
++    ${_sharedStyle.defaultH3Style}
+   }
+ `;
+ 
+@@ -40,7 +40,7 @@ function SideIndexBlock(props) {
+   if (h2Text) {
+     sideIndexBlock = /*#__PURE__*/_react.default.createElement(SideIndexBlockWrapper, {
+       id: `header-${key}`
+-    }, /*#__PURE__*/_react.default.createElement("h2", null, h2Text));
++    }, /*#__PURE__*/_react.default.createElement("h3", null, h2Text));
+   } else {
+     sideIndexBlock = null;
+   }
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
 index b0cc307..6ff1917 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/slideshow-block.js
@@ -350,7 +374,7 @@ index b0cc307..6ff1917 100644
      images: images,
      setShowLightBox: setShowLightBox,
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js
-index 57cde9d..3ca64cf 100644
+index 57cde9d..2dd6abd 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js
 +++ b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/block-renderers/video-block.js
 @@ -4,12 +4,15 @@ Object.defineProperty(exports, "__esModule", {
@@ -553,6 +577,7 @@ index 57cde9d..3ca64cf 100644
 +
 +  return null;
  }
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js b/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js
 index fc67e4f..e3b2a5b 100644
 --- a/node_modules/@mirrormedia/lilith-draft-renderer/lib/website/readr/draft-renderer.js

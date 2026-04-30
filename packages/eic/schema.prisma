@@ -71,6 +71,7 @@ model Author {
   from_Post_reviewers   Post[]    @relation("Post_reviewers")
   from_Post_writers     Post[]    @relation("Post_writers")
   from_Post_sources     Post[]    @relation("Post_sources")
+  from_Post_stringers   Post[]    @relation("Post_stringers")
 
   @@index([imageId])
   @@index([createdById])
@@ -565,6 +566,7 @@ model Post {
   reviewers                          Author[]                     @relation("Post_reviewers")
   writers                            Author[]                     @relation("Post_writers")
   sources                            Author[]                     @relation("Post_sources")
+  stringers                          Author[]                     @relation("Post_stringers")
   otherByline                        String                       @default("")
   locations                          Location[]                   @relation("Post_locations")
   section                            Section?                     @relation("Post_section", fields: [sectionId], references: [id])
@@ -602,6 +604,7 @@ model Post {
   manualOrderOfReviewers             Json?
   manualOrderOfWriters               Json?
   manualOrderOfSources               Json?
+  manualOrderOfStringers             Json?
   createdAt                          DateTime?
   updatedAt                          DateTime?
   createdBy                          User?                        @relation("Post_createdBy", fields: [createdById], references: [id])

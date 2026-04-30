@@ -2299,6 +2299,8 @@ type Post {
   writersCount(where: AuthorWhereInput! = {}): Int
   sources(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
   sourcesCount(where: AuthorWhereInput! = {}): Int
+  stringers(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  stringersCount(where: AuthorWhereInput! = {}): Int
   otherByline: String
   locations(where: LocationWhereInput! = {}, orderBy: [LocationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: LocationWhereUniqueInput): [Location!]
   locationsCount(where: LocationWhereInput! = {}): Int
@@ -2344,6 +2346,8 @@ type Post {
   writersInInputOrder: [Author]
   manualOrderOfSources: JSON
   sourcesInInputOrder: [Author]
+  manualOrderOfStringers: JSON
+  stringersInInputOrder: [Author]
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2370,6 +2374,7 @@ input PostWhereInput {
   reviewers: AuthorManyRelationFilter
   writers: AuthorManyRelationFilter
   sources: AuthorManyRelationFilter
+  stringers: AuthorManyRelationFilter
   otherByline: StringFilter
   locations: LocationManyRelationFilter
   section: SectionWhereInput
@@ -2462,6 +2467,7 @@ input PostUpdateInput {
   reviewers: AuthorRelateToManyForUpdateInput
   writers: AuthorRelateToManyForUpdateInput
   sources: AuthorRelateToManyForUpdateInput
+  stringers: AuthorRelateToManyForUpdateInput
   otherByline: String
   locations: LocationRelateToManyForUpdateInput
   section: SectionRelateToOneForUpdateInput
@@ -2493,6 +2499,7 @@ input PostUpdateInput {
   manualOrderOfReviewers: JSON
   manualOrderOfWriters: JSON
   manualOrderOfSources: JSON
+  manualOrderOfStringers: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2577,6 +2584,7 @@ input PostCreateInput {
   reviewers: AuthorRelateToManyForCreateInput
   writers: AuthorRelateToManyForCreateInput
   sources: AuthorRelateToManyForCreateInput
+  stringers: AuthorRelateToManyForCreateInput
   otherByline: String
   locations: LocationRelateToManyForCreateInput
   section: SectionRelateToOneForCreateInput
@@ -2608,6 +2616,7 @@ input PostCreateInput {
   manualOrderOfReviewers: JSON
   manualOrderOfWriters: JSON
   manualOrderOfSources: JSON
+  manualOrderOfStringers: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
