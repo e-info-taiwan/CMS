@@ -67,11 +67,11 @@ model Author {
   updatedBy             User?     @relation("Author_updatedBy", fields: [updatedById], references: [id])
   updatedById           Int?      @map("updatedBy")
   from_Post_reporters   Post[]    @relation("Post_reporters")
+  from_Post_stringers   Post[]    @relation("Post_stringers")
   from_Post_translators Post[]    @relation("Post_translators")
   from_Post_reviewers   Post[]    @relation("Post_reviewers")
   from_Post_writers     Post[]    @relation("Post_writers")
   from_Post_sources     Post[]    @relation("Post_sources")
-  from_Post_stringers   Post[]    @relation("Post_stringers")
 
   @@index([imageId])
   @@index([createdById])
@@ -562,11 +562,11 @@ model Post {
   ogImage                            Photo?                       @relation("Post_ogImage", fields: [ogImageId], references: [id])
   ogImageId                          Int?                         @map("ogImage")
   reporters                          Author[]                     @relation("Post_reporters")
+  stringers                          Author[]                     @relation("Post_stringers")
   translators                        Author[]                     @relation("Post_translators")
   reviewers                          Author[]                     @relation("Post_reviewers")
   writers                            Author[]                     @relation("Post_writers")
   sources                            Author[]                     @relation("Post_sources")
-  stringers                          Author[]                     @relation("Post_stringers")
   otherByline                        String                       @default("")
   locations                          Location[]                   @relation("Post_locations")
   section                            Section?                     @relation("Post_section", fields: [sectionId], references: [id])
@@ -600,11 +600,11 @@ model Post {
   aiPossibleTypos                    String                       @default("")
   isNewsletter                       Boolean                      @default(false)
   manualOrderOfReporters             Json?
+  manualOrderOfStringers             Json?
   manualOrderOfTranslators           Json?
   manualOrderOfReviewers             Json?
   manualOrderOfWriters               Json?
   manualOrderOfSources               Json?
-  manualOrderOfStringers             Json?
   createdAt                          DateTime?
   updatedAt                          DateTime?
   createdBy                          User?                        @relation("Post_createdBy", fields: [createdById], references: [id])
