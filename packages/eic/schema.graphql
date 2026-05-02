@@ -1956,6 +1956,7 @@ type Photo {
   file: FileFieldOutput
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
+  possibleDuplicates: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -2032,6 +2033,7 @@ input PhotoUpdateInput {
   exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForUpdateInput
+  possibleDuplicates: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2055,6 +2057,7 @@ input PhotoCreateInput {
   exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForCreateInput
+  possibleDuplicates: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
@@ -2288,6 +2291,8 @@ type Post {
   ogImage: Photo
   reporters(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
   reportersCount(where: AuthorWhereInput! = {}): Int
+  stringers(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
+  stringersCount(where: AuthorWhereInput! = {}): Int
   translators(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
   translatorsCount(where: AuthorWhereInput! = {}): Int
   reviewers(where: AuthorWhereInput! = {}, orderBy: [AuthorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorWhereUniqueInput): [Author!]
@@ -2320,6 +2325,8 @@ type Post {
   ad: Ad
   tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
+  aiTagSuggestionButton: JSON
+  titleSimilarPosts: JSON
   rssTargets: [String!]
   poll: Poll
   pollResults(where: PollResultWhereInput! = {}, orderBy: [PollResultOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PollResultWhereUniqueInput): [PollResult!]
@@ -2327,9 +2334,12 @@ type Post {
   preview: JSON
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  aiPossibleTypos: String
   isNewsletter: Boolean
   manualOrderOfReporters: JSON
   reportersInInputOrder: [Author]
+  manualOrderOfStringers: JSON
+  stringersInInputOrder: [Author]
   manualOrderOfTranslators: JSON
   translatorsInInputOrder: [Author]
   manualOrderOfReviewers: JSON
@@ -2360,6 +2370,7 @@ input PostWhereInput {
   publishTime: DateTimeFilter
   ogImage: PhotoWhereInput
   reporters: AuthorManyRelationFilter
+  stringers: AuthorManyRelationFilter
   translators: AuthorManyRelationFilter
   reviewers: AuthorManyRelationFilter
   writers: AuthorManyRelationFilter
@@ -2381,6 +2392,7 @@ input PostWhereInput {
   pollResults: PollResultManyRelationFilter
   aiPollHelper: BooleanFilter
   aiPollHelperResult: StringFilter
+  aiPossibleTypos: StringFilter
   isNewsletter: BooleanFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
@@ -2436,6 +2448,7 @@ input PostOrderByInput {
   contentPreview: OrderDirection
   aiPollHelper: OrderDirection
   aiPollHelperResult: OrderDirection
+  aiPossibleTypos: OrderDirection
   isNewsletter: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -2450,6 +2463,7 @@ input PostUpdateInput {
   publishTime: DateTime
   ogImage: PhotoRelateToOneForUpdateInput
   reporters: AuthorRelateToManyForUpdateInput
+  stringers: AuthorRelateToManyForUpdateInput
   translators: AuthorRelateToManyForUpdateInput
   reviewers: AuthorRelateToManyForUpdateInput
   writers: AuthorRelateToManyForUpdateInput
@@ -2478,8 +2492,10 @@ input PostUpdateInput {
   pollResults: PollResultRelateToManyForUpdateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  aiPossibleTypos: String
   isNewsletter: Boolean
   manualOrderOfReporters: JSON
+  manualOrderOfStringers: JSON
   manualOrderOfTranslators: JSON
   manualOrderOfReviewers: JSON
   manualOrderOfWriters: JSON
@@ -2564,6 +2580,7 @@ input PostCreateInput {
   publishTime: DateTime
   ogImage: PhotoRelateToOneForCreateInput
   reporters: AuthorRelateToManyForCreateInput
+  stringers: AuthorRelateToManyForCreateInput
   translators: AuthorRelateToManyForCreateInput
   reviewers: AuthorRelateToManyForCreateInput
   writers: AuthorRelateToManyForCreateInput
@@ -2592,8 +2609,10 @@ input PostCreateInput {
   pollResults: PollResultRelateToManyForCreateInput
   aiPollHelper: Boolean
   aiPollHelperResult: String
+  aiPossibleTypos: String
   isNewsletter: Boolean
   manualOrderOfReporters: JSON
+  manualOrderOfStringers: JSON
   manualOrderOfTranslators: JSON
   manualOrderOfReviewers: JSON
   manualOrderOfWriters: JSON
@@ -2705,6 +2724,90 @@ input ReadingHistoryCreateInput {
   updatedBy: UserRelateToOneForCreateInput
 }
 
+type RssArticle {
+  id: ID!
+  source: String
+  title: String
+  link: String
+  guid: String
+  publishedAt: DateTime
+  fetchedAt: DateTime
+  summary: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: User
+  updatedBy: User
+}
+
+input RssArticleWhereUniqueInput {
+  id: ID
+  link: String
+}
+
+input RssArticleWhereInput {
+  AND: [RssArticleWhereInput!]
+  OR: [RssArticleWhereInput!]
+  NOT: [RssArticleWhereInput!]
+  id: IDFilter
+  source: StringFilter
+  title: StringFilter
+  link: StringFilter
+  guid: StringNullableFilter
+  publishedAt: DateTimeNullableFilter
+  fetchedAt: DateTimeFilter
+  summary: StringFilter
+  createdAt: DateTimeNullableFilter
+  updatedAt: DateTimeNullableFilter
+  createdBy: UserWhereInput
+  updatedBy: UserWhereInput
+}
+
+input RssArticleOrderByInput {
+  id: OrderDirection
+  source: OrderDirection
+  title: OrderDirection
+  link: OrderDirection
+  guid: OrderDirection
+  publishedAt: OrderDirection
+  fetchedAt: OrderDirection
+  summary: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RssArticleUpdateInput {
+  source: String
+  title: String
+  link: String
+  guid: String
+  publishedAt: DateTime
+  fetchedAt: DateTime
+  summary: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForUpdateInput
+  updatedBy: UserRelateToOneForUpdateInput
+}
+
+input RssArticleUpdateArgs {
+  where: RssArticleWhereUniqueInput!
+  data: RssArticleUpdateInput!
+}
+
+input RssArticleCreateInput {
+  source: String
+  title: String
+  link: String
+  guid: String
+  publishedAt: DateTime
+  fetchedAt: DateTime
+  summary: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForCreateInput
+  updatedBy: UserRelateToOneForCreateInput
+}
+
 type Section {
   id: ID!
   slug: String
@@ -2805,6 +2908,7 @@ input SectionCreateInput {
 type Tag {
   id: ID!
   name: String
+  checkSimilarity: Boolean
   brief: String
   heroImage: Photo
   isFeatured: Boolean
@@ -2828,6 +2932,7 @@ input TagWhereInput {
   NOT: [TagWhereInput!]
   id: IDFilter
   name: StringFilter
+  checkSimilarity: BooleanFilter
   brief: StringFilter
   heroImage: PhotoWhereInput
   isFeatured: BooleanFilter
@@ -2842,6 +2947,7 @@ input TagWhereInput {
 input TagOrderByInput {
   id: OrderDirection
   name: OrderDirection
+  checkSimilarity: OrderDirection
   brief: OrderDirection
   isFeatured: OrderDirection
   sortOrder: OrderDirection
@@ -2851,6 +2957,7 @@ input TagOrderByInput {
 
 input TagUpdateInput {
   name: String
+  checkSimilarity: Boolean
   brief: String
   heroImage: PhotoRelateToOneForUpdateInput
   isFeatured: Boolean
@@ -2869,6 +2976,7 @@ input TagUpdateArgs {
 
 input TagCreateInput {
   name: String
+  checkSimilarity: Boolean
   brief: String
   heroImage: PhotoRelateToOneForCreateInput
   isFeatured: Boolean
@@ -3354,6 +3462,12 @@ type Mutation {
   updateReadingHistories(data: [ReadingHistoryUpdateArgs!]!): [ReadingHistory]
   deleteReadingHistory(where: ReadingHistoryWhereUniqueInput!): ReadingHistory
   deleteReadingHistories(where: [ReadingHistoryWhereUniqueInput!]!): [ReadingHistory]
+  createRssArticle(data: RssArticleCreateInput!): RssArticle
+  createRssArticles(data: [RssArticleCreateInput!]!): [RssArticle]
+  updateRssArticle(where: RssArticleWhereUniqueInput!, data: RssArticleUpdateInput!): RssArticle
+  updateRssArticles(data: [RssArticleUpdateArgs!]!): [RssArticle]
+  deleteRssArticle(where: RssArticleWhereUniqueInput!): RssArticle
+  deleteRssArticles(where: [RssArticleWhereUniqueInput!]!): [RssArticle]
   createSection(data: SectionCreateInput!): Section
   createSections(data: [SectionCreateInput!]!): [Section]
   updateSection(where: SectionWhereUniqueInput!, data: SectionUpdateInput!): Section
@@ -3393,6 +3507,7 @@ type Mutation {
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
+  suggestPostTagsWithAi(postId: ID!): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -3483,6 +3598,9 @@ type Query {
   readingHistories(where: ReadingHistoryWhereInput! = {}, orderBy: [ReadingHistoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReadingHistoryWhereUniqueInput): [ReadingHistory!]
   readingHistory(where: ReadingHistoryWhereUniqueInput!): ReadingHistory
   readingHistoriesCount(where: ReadingHistoryWhereInput! = {}): Int
+  rssArticles(where: RssArticleWhereInput! = {}, orderBy: [RssArticleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RssArticleWhereUniqueInput): [RssArticle!]
+  rssArticle(where: RssArticleWhereUniqueInput!): RssArticle
+  rssArticlesCount(where: RssArticleWhereInput! = {}): Int
   sections(where: SectionWhereInput! = {}, orderBy: [SectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SectionWhereUniqueInput): [Section!]
   section(where: SectionWhereUniqueInput!): Section
   sectionsCount(where: SectionWhereInput! = {}): Int
@@ -3504,6 +3622,8 @@ type Query {
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   postsForRssTarget(rssTarget: String!): [Post]!
+  similarPhotos(id: ID!): [Photo]!
+  similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
 }
 
 union AuthenticatedItem = User

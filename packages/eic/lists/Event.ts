@@ -141,6 +141,7 @@ const listConfigurations = list({
       label: '縣市',
       type: 'string',
       options: [
+        { label: '全台', value: '全台' },
         { label: '臺北市', value: '臺北市' },
         { label: '新北市', value: '新北市' },
         { label: '桃園市', value: '桃園市' },

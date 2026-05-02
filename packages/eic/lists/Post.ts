@@ -17,6 +17,7 @@ import {
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 import { aiPollHelperService } from '../services/ai-poll-helper'
+import { tagEmbeddingService, toVectorLiteral } from '../services/tag-embedding'
 
 const CITATIONS_ENABLED_BUTTONS = ['unordered-list-item', 'link']
 const BRIEF_ENABLED_BUTTONS = ['bold', 'italic', 'link', 'font-color']
@@ -403,6 +404,14 @@ const listConfigurations = list({
         views: './lists/views/sorted-relationship',
       },
     }),
+    stringers: relationship({
+      ref: 'Author',
+      label: '特約記者',
+      many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
+    }),
     translators: relationship({
       ref: 'Author',
       label: '編譯',
@@ -571,6 +580,41 @@ const listConfigurations = list({
       label: '標籤',
       many: true,
     }),
+    aiTagSuggestionButton: virtual({
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve() {
+          return { kind: 'aiTagSuggestion' }
+        },
+      }),
+      ui: {
+        views: './lists/views/post/ai-tag-suggestion-button',
+        createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+        itemView: {
+          fieldMode:
+            envVar.featureToggle.postVector && envVar.featureToggle.tagVector
+              ? 'edit'
+              : 'hidden',
+        },
+      },
+    }),
+    titleSimilarPosts: virtual({
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve() {
+          return { kind: 'titleSimilarity' }
+        },
+      }),
+      ui: {
+        views: './lists/views/post/title-similar-posts',
+        createView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+        itemView: {
+          fieldMode: envVar.featureToggle.postVector ? 'edit' : 'hidden',
+        },
+      },
+    }),
     rssTargets: multiselect({
       label: '送出RSS',
       type: 'string',
@@ -619,6 +663,12 @@ const listConfigurations = list({
     // TODO: Implement AI helper result pipeline
     aiPollHelperResult: text({
       label: 'AI 投票小幫手建議結果',
+      ui: {
+        displayMode: 'textarea',
+      },
+    }),
+    aiPossibleTypos: text({
+      label: 'AI 可能錯字',
       ui: {
         displayMode: 'textarea',
       },
@@ -888,6 +938,55 @@ const listConfigurations = list({
         }
       }
     },
+    afterOperation: async ({ operation, item, originalItem, context }) => {
+      if (operation !== 'create' && operation !== 'update') {
+        return
+      }
+
+      if (!envVar.featureToggle.postVector) {
+        return
+      }
+
+      const postId = Number(item?.id ?? originalItem?.id)
+      if (!Number.isFinite(postId)) {
+        return
+      }
+
+      const currentTitle = String(item?.title ?? '').trim()
+      const previousTitle = String(originalItem?.title ?? '').trim()
+      const shouldRefreshEmbedding =
+        operation === 'create' || currentTitle !== previousTitle
+
+      if (!shouldRefreshEmbedding) {
+        return
+      }
+
+      if (!currentTitle) {
+        await context.prisma.$executeRawUnsafe(
+          'UPDATE "Post" SET "titleEmbedding" = NULL WHERE id = $1',
+          postId
+        )
+        return
+      }
+
+      try {
+        const embedding = await tagEmbeddingService.generateVertexEmbedding(
+          currentTitle
+        )
+        await context.prisma.$executeRawUnsafe(
+          `UPDATE "Post"
+           SET "titleEmbedding" = CAST($1 AS vector)
+           WHERE id = $2`,
+          toVectorLiteral(embedding),
+          postId
+        )
+      } catch (error) {
+        console.error(
+          `[Post title embedding] failed to refresh embedding for Post ${postId}`,
+          error
+        )
+      }
+    },
   },
 })
 
@@ -897,6 +996,13 @@ const postListWithManualOrder = utils.addManualOrderRelationshipFields(
       fieldName: 'manualOrderOfReporters',
       fieldLabel: '記者（按新增順序）',
       targetFieldName: 'reporters',
+      targetListName: 'Author',
+      targetListLabelField: 'name',
+    },
+    {
+      fieldName: 'manualOrderOfStringers',
+      fieldLabel: '特約記者（按新增順序）',
+      targetFieldName: 'stringers',
       targetListName: 'Author',
       targetListLabelField: 'name',
     },
