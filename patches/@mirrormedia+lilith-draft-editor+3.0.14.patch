@@ -1,5 +1,5 @@
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js
-index 0925f4e..094edcb 100644
+index 0925f4e..9f39c0b 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/background-video.js
 @@ -12,21 +12,56 @@ var _draftJs = require("draft-js");
@@ -400,6 +400,7 @@ index 0925f4e..094edcb 100644
 +    )
 +  );
  }
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
 index 5ffdb99..1373973 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/color-box.js
@@ -1592,6 +1593,25 @@ index 4e4833f..0000000
 -  })))));
 -}
 \ No newline at end of file
+diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/side-index.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/side-index.js
+index 9d99009..534a1bd 100644
+--- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/side-index.js
++++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/side-index.js
+@@ -99,12 +99,12 @@ function SideIndexInput(props) {
+         }
+       }
+     }
+-  }, /*#__PURE__*/_react.default.createElement(Label, null, "\u6587\u5167\u6A19\u984C (\u82E5\u586B\u5165\u5916\u90E8\u9023\u7D50\u5247\u4E0D\u6703\u7522\u751F\u6587\u7AE0\u5167h2)"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
++  }, /*#__PURE__*/_react.default.createElement(Label, null, "\u6587\u5167\u6A19\u984C (\u82E5\u586B\u5165\u5916\u90E8\u9023\u7D50\u5247\u4E0D\u6703\u7522\u751F\u6587\u7AE0\u5167h3)"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+     onChange: e => setInputValue(oldInputValue => ({ ...oldInputValue,
+       h2Text: e.target.value
+     })),
+     type: "text",
+-    placeholder: "h2 text",
++    placeholder: "h3 text",
+     value: inputValue.h2Text
+   }), /*#__PURE__*/_react.default.createElement(Label, null, "\u5074\u6B04\u6A19\u984C (Optional, \u82E5\u672A\u8A2D\u5B9A\u6703\u76F4\u63A5\u7528\u6587\u5167\u6A19\u984C)"), /*#__PURE__*/_react.default.createElement(_fields.TextInput, {
+     onChange: e => setInputValue(oldInputValue => ({ ...oldInputValue,
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
 index b78fa88..399dc04 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/slideshow.js
@@ -1614,7 +1634,7 @@ index b78fa88..399dc04 100644
          return { ...(ele === null || ele === void 0 ? void 0 : ele.image),
            desc: ele === null || ele === void 0 ? void 0 : ele.desc
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js
-index 26044ef..af7e742 100644
+index 26044ef..91dcb4e 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js
 +++ b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/buttons/video.js
 @@ -9,57 +9,270 @@ var _react = _interopRequireWildcard(require("react"));
@@ -1925,6 +1945,7 @@ index 26044ef..af7e742 100644
 +    )
 +  );
  }
+\ No newline at end of file
 diff --git a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js b/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
 index e579193..3efd5fc 100644
 --- a/node_modules/@mirrormedia/lilith-draft-editor/lib/draft-js/draft-converter/atomic-block-processor.js
