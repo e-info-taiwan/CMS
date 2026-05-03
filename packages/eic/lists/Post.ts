@@ -671,6 +671,9 @@ const listConfigurations = list({
       label: 'AI 可能錯字',
       ui: {
         displayMode: 'textarea',
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
       },
     }),
     isNewsletter: checkbox({
