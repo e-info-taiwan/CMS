@@ -8,6 +8,7 @@ const SIMILAR_PHOTOS_QUERY = gql`
     photo(where: { id: $id }) {
       id
       hasImageVector
+      createdAt
     }
     similarPhotos(id: $id) {
       id
@@ -18,6 +19,13 @@ const SIMILAR_PHOTOS_QUERY = gql`
     }
   }
 `
+
+const VECTOR_COMPARISON_TIMEOUT_MS = 3 * 60 * 1000
+const NOTICE_TEXT_STYLE = {
+  fontSize: '16px',
+  fontWeight: 600,
+  marginTop: '4px',
+}
 
 // The value will be an array of objects like: [{ id: '123', url: 'https://...' }]
 export function Field({ value }: FieldProps<any>) {
@@ -47,6 +55,12 @@ export function Field({ value }: FieldProps<any>) {
     parsedValue && Array.isArray(parsedValue) ? parsedValue : []
   const vectorSimilar = data?.similarPhotos || []
   const hasImageVector = data?.photo?.hasImageVector === true
+  const createdAtTime = data?.photo?.createdAt
+    ? new Date(data.photo.createdAt).getTime()
+    : NaN
+  const isVectorComparisonTimedOut =
+    Number.isFinite(createdAtTime) &&
+    Date.now() - createdAtTime >= VECTOR_COMPARISON_TIMEOUT_MS
 
   if (pHashDuplicates.length === 0 && vectorSimilar.length === 0 && !loading) {
     // If there is an error in the query, we should still show it instead of disappearing
@@ -58,24 +72,40 @@ export function Field({ value }: FieldProps<any>) {
         </FieldContainer>
       )
     }
+    if (isCreate) {
+      return null
+    }
     if (!isCreate && !hasImageVector) {
+      const message = isVectorComparisonTimedOut
+        ? '比對失敗，等候修復。'
+        : '比對中，請稍待回來看結果。'
       return (
         <FieldContainer>
           <FieldLabel>可能重複的圖片</FieldLabel>
           <div
             style={{
               color: '#dc2626',
-              fontSize: '16px',
-              fontWeight: 600,
-              marginTop: '4px',
+              ...NOTICE_TEXT_STYLE,
             }}
           >
-            比對中，請稍待回來看結果。
+            {message}
           </div>
         </FieldContainer>
       )
     }
-    return null
+    return (
+      <FieldContainer>
+        <FieldLabel>可能重複的圖片</FieldLabel>
+        <div
+          style={{
+            color: '#16a34a',
+            ...NOTICE_TEXT_STYLE,
+          }}
+        >
+          沒有比對到類似的照片。
+        </div>
+      </FieldContainer>
+    )
   }
 
   // Deduplicate: if a vector similar photo is already in pHash, hide it from vector view
