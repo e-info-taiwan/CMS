@@ -125,11 +125,13 @@ export default withAuth(
             }
             const SIMILAR_LIMIT = 10
             const rows = (await context.prisma.$queryRaw`
-              SELECT id FROM "Photo"
-              WHERE id != ${Number(id)} AND "imageVector" IS NOT NULL
-              ORDER BY "imageVector" <=> (SELECT "imageVector" FROM "Photo" WHERE id = ${Number(
-                id
-              )})
+              SELECT target.id
+              FROM "Photo" target
+              JOIN "Photo" source ON source.id = ${Number(id)}
+              WHERE target.id != source.id
+                AND source."imageVector" IS NOT NULL
+                AND target."imageVector" IS NOT NULL
+              ORDER BY target."imageVector" <=> source."imageVector"
               LIMIT ${SIMILAR_LIMIT}
             `) as { id: number }[]
             const ids = rows.map((r) => r.id)

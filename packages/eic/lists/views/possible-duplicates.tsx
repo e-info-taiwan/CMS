@@ -5,6 +5,10 @@ import { useQuery, gql } from '@apollo/client'
 
 const SIMILAR_PHOTOS_QUERY = gql`
   query GetSimilarPhotos($id: ID!) {
+    photo(where: { id: $id }) {
+      id
+      hasImageVector
+    }
     similarPhotos(id: $id) {
       id
       name
@@ -42,6 +46,7 @@ export function Field({ value }: FieldProps<any>) {
   const pHashDuplicates =
     parsedValue && Array.isArray(parsedValue) ? parsedValue : []
   const vectorSimilar = data?.similarPhotos || []
+  const hasImageVector = data?.photo?.hasImageVector === true
 
   if (pHashDuplicates.length === 0 && vectorSimilar.length === 0 && !loading) {
     // If there is an error in the query, we should still show it instead of disappearing
@@ -50,6 +55,14 @@ export function Field({ value }: FieldProps<any>) {
         <FieldContainer>
           <FieldLabel>可能重複的圖片 ID (Error)</FieldLabel>
           <div style={{ color: 'red' }}>AI 相似度查詢失敗: {error.message}</div>
+        </FieldContainer>
+      )
+    }
+    if (!isCreate && !hasImageVector) {
+      return (
+        <FieldContainer>
+          <FieldLabel>可能重複的圖片</FieldLabel>
+          <div style={{ color: '#6b7280' }}>比對中，請稍待回來看結果。</div>
         </FieldContainer>
       )
     }

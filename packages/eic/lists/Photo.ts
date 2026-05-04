@@ -200,6 +200,35 @@ const listConfigurations = list({
         listView: { fieldMode: 'hidden' },
       },
     }),
+    hasImageVector: virtual({
+      field: graphql.field({
+        type: graphql.Boolean,
+        async resolve(item: Record<string, unknown>, _args, context) {
+          if (!envVar.featureToggle.photoVector) {
+            return false
+          }
+
+          const photoId = Number(item?.id)
+          if (!Number.isFinite(photoId)) {
+            return false
+          }
+
+          const rows = (await context.prisma.$queryRaw`
+            SELECT ("imageVector" IS NOT NULL) AS "hasImageVector"
+            FROM "Photo"
+            WHERE id = ${photoId}
+            LIMIT 1
+          `) as Array<{ hasImageVector: boolean | null }>
+
+          return rows[0]?.hasImageVector === true
+        },
+      }),
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
   },
   ui: {
     listView: {
