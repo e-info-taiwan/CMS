@@ -62,7 +62,16 @@ export function Field({ value }: FieldProps<any>) {
       return (
         <FieldContainer>
           <FieldLabel>可能重複的圖片</FieldLabel>
-          <div style={{ color: '#6b7280' }}>比對中，請稍待回來看結果。</div>
+          <div
+            style={{
+              color: '#dc2626',
+              fontSize: '16px',
+              fontWeight: 600,
+              marginTop: '4px',
+            }}
+          >
+            比對中，請稍待回來看結果。
+          </div>
         </FieldContainer>
       )
     }
