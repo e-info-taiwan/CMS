@@ -12,6 +12,9 @@ import envVar from '../environment-variables'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
+const formatDuplicateTagMessage = (tag: { id: number; name: string }) =>
+  `已有相同名稱的標籤「${tag.name}」（ID: ${tag.id}），請改用既有標籤或更換名稱。`
+
 const formatSimilarTagMessage = (tags: SimilarTag[]) => {
   const tagNames = tags
     .slice(0, 3)
@@ -93,6 +96,10 @@ type TagHookContext = {
     $executeRawUnsafe(query: string, ...values: unknown[]): Promise<unknown>
   }
 }
+type DuplicateTag = {
+  id: number
+  name: string
+}
 type ValidateInputArgs = {
   operation: string
   item?: Record<string, unknown>
@@ -119,15 +126,7 @@ extendedListConfigurations.hooks = {
       context,
     } as Parameters<NonNullable<typeof originalValidateInput>>[0])
 
-    if (
-      !envVar.featureToggle.tagVector ||
-      !envVar.tagEmbedding.similarityCheck.enabled ||
-      (operation !== 'create' && operation !== 'update')
-    ) {
-      return
-    }
-
-    if (resolvedData.checkSimilarity === false) {
+    if (operation !== 'create' && operation !== 'update') {
       return
     }
 
@@ -145,6 +144,38 @@ extendedListConfigurations.hooks = {
       operation === 'create' || currentName !== previousName
 
     if (!currentName || !shouldCheckSimilarity) {
+      return
+    }
+
+    try {
+      const tagId = Number(item?.id)
+      const duplicateTags = await context.prisma.$queryRawUnsafe<
+        DuplicateTag[]
+      >(
+        `SELECT id, name
+         FROM "Tag"
+         WHERE name = $1
+           AND ($2::integer IS NULL OR id != $2::integer)
+         LIMIT 1`,
+        currentName,
+        Number.isFinite(tagId) ? tagId : null
+      )
+
+      if (duplicateTags.length > 0) {
+        addValidationError(formatDuplicateTagMessage(duplicateTags[0]))
+        return
+      }
+    } catch (error) {
+      console.error('[Tag] failed to validate duplicate tag name', error)
+      addValidationError('無法檢查標籤名稱是否重複，請稍後再試。')
+      return
+    }
+
+    if (
+      !envVar.featureToggle.tagVector ||
+      !envVar.tagEmbedding.similarityCheck.enabled ||
+      resolvedData.checkSimilarity === false
+    ) {
       return
     }
 
