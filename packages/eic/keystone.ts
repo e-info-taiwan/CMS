@@ -4,6 +4,10 @@ import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import {
+  findExactPHashDuplicatePhotos,
+  findNearPHashDuplicatePhotos,
+} from './services/photo-phash-duplicates'
 import { findSimilarPhotos } from './services/photo-similarity'
 import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
 import express from 'express'
@@ -122,6 +126,28 @@ export default withAuth(
           },
           resolve: async (_source, { id }, context) => {
             return findSimilarPhotos(context, id as string)
+          },
+        }),
+        exactPHashDuplicatePhotos: graphql.field({
+          type: graphql.nonNull(graphql.list(base.object('Photo'))),
+          args: {
+            id: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { id }, context) => {
+            return findExactPHashDuplicatePhotos(context, id as string)
+          },
+        }),
+        nearPHashDuplicatePhotos: graphql.field({
+          type: graphql.nonNull(graphql.list(base.object('Photo'))),
+          args: {
+            id: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { id }, context) => {
+            return findNearPHashDuplicatePhotos(context, id as string)
           },
         }),
         similarRssArticlesByPostTitle: graphql.field({

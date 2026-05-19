@@ -3624,6 +3624,8 @@ type Query {
   authenticatedItem: AuthenticatedItem
   postsForRssTarget(rssTarget: String!): [Post]!
   similarPhotos(id: ID!): [Photo]!
+  exactPHashDuplicatePhotos(id: ID!): [Photo]!
+  nearPHashDuplicatePhotos(id: ID!): [Photo]!
   similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
 }
 

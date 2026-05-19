@@ -92,7 +92,12 @@ PHOTO_SIMILARITY_MAX_DISTANCE=0.22
 PHOTO_SIMILARITY_RESULT_LIMIT=10
 ```
 
-`possibleDuplicates` 的「完全相同的圖片 (pHash)」資料由 image-processor 寫入，不會受到這組 vector threshold 影響。
+CMS 的 pHash 區塊會即時用 `Photo.phash` 查詢並分成兩組：
+
+- 完全相同：64-bit Hamming distance `<= 2`
+- 近似重複：64-bit Hamming distance `3..8`
+
+`possibleDuplicates` 是 image-processor 寫入的 legacy JSON，不會影響 CMS 目前的 pHash 顯示分流。
 
 ## Getting started on local environment
 ### Start postgres instance

@@ -1,5 +1,4 @@
 import React from 'react'
-import { FieldProps } from '@keystone-6/core/types'
 import { FieldContainer, FieldLabel } from '@keystone-ui/fields'
 import { useQuery, gql } from '@apollo/client'
 
@@ -9,6 +8,20 @@ const SIMILAR_PHOTOS_QUERY = gql`
       id
       hasImageVector
       createdAt
+    }
+    exactPHashDuplicatePhotos(id: $id) {
+      id
+      name
+      resized {
+        w480
+      }
+    }
+    nearPHashDuplicatePhotos(id: $id) {
+      id
+      name
+      resized {
+        w480
+      }
     }
     similarPhotos(id: $id) {
       id
@@ -27,8 +40,71 @@ const NOTICE_TEXT_STYLE = {
   marginTop: '4px',
 }
 
-// The value will be an array of objects like: [{ id: '123', url: 'https://...' }]
-export function Field({ value }: FieldProps<any>) {
+type DuplicatePhoto = {
+  id: string | number
+  url?: string
+  resized?: {
+    w480?: string | null
+  } | null
+}
+
+const renderPhotoCards = ({
+  photos,
+  label,
+  border,
+  color,
+  fontWeight,
+}: {
+  photos: DuplicatePhoto[]
+  label: string
+  border: string
+  color: string
+  fontWeight?: 'bold'
+}) => (
+  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+    {photos.map((photo) => (
+      <a
+        key={photo.id}
+        href={`/photos/${photo.id}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ textDecoration: 'none', maxWidth: '130px' }}
+      >
+        <div
+          style={{
+            border,
+            borderRadius: '4px',
+            padding: '4px',
+            background: 'white',
+          }}
+        >
+          <img
+            src={photo?.resized?.w480 || photo?.url || ''}
+            alt={`Photo ${photo.id}`}
+            style={{
+              width: '120px',
+              height: '120px',
+              objectFit: 'cover',
+            }}
+          />
+          <div
+            style={{
+              fontSize: '12px',
+              textAlign: 'center',
+              marginTop: '4px',
+              color,
+              fontWeight,
+            }}
+          >
+            {label} ID: {photo.id}
+          </div>
+        </div>
+      </a>
+    ))}
+  </div>
+)
+
+export function Field() {
   const isCreate =
     typeof window !== 'undefined' &&
     window.location.pathname.endsWith('/create')
@@ -42,18 +118,11 @@ export function Field({ value }: FieldProps<any>) {
     skip: isCreate || !itemId,
   })
 
-  let parsedValue = value
-  if (typeof value === 'string') {
-    try {
-      parsedValue = JSON.parse(value)
-    } catch (e) {
-      console.error('Failed to parse possibleDuplicates', e)
-    }
-  }
-
-  const pHashDuplicates =
-    parsedValue && Array.isArray(parsedValue) ? parsedValue : []
-  const vectorSimilar = data?.similarPhotos || []
+  const exactPHashDuplicates: DuplicatePhoto[] =
+    data?.exactPHashDuplicatePhotos || []
+  const nearPHashDuplicates: DuplicatePhoto[] =
+    data?.nearPHashDuplicatePhotos || []
+  const vectorSimilar: DuplicatePhoto[] = data?.similarPhotos || []
   const hasImageVector = data?.photo?.hasImageVector === true
   const createdAtTime = data?.photo?.createdAt
     ? new Date(data.photo.createdAt).getTime()
@@ -62,7 +131,12 @@ export function Field({ value }: FieldProps<any>) {
     Number.isFinite(createdAtTime) &&
     Date.now() - createdAtTime >= VECTOR_COMPARISON_TIMEOUT_MS
 
-  if (pHashDuplicates.length === 0 && vectorSimilar.length === 0 && !loading) {
+  if (
+    exactPHashDuplicates.length === 0 &&
+    nearPHashDuplicates.length === 0 &&
+    vectorSimilar.length === 0 &&
+    !loading
+  ) {
     // If there is an error in the query, we should still show it instead of disappearing
     if (error) {
       return (
@@ -109,9 +183,12 @@ export function Field({ value }: FieldProps<any>) {
   }
 
   // Deduplicate: if a vector similar photo is already in pHash, hide it from vector view
-  const pHashIds = new Set(pHashDuplicates.map((d: any) => d.id.toString()))
+  const pHashIds = new Set([
+    ...exactPHashDuplicates.map((d) => d.id.toString()),
+    ...nearPHashDuplicates.map((d) => d.id.toString()),
+  ])
   const filteredVector = vectorSimilar.filter(
-    (v: any) => !pHashIds.has(v.id.toString())
+    (v) => !pHashIds.has(v.id.toString())
   )
 
   return (
@@ -126,7 +203,7 @@ export function Field({ value }: FieldProps<any>) {
         gap: '16px',
       }}
     >
-      {pHashDuplicates.length > 0 && (
+      {exactPHashDuplicates.length > 0 && (
         <div
           style={{
             backgroundColor: '#fff3cd',
@@ -147,47 +224,44 @@ export function Field({ value }: FieldProps<any>) {
           >
             這些圖片的像素特徵極為相近，很可能是重複上傳。
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {pHashDuplicates.map((dup: any) => (
-              <a
-                key={dup.id}
-                href={`/photos/${dup.id}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: 'none' }}
-              >
-                <div
-                  style={{
-                    border: '2px solid #dc3545',
-                    borderRadius: '4px',
-                    padding: '4px',
-                    background: 'white',
-                  }}
-                >
-                  <img
-                    src={dup.url}
-                    alt={`Photo ${dup.id}`}
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      objectFit: 'cover',
-                    }}
-                  />
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      textAlign: 'center',
-                      marginTop: '4px',
-                      color: '#dc3545',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    高度重複 ID: {dup.id}
-                  </div>
-                </div>
-              </a>
-            ))}
+          {renderPhotoCards({
+            photos: exactPHashDuplicates,
+            label: '完全相同',
+            border: '2px solid #dc3545',
+            color: '#dc3545',
+            fontWeight: 'bold',
+          })}
+        </div>
+      )}
+
+      {nearPHashDuplicates.length > 0 && (
+        <div
+          style={{
+            backgroundColor: '#fff8e1',
+            padding: '12px',
+            borderRadius: '6px',
+            border: '1px solid #f4d06f',
+          }}
+        >
+          <FieldLabel style={{ color: '#7c5f00', fontWeight: 'bold' }}>
+            近似重複的圖片 (pHash)
+          </FieldLabel>
+          <div
+            style={{
+              color: '#7c5f00',
+              fontSize: '13px',
+              margin: '4px 0 12px 0',
+            }}
+          >
+            這些圖片的像素特徵相近，可能是同場景、相近構圖或連拍素材。
           </div>
+          {renderPhotoCards({
+            photos: nearPHashDuplicates,
+            label: '近似重複',
+            border: '2px solid #d97706',
+            color: '#b45309',
+            fontWeight: 'bold',
+          })}
         </div>
       )}
 
@@ -215,46 +289,12 @@ export function Field({ value }: FieldProps<any>) {
             >
               這些圖片在場景、構圖或語意上高度相關，可能是連拍或過往的相似素材。
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {filteredVector.map((dup: any) => (
-                <a
-                  key={dup.id}
-                  href={`/photos/${dup.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ textDecoration: 'none', maxWidth: '130px' }}
-                >
-                  <div
-                    style={{
-                      border: '1px solid #adb5bd',
-                      borderRadius: '4px',
-                      padding: '4px',
-                      background: 'white',
-                    }}
-                  >
-                    <img
-                      src={dup?.resized?.w480 || ''}
-                      alt={`Photo ${dup.id}`}
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <div
-                      style={{
-                        fontSize: '12px',
-                        textAlign: 'center',
-                        marginTop: '4px',
-                        color: '#495057',
-                      }}
-                    >
-                      情境相似 ID: {dup.id}
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
+            {renderPhotoCards({
+              photos: filteredVector,
+              label: '情境相似',
+              border: '1px solid #adb5bd',
+              color: '#495057',
+            })}
           </div>
         )
       )}
