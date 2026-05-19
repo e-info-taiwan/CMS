@@ -81,6 +81,19 @@ yarn workspace @mirrormedia/lilith-eic run backfill-tag-embeddings --force
 
 目前 tags 數量約數千筆，適合直接用 `gemini-embedding-001` 線上逐筆 backfill。若未來資料量成長到數十萬筆以上，需重新評估是否改用支援 batch prediction 的 embedding model 或另外設計分片式 backfill worker。
 
+### Photo vector similarity
+
+`Photo.imageVector` 使用 pgvector cosine distance (`<=>`) 尋找場景或語意相似圖片。CMS 只會回傳距離小於等於門檻的照片，避免在沒有真正相近圖片時仍硬取最近的 N 張。
+
+相關環境變數：
+
+```
+PHOTO_SIMILARITY_MAX_DISTANCE=0.22
+PHOTO_SIMILARITY_RESULT_LIMIT=10
+```
+
+`possibleDuplicates` 的「完全相同的圖片 (pHash)」資料由 image-processor 寫入，不會受到這組 vector threshold 影響。
+
 ## Getting started on local environment
 ### Start postgres instance
 在起 lilith-readr 服務前，需要在 local 端先起 postgres database。

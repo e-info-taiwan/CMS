@@ -4,6 +4,7 @@ import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import { findSimilarPhotos } from './services/photo-similarity'
 import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
 import express from 'express'
 import { createAuth } from '@keystone-6/auth'
@@ -120,31 +121,7 @@ export default withAuth(
             }),
           },
           resolve: async (_source, { id }, context) => {
-            if (!envVar.featureToggle.photoVector) {
-              return []
-            }
-            const SIMILAR_LIMIT = 10
-            const rows = (await context.prisma.$queryRaw`
-              SELECT target.id
-              FROM "Photo" target
-              JOIN "Photo" source ON source.id = ${Number(id)}
-              WHERE target.id != source.id
-                AND source."imageVector" IS NOT NULL
-                AND target."imageVector" IS NOT NULL
-              ORDER BY target."imageVector" <=> source."imageVector"
-              LIMIT ${SIMILAR_LIMIT}
-            `) as { id: number }[]
-            const ids = rows.map((r) => r.id)
-            if (ids.length === 0) {
-              return []
-            }
-            const photos = await context.db.Photo.findMany({
-              where: { id: { in: ids } },
-            })
-            // Map the results to maintain the order returned by pgvector
-            return ids
-              .map((queryId) => photos.find((p) => p.id === queryId.toString()))
-              .filter(Boolean)
+            return findSimilarPhotos(context, id as string)
           },
         }),
         similarRssArticlesByPostTitle: graphql.field({
