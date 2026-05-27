@@ -17,6 +17,7 @@ import {
 } from '@keystone-6/core/fields'
 import envVar from '../environment-variables'
 import { aiPollHelperService } from '../services/ai-poll-helper'
+import { refreshPostDocumentVector } from '../services/post-vector'
 import { tagEmbeddingService, toVectorLiteral } from '../services/tag-embedding'
 
 const CITATIONS_ENABLED_BUTTONS = ['unordered-list-item', 'link']
@@ -66,6 +67,13 @@ type ListItemContext = {
 type MaybeItemFunction<T extends FieldMode> =
   | T
   | ((args: ListItemContext) => Promise<T>)
+
+type PostAfterOperationArgs = {
+  operation: string
+  item?: Record<string, unknown>
+  originalItem?: Record<string, unknown>
+  context: KeystoneContext
+}
 
 const LOCK_DURATION_MINUTES = 30
 const CONTENT_PREVIEW_LENGTH = 400
@@ -1056,7 +1064,10 @@ if (
   extendedListConfigurations = utils.invalidateCacheAfterOperation(
     extendedListConfigurations,
     `${envVar.invalidateCDNCacheServerURL}/post`,
-    (item, originalItem) => ({
+    (
+      item: Record<string, unknown> | undefined,
+      originalItem: Record<string, unknown> | undefined
+    ) => ({
       slug: originalItem?.id ?? item?.id,
     })
   )
@@ -1070,7 +1081,8 @@ if (
 
   extendedListConfigurations.hooks = {
     ...extendedListConfigurations.hooks,
-    afterOperation: async ({ item, originalItem }) => {
+    afterOperation: async (args: PostAfterOperationArgs) => {
+      const { item, originalItem } = args
       const itemId = (originalItem?.id ?? item?.id) as
         | string
         | number
@@ -1108,13 +1120,44 @@ if (
       }
 
       await Promise.allSettled([
-        originalAfterOperation?.({ item, originalItem } as Parameters<
-          NonNullable<typeof originalAfterOperation>
-        >[0]),
+        originalAfterOperation?.(
+          args as Parameters<NonNullable<typeof originalAfterOperation>>[0]
+        ),
         ...tasks,
       ])
     },
   }
+}
+
+const originalPostAfterOperation =
+  extendedListConfigurations.hooks?.afterOperation
+
+extendedListConfigurations.hooks = {
+  ...extendedListConfigurations.hooks,
+  afterOperation: async (args: PostAfterOperationArgs) => {
+    await originalPostAfterOperation?.(
+      args as Parameters<NonNullable<typeof originalPostAfterOperation>>[0]
+    )
+
+    const { operation, item, originalItem, context } = args
+    if (operation !== 'create' && operation !== 'update') {
+      return
+    }
+
+    const postId = Number(item?.id ?? originalItem?.id)
+    if (!Number.isFinite(postId)) {
+      return
+    }
+
+    try {
+      await refreshPostDocumentVector(context, postId)
+    } catch (error) {
+      console.error(
+        `[PostVector] failed to refresh document vector for Post ${postId}`,
+        error
+      )
+    }
+  },
 }
 
 export default extendedListConfigurations

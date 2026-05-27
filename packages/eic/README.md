@@ -81,6 +81,30 @@ yarn workspace @mirrormedia/lilith-eic run backfill-tag-embeddings --force
 
 目前 tags 數量約數千筆，適合直接用 `gemini-embedding-001` 線上逐筆 backfill。若未來資料量成長到數十萬筆以上，需重新評估是否改用支援 batch prediction 的 embedding model 或另外設計分片式 backfill worker。
 
+### Post document vector
+
+`PostVector` 會保存文章層級的語意向量，供後續報題建議、相似文章搜尋使用。Post 建立或更新後，CMS 會從標題、副標、前言、內文、section、categories、tags 組合出索引文字，產生 `document` 類型的向量並寫入 `PostVector.embedding`。
+
+目前採用的模型與欄位：
+
+- Model：沿用 `TAG_VERTEX_EMBEDDING_MODEL`，預設 `gemini-embedding-001`
+- Dimension：沿用 `TAG_VERTEX_EMBEDDING_DIMENSION`，預設 `1536`
+- DB 欄位：`PostVector.embedding`，型別為 `vector(1536)`
+- 距離計算：PostgreSQL pgvector cosine distance `<=>`
+
+Post hook 受 `FEATURE_TOGGLE_POST_VECTOR=true` 控制。第一次部署或需要補齊既有文章時，先執行：
+
+```
+yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors --dry-run
+yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors
+```
+
+預設會用 `sourceHash` 跳過內容未變的文章。若需要全部重算：
+
+```
+yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors --force
+```
+
 ### Photo vector similarity
 
 `Photo.imageVector` 使用 pgvector cosine distance (`<=>`) 尋找場景或語意相似圖片。CMS 只會回傳距離小於等於門檻的照片，避免在沒有真正相近圖片時仍硬取最近的 N 張。

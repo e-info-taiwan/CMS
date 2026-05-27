@@ -619,6 +619,7 @@ model Post {
   from_Newsletter_readerResponsePost Newsletter[]                 @relation("Newsletter_readerResponsePost")
   from_Photo_posts                   Photo[]                      @relation("Photo_posts")
   from_Post_relatedPosts             Post[]                       @relation("Post_relatedPosts")
+  from_PostVector_post               PostVector[]                 @relation("PostVector_post")
   from_ReadingHistory_post           ReadingHistory[]             @relation("ReadingHistory_post")
 
   @@index([lockById])
@@ -631,6 +632,30 @@ model Post {
   @@index([heroImageId])
   @@index([adId])
   @@index([pollId])
+  @@index([createdById])
+  @@index([updatedById])
+}
+
+model PostVector {
+  id                   Int                          @id @default(autoincrement())
+  post                 Post?                        @relation("PostVector_post", fields: [postId], references: [id])
+  postId               Int?                         @map("post")
+  kind                 String                       @default("document")
+  model                String                       @default("")
+  dimension            Int                          @default(1536)
+  sourceHash           String                       @default("")
+  sourcePreview        String                       @default("")
+  embedding            Unsupported("vector(1536)")?
+  embeddingGeneratedAt DateTime?
+  createdAt            DateTime?
+  updatedAt            DateTime?
+  createdBy            User?                        @relation("PostVector_createdBy", fields: [createdById], references: [id])
+  createdById          Int?                         @map("createdBy")
+  updatedBy            User?                        @relation("PostVector_updatedBy", fields: [updatedById], references: [id])
+  updatedById          Int?                         @map("updatedBy")
+
+  @@index([postId])
+  @@index([sourceHash])
   @@index([createdById])
   @@index([updatedById])
 }
@@ -846,6 +871,8 @@ model User {
   from_Post_lockBy                  Post[]               @relation("Post_lockBy")
   from_Post_createdBy               Post[]               @relation("Post_createdBy")
   from_Post_updatedBy               Post[]               @relation("Post_updatedBy")
+  from_PostVector_createdBy         PostVector[]         @relation("PostVector_createdBy")
+  from_PostVector_updatedBy         PostVector[]         @relation("PostVector_updatedBy")
   from_ReadingHistory_createdBy     ReadingHistory[]     @relation("ReadingHistory_createdBy")
   from_ReadingHistory_updatedBy     ReadingHistory[]     @relation("ReadingHistory_updatedBy")
   from_RssArticle_createdBy         RssArticle[]         @relation("RssArticle_createdBy")

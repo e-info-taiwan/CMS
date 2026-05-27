@@ -29,7 +29,7 @@ const { withAuth } = createAuth({
 
 const session = statelessSessions(appConfig.session)
 
-const extendPrismaSchemaWithTagVectors = (schema: string) => {
+const extendPrismaSchemaWithVectors = (schema: string) => {
   let nextSchema = schema
 
   if (
@@ -65,6 +65,17 @@ const extendPrismaSchemaWithTagVectors = (schema: string) => {
     )
   }
 
+  if (
+    nextSchema.includes('model PostVector {') &&
+    !nextSchema.includes('embedding Unsupported("vector(1536)")?')
+  ) {
+    nextSchema = nextSchema.replace(
+      /(model PostVector \{[\s\S]*?sourcePreview\s+String\s+@default\(""\))/,
+      `$1
+  embedding Unsupported("vector(1536)")?`
+    )
+  }
+
   return nextSchema
 }
 
@@ -76,7 +87,7 @@ export default withAuth(
       idField: {
         kind: 'autoincrement',
       },
-      extendPrismaSchema: extendPrismaSchemaWithTagVectors,
+      extendPrismaSchema: extendPrismaSchemaWithVectors,
     },
     ui: {
       // If `isDisabled` is set to `true` then the Admin UI will be completely disabled.

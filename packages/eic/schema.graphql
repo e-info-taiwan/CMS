@@ -2669,6 +2669,88 @@ input PollResultRelateToManyForCreateInput {
   connect: [PollResultWhereUniqueInput!]
 }
 
+type PostVector {
+  id: ID!
+  post: Post
+  kind: String
+  model: String
+  dimension: Int
+  sourceHash: String
+  sourcePreview: String
+  embeddingGeneratedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: User
+  updatedBy: User
+}
+
+input PostVectorWhereUniqueInput {
+  id: ID
+}
+
+input PostVectorWhereInput {
+  AND: [PostVectorWhereInput!]
+  OR: [PostVectorWhereInput!]
+  NOT: [PostVectorWhereInput!]
+  id: IDFilter
+  post: PostWhereInput
+  kind: StringFilter
+  model: StringFilter
+  dimension: IntFilter
+  sourceHash: StringFilter
+  sourcePreview: StringFilter
+  embeddingGeneratedAt: DateTimeNullableFilter
+  createdAt: DateTimeNullableFilter
+  updatedAt: DateTimeNullableFilter
+  createdBy: UserWhereInput
+  updatedBy: UserWhereInput
+}
+
+input PostVectorOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  model: OrderDirection
+  dimension: OrderDirection
+  sourceHash: OrderDirection
+  sourcePreview: OrderDirection
+  embeddingGeneratedAt: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PostVectorUpdateInput {
+  post: PostRelateToOneForUpdateInput
+  kind: String
+  model: String
+  dimension: Int
+  sourceHash: String
+  sourcePreview: String
+  embeddingGeneratedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForUpdateInput
+  updatedBy: UserRelateToOneForUpdateInput
+}
+
+input PostVectorUpdateArgs {
+  where: PostVectorWhereUniqueInput!
+  data: PostVectorUpdateInput!
+}
+
+input PostVectorCreateInput {
+  post: PostRelateToOneForCreateInput
+  kind: String
+  model: String
+  dimension: Int
+  sourceHash: String
+  sourcePreview: String
+  embeddingGeneratedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  createdBy: UserRelateToOneForCreateInput
+  updatedBy: UserRelateToOneForCreateInput
+}
+
 type ReadingHistory {
   id: ID!
   member: Member
@@ -3457,6 +3539,12 @@ type Mutation {
   updatePosts(data: [PostUpdateArgs!]!): [Post]
   deletePost(where: PostWhereUniqueInput!): Post
   deletePosts(where: [PostWhereUniqueInput!]!): [Post]
+  createPostVector(data: PostVectorCreateInput!): PostVector
+  createPostVectors(data: [PostVectorCreateInput!]!): [PostVector]
+  updatePostVector(where: PostVectorWhereUniqueInput!, data: PostVectorUpdateInput!): PostVector
+  updatePostVectors(data: [PostVectorUpdateArgs!]!): [PostVector]
+  deletePostVector(where: PostVectorWhereUniqueInput!): PostVector
+  deletePostVectors(where: [PostVectorWhereUniqueInput!]!): [PostVector]
   createReadingHistory(data: ReadingHistoryCreateInput!): ReadingHistory
   createReadingHistories(data: [ReadingHistoryCreateInput!]!): [ReadingHistory]
   updateReadingHistory(where: ReadingHistoryWhereUniqueInput!, data: ReadingHistoryUpdateInput!): ReadingHistory
@@ -3596,6 +3684,9 @@ type Query {
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   post(where: PostWhereUniqueInput!): Post
   postsCount(where: PostWhereInput! = {}): Int
+  postVectors(where: PostVectorWhereInput! = {}, orderBy: [PostVectorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostVectorWhereUniqueInput): [PostVector!]
+  postVector(where: PostVectorWhereUniqueInput!): PostVector
+  postVectorsCount(where: PostVectorWhereInput! = {}): Int
   readingHistories(where: ReadingHistoryWhereInput! = {}, orderBy: [ReadingHistoryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReadingHistoryWhereUniqueInput): [ReadingHistory!]
   readingHistory(where: ReadingHistoryWhereUniqueInput!): ReadingHistory
   readingHistoriesCount(where: ReadingHistoryWhereInput! = {}): Int
