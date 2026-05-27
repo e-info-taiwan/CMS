@@ -105,6 +105,18 @@ yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors
 yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors --force
 ```
 
+Admin UI 另有 `/post-idea-suggestions` 報題建議頁。使用者輸入發想後，CMS 會先呼叫 Gemini 將文字整理成結構化提案，再用 Vertex embedding 查 `PostVector` 找相似文章。
+
+相關環境變數：
+
+```
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+POST_IDEA_SUGGESTION_MAX_DISTANCE=0.62
+POST_IDEA_SUGGESTION_CANDIDATE_LIMIT=50
+POST_IDEA_SUGGESTION_RESULT_LIMIT=10
+```
+
 ### Photo vector similarity
 
 `Photo.imageVector` 使用 pgvector cosine distance (`<=>`) 尋找場景或語意相似圖片。CMS 只會回傳距離小於等於門檻的照片，避免在沒有真正相近圖片時仍硬取最近的 N 張。

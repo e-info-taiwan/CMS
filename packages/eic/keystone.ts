@@ -4,6 +4,7 @@ import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import { suggestPostIdea } from './services/post-idea-suggestion'
 import {
   findExactPHashDuplicatePhotos,
   findNearPHashDuplicatePhotos,
@@ -192,6 +193,20 @@ export default withAuth(
               throw new Error('AI 標籤建議功能目前已停用')
             }
             return suggestAndApplyPostTags(context, postId as string)
+          },
+        }),
+        suggestPostIdea: graphql.field({
+          type: graphql.nonNull(graphql.JSON),
+          args: {
+            input: graphql.arg({
+              type: graphql.nonNull(graphql.String),
+            }),
+          },
+          resolve: async (_source, { input }, context) => {
+            if (!envVar.featureToggle.postVector) {
+              throw new Error('報題建議功能目前已停用')
+            }
+            return suggestPostIdea(context, input as string)
           },
         }),
       },
