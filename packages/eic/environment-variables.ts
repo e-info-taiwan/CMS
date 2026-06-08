@@ -152,10 +152,11 @@ export default {
     maxDistance: numberFromEnv(POST_IDEA_SUGGESTION_MAX_DISTANCE, 0.62),
     candidateLimit: numberFromEnv(POST_IDEA_SUGGESTION_CANDIDATE_LIMIT, 50),
     resultLimit: numberFromEnv(POST_IDEA_SUGGESTION_RESULT_LIMIT, 10),
-    // 自適應截斷：distance <= strongDistance 視為「高度相關」，全部顯示（上限 maxResults）；
-    // 若完全沒有高度相關者，只顯示最接近的 weakResultLimit 篇，避免無關查詢也塞滿列表。
+    // 相關／不相關分流：distance <= strongDistance 視為「較相關」（時間軸與完整清單主區，
+    // 上限 maxResults）；strongDistance < distance <= maxDistance 視為「較不相關」，
+    // 另以收折區呈現（上限 weakResultLimit）。
     strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.45),
-    weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 3),
+    weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 5),
     maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 30),
   },
   photoSimilarity: {

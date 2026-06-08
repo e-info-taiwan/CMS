@@ -21,9 +21,20 @@ type PostIdeaStructuredData = {
   tagHints: string[]
 }
 
+type AnalysisPointSource = {
+  id: string
+  title: string
+}
+
+type AnalysisPoint = {
+  text: string
+  sources: AnalysisPointSource[]
+}
+
 type PostIdeaCoverageAnalysis = {
-  coveredAngles: string[]
-  keyActors: string[]
+  overallAssessment: string
+  coveredAngles: AnalysisPoint[]
+  keyActors: AnalysisPoint[]
   underexploredAngles: string[]
 }
 
@@ -329,7 +340,60 @@ const truncateForAnalysis = (value: string) =>
     ? `${value.slice(0, ANALYSIS_PREVIEW_MAX_LENGTH)}…`
     : value
 
-const parseCoverageAnalysis = (text: string): PostIdeaCoverageAnalysis => {
+const parseAnalysisPoints = (
+  value: unknown,
+  fedPosts: { post: PostResult }[],
+  limit: number
+): AnalysisPoint[] => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const points: AnalysisPoint[] = []
+  for (const raw of value) {
+    if (!raw) {
+      continue
+    }
+    let text = ''
+    let rawSources: unknown[] = []
+    if (typeof raw === 'string') {
+      text = normalizeText(raw)
+    } else if (typeof raw === 'object') {
+      const obj = raw as Record<string, unknown>
+      text = normalizeText(obj.text ?? obj.point ?? obj.angle ?? obj.actor)
+      if (Array.isArray(obj.sources)) {
+        rawSources = obj.sources
+      }
+    }
+    if (!text) {
+      continue
+    }
+    const seen = new Set<string>()
+    const sources: AnalysisPointSource[] = []
+    for (const n of rawSources) {
+      const idx = Number(n)
+      if (!Number.isInteger(idx) || idx < 1 || idx > fedPosts.length) {
+        continue
+      }
+      const post = fedPosts[idx - 1].post
+      const id = String(post.id)
+      if (seen.has(id)) {
+        continue
+      }
+      seen.add(id)
+      sources.push({ id, title: post.title })
+    }
+    points.push({ text, sources })
+    if (points.length >= limit) {
+      break
+    }
+  }
+  return points
+}
+
+const parseCoverageAnalysis = (
+  text: string,
+  fedPosts: { post: PostResult }[]
+): PostIdeaCoverageAnalysis => {
   let parsed: unknown
   try {
     parsed = JSON.parse(extractJsonObjectSource(text))
@@ -341,8 +405,9 @@ const parseCoverageAnalysis = (text: string): PostIdeaCoverageAnalysis => {
   }
   const payload = parsed as Record<string, unknown>
   return {
-    coveredAngles: normalizeStringArray(payload.coveredAngles, 12),
-    keyActors: normalizeStringArray(payload.keyActors, 12),
+    overallAssessment: normalizeText(payload.overallAssessment),
+    coveredAngles: parseAnalysisPoints(payload.coveredAngles, fedPosts, 12),
+    keyActors: parseAnalysisPoints(payload.keyActors, fedPosts, 12),
     underexploredAngles: normalizeStringArray(payload.underexploredAngles, 12),
   }
 }
@@ -364,8 +429,8 @@ async function callGeminiForCoverageAnalysis({
   }
 
   const ai = new GoogleGenAI({})
-  const articleLines = posts
-    .slice(0, ANALYSIS_POST_LIMIT)
+  const fedPosts = posts.slice(0, ANALYSIS_POST_LIMIT)
+  const articleLines = fedPosts
     .map((item, index) => {
       const post = item.post
       const categories = post.categories.map((c) => c.name).join('、')
@@ -387,22 +452,31 @@ async function callGeminiForCoverageAnalysis({
     })
     .join('\n')
 
-  const prompt = `你是環境與公共議題媒體的資深編輯。使用者正在發想一個新報題，以下是資料庫中語意最相近的既有報導。請根據這些既有報導，幫編輯快速判斷「這個題目過去被怎麼報過、還有哪些角度沒做」。
+  const prompt = `你是環境與公共議題媒體的資深編輯。使用者正在發想一個新報題，系統已從資料庫撈出語意最相近的既有報導（如下，每篇都有編號）。請你「讀完這些既有報導」後，給編輯一份完整的判斷：這個題目在我們的資料庫裡被報導的概況、值不值得做、以及最好的切入點在哪。
 
 使用者報題發想：
 ${originalInput}
 
-整理後方向：${structured.normalizedTitle}｜${structured.summary}
+系統理解的方向（供參考）：${structured.normalizedTitle}｜${structured.summary}
 
-既有相關報導：
+既有相關報導（已編號）：
 ${articleLines}
 
 請只輸出 JSON 物件，不要 Markdown，不要額外說明。格式如下：
 {
-  "coveredAngles": ["既有報導已經涵蓋的面向或切角，盡量具體，條列"],
-  "keyActors": ["這些報導中反覆出現或關鍵的機構、組織、人物，每條附一句角色說明"],
-  "underexploredAngles": ["根據以上既有報導，這個題目還沒被充分探討、值得新報導切入的面向"]
-}`
+  "overallAssessment": "用 2 到 4 句做整體判斷：這題目在既有報導中的覆蓋程度、是否已被充分報過、新報題值不值得做、建議的切入方向",
+  "coveredAngles": [
+    { "text": "既有報導已涵蓋的具體面向或切角", "sources": [出處報導的編號，至少一個] }
+  ],
+  "keyActors": [
+    { "text": "反覆出現或關鍵的機構、組織、人物，附一句角色說明", "sources": [出現的報導編號] }
+  ],
+  "underexploredAngles": ["尚未被充分探討、值得新報導切入的面向（這是缺口，不需標來源）"]
+}
+
+規則：
+- coveredAngles 與 keyActors 的每一點，都必須在 sources 用上面報導的「編號」標出是從哪幾篇看出來的，至少一篇；不要杜撰沒列在上面的內容。
+- 條目數量依實際內容而定，不要為了整齊硬湊；每個欄位的條數本來就會不一樣，沒有的就少列或給空陣列 []。`
 
   const result = await ai.models.generateContent({
     model: envVar.ai.gemini.model,
@@ -414,7 +488,7 @@ ${articleLines}
     throw new Error('POST_IDEA_ANALYSIS_LLM_EMPTY_RESPONSE')
   }
 
-  return parseCoverageAnalysis(text)
+  return parseCoverageAnalysis(text, fedPosts)
 }
 
 export async function suggestPostIdea(context: KeystoneContext, input: string) {
@@ -511,18 +585,21 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score || a.distance - b.distance)
 
-  // 自適應截斷：只要有「高度相關」(distance <= strongDistance) 就全部顯示（上限 maxResults），
-  // 讓相關查詢能看到更多；若一篇高度相關都沒有，只顯示最接近的 weakResultLimit 篇，
-  // 避免無關查詢也硬塞滿列表。
+  // 相關／不相關分流：distance <= strongDistance 為「較相關」，其餘（仍在 maxDistance 內）
+  // 為「較不相關」。兩組都回傳、各自有上限，前端分開呈現，時間軸只放較相關那組。
   const config = envVar.postIdeaSuggestion
-  const strong = scored.filter((item) => item.distance <= config.strongDistance)
-  const selected =
-    strong.length > 0
-      ? strong.slice(0, config.maxResults)
-      : scored.slice(0, config.weakResultLimit)
-  const weakMatch = strong.length === 0
+  const selectedStrong = scored
+    .filter((item) => item.distance <= config.strongDistance)
+    .slice(0, config.maxResults)
+  const selectedWeak = scored
+    .filter((item) => item.distance > config.strongDistance)
+    .slice(0, config.weakResultLimit)
+  const weakMatch = selectedStrong.length === 0
 
-  const results = selected.map((result) => ({
+  const toResult = (
+    result: ReturnType<typeof scorePost>,
+    tier: 'strong' | 'weak'
+  ) => ({
     post: {
       id: String(result.post.id),
       title: result.post.title,
@@ -538,18 +615,25 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     distance: result.distance,
     similarity: result.similarity,
     score: result.score,
-    relevanceTier: result.distance <= config.strongDistance ? 'strong' : 'weak',
+    relevanceTier: tier,
     matchedKeywords: result.matchedKeywords,
     matchedHints: result.matchedHints,
-  }))
+  })
 
-  // 三點覆蓋面分析：隨列表自動產出。失敗不影響列表回傳（analysis = null）。
+  const results = [
+    ...selectedStrong.map((item) => toResult(item, 'strong')),
+    ...selectedWeak.map((item) => toResult(item, 'weak')),
+  ]
+
+  // 完整分析：讀完相關報導後產出。優先餵「較相關」那組，沒有時退而用較不相關。
+  const analysisSource =
+    selectedStrong.length > 0 ? selectedStrong : selectedWeak
   let analysis: PostIdeaCoverageAnalysis | null = null
   try {
     analysis = await callGeminiForCoverageAnalysis({
       originalInput,
       structured,
-      posts: selected.map((item) => ({
+      posts: analysisSource.map((item) => ({
         post: item.post,
         sourcePreview: item.sourcePreview,
       })),
