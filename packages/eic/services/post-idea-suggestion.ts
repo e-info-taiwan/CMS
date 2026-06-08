@@ -6,6 +6,9 @@ import { tagEmbeddingService, toVectorLiteral } from './tag-embedding'
 
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 const POST_VECTOR_KIND_DOCUMENT = 'document'
+// 餵給 Gemini 做覆蓋面分析的文章數上限與每篇摘要長度，控制 token 與延遲。
+const ANALYSIS_POST_LIMIT = 12
+const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 
 type PostIdeaStructuredData = {
   normalizedTitle: string
@@ -16,6 +19,12 @@ type PostIdeaStructuredData = {
   timeScope: string
   sectionHints: string[]
   tagHints: string[]
+}
+
+type PostIdeaCoverageAnalysis = {
+  coveredAngles: string[]
+  keyActors: string[]
+  underexploredAngles: string[]
 }
 
 type PostVectorCandidateRow = {
@@ -315,6 +324,99 @@ const scorePost = ({
   }
 }
 
+const truncateForAnalysis = (value: string) =>
+  value.length > ANALYSIS_PREVIEW_MAX_LENGTH
+    ? `${value.slice(0, ANALYSIS_PREVIEW_MAX_LENGTH)}…`
+    : value
+
+const parseCoverageAnalysis = (text: string): PostIdeaCoverageAnalysis => {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(extractJsonObjectSource(text))
+  } catch {
+    throw new Error('POST_IDEA_ANALYSIS_JSON_PARSE_ERROR')
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('POST_IDEA_ANALYSIS_JSON_NOT_OBJECT')
+  }
+  const payload = parsed as Record<string, unknown>
+  return {
+    coveredAngles: normalizeStringArray(payload.coveredAngles, 12),
+    keyActors: normalizeStringArray(payload.keyActors, 12),
+    underexploredAngles: normalizeStringArray(payload.underexploredAngles, 12),
+  }
+}
+
+async function callGeminiForCoverageAnalysis({
+  originalInput,
+  structured,
+  posts,
+}: {
+  originalInput: string
+  structured: PostIdeaStructuredData
+  posts: { post: PostResult; sourcePreview: string }[]
+}): Promise<PostIdeaCoverageAnalysis | null> {
+  if (posts.length === 0) {
+    return null
+  }
+  if (!envVar.ai.gemini.apiKey) {
+    throw new Error('GEMINI_API_KEY_NOT_CONFIGURED')
+  }
+
+  const ai = new GoogleGenAI({})
+  const articleLines = posts
+    .slice(0, ANALYSIS_POST_LIMIT)
+    .map((item, index) => {
+      const post = item.post
+      const categories = post.categories.map((c) => c.name).join('、')
+      const tags = post.tags.map((t) => t.name).join('、')
+      const summary = truncateForAnalysis(
+        normalizeText(post.contentPreview ?? '') ||
+          normalizeText(item.sourcePreview)
+      )
+      return [
+        `${index + 1}. 〈${normalizeText(post.title)}〉`,
+        post.subtitle ? `副標：${normalizeText(post.subtitle)}` : '',
+        post.section?.name ? `分類：${post.section.name}` : '',
+        categories ? `子分類：${categories}` : '',
+        tags ? `標籤：${tags}` : '',
+        summary ? `摘要：${summary}` : '',
+      ]
+        .filter(Boolean)
+        .join('｜')
+    })
+    .join('\n')
+
+  const prompt = `你是環境與公共議題媒體的資深編輯。使用者正在發想一個新報題，以下是資料庫中語意最相近的既有報導。請根據這些既有報導，幫編輯快速判斷「這個題目過去被怎麼報過、還有哪些角度沒做」。
+
+使用者報題發想：
+${originalInput}
+
+整理後方向：${structured.normalizedTitle}｜${structured.summary}
+
+既有相關報導：
+${articleLines}
+
+請只輸出 JSON 物件，不要 Markdown，不要額外說明。格式如下：
+{
+  "coveredAngles": ["既有報導已經涵蓋的面向或切角，盡量具體，條列"],
+  "keyActors": ["這些報導中反覆出現或關鍵的機構、組織、人物，每條附一句角色說明"],
+  "underexploredAngles": ["根據以上既有報導，這個題目還沒被充分探討、值得新報導切入的面向"]
+}`
+
+  const result = await ai.models.generateContent({
+    model: envVar.ai.gemini.model,
+    contents: prompt,
+  })
+
+  const text = result.text?.trim()
+  if (!text) {
+    throw new Error('POST_IDEA_ANALYSIS_LLM_EMPTY_RESPONSE')
+  }
+
+  return parseCoverageAnalysis(text)
+}
+
 export async function suggestPostIdea(context: KeystoneContext, input: string) {
   assertUserCanSuggestPostIdea(context)
 
@@ -371,7 +473,9 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     return {
       structured,
       queryText,
+      weakMatch: false,
       results: [],
+      analysis: null,
     }
   }
 
@@ -391,7 +495,7 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
   })) as PostResult[]
 
   const postsById = new Map(posts.map((post) => [Number(post.id), post]))
-  const results = candidates
+  const scored = candidates
     .map((candidate) => {
       const post = postsById.get(candidate.postId)
       if (!post) {
@@ -406,30 +510,60 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     })
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score || a.distance - b.distance)
-    .slice(0, envVar.postIdeaSuggestion.resultLimit)
-    .map((result) => ({
-      post: {
-        id: String(result.post.id),
-        title: result.post.title,
-        subtitle: result.post.subtitle,
-        state: result.post.state,
-        publishTime: result.post.publishTime.toISOString(),
-        contentPreview: result.post.contentPreview,
-        section: result.post.section,
-        categories: result.post.categories,
-        tags: result.post.tags,
-      },
-      sourcePreview: result.sourcePreview,
-      distance: result.distance,
-      similarity: result.similarity,
-      score: result.score,
-      matchedKeywords: result.matchedKeywords,
-      matchedHints: result.matchedHints,
-    }))
+
+  // 自適應截斷：只要有「高度相關」(distance <= strongDistance) 就全部顯示（上限 maxResults），
+  // 讓相關查詢能看到更多；若一篇高度相關都沒有，只顯示最接近的 weakResultLimit 篇，
+  // 避免無關查詢也硬塞滿列表。
+  const config = envVar.postIdeaSuggestion
+  const strong = scored.filter((item) => item.distance <= config.strongDistance)
+  const selected =
+    strong.length > 0
+      ? strong.slice(0, config.maxResults)
+      : scored.slice(0, config.weakResultLimit)
+  const weakMatch = strong.length === 0
+
+  const results = selected.map((result) => ({
+    post: {
+      id: String(result.post.id),
+      title: result.post.title,
+      subtitle: result.post.subtitle,
+      state: result.post.state,
+      publishTime: result.post.publishTime.toISOString(),
+      contentPreview: result.post.contentPreview,
+      section: result.post.section,
+      categories: result.post.categories,
+      tags: result.post.tags,
+    },
+    sourcePreview: result.sourcePreview,
+    distance: result.distance,
+    similarity: result.similarity,
+    score: result.score,
+    relevanceTier: result.distance <= config.strongDistance ? 'strong' : 'weak',
+    matchedKeywords: result.matchedKeywords,
+    matchedHints: result.matchedHints,
+  }))
+
+  // 三點覆蓋面分析：隨列表自動產出。失敗不影響列表回傳（analysis = null）。
+  let analysis: PostIdeaCoverageAnalysis | null = null
+  try {
+    analysis = await callGeminiForCoverageAnalysis({
+      originalInput,
+      structured,
+      posts: selected.map((item) => ({
+        post: item.post,
+        sourcePreview: item.sourcePreview,
+      })),
+    })
+  } catch (error) {
+    console.error('[post-idea-suggestion] coverage analysis error', error)
+    analysis = null
+  }
 
   return {
     structured,
     queryText,
+    weakMatch,
     results,
+    analysis,
   }
 }

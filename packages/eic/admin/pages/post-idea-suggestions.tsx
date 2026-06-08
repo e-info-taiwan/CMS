@@ -38,14 +38,23 @@ type SuggestionResult = {
   distance: number
   similarity: number
   score: number
+  relevanceTier?: 'strong' | 'weak'
   matchedKeywords?: string[]
   matchedHints?: string[]
+}
+
+type CoverageAnalysis = {
+  coveredAngles?: string[]
+  keyActors?: string[]
+  underexploredAngles?: string[]
 }
 
 type SuggestionPayload = {
   structured?: StructuredIdea
   queryText?: string
+  weakMatch?: boolean
   results?: SuggestionResult[]
+  analysis?: CoverageAnalysis | null
 }
 
 const tagList = (items?: string[]) =>
@@ -58,6 +67,58 @@ const formatDate = (value?: string) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString()
+}
+
+const formatDateShort = (value?: string) => {
+  if (!value) return '未排程'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '未排程'
+  return date.toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
+
+const getPublishTimestamp = (value?: string) => {
+  if (!value) return 0
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? 0 : time
+}
+
+function AnalysisCard({
+  title,
+  items,
+  accent,
+}: {
+  title: string
+  items?: string[]
+  accent?: boolean
+}) {
+  const list = items ?? []
+  return (
+    <div
+      style={{
+        border: `1px solid ${accent ? '#bfdbfe' : '#e5e7eb'}`,
+        borderRadius: 8,
+        padding: 18,
+        background: accent ? '#eff6ff' : '#fff',
+      }}
+    >
+      <h3 style={{ fontSize: 16, margin: '0 0 10px' }}>{title}</h3>
+      {list.length === 0 ? (
+        <p style={{ color: '#9ca3af', margin: 0 }}>無</p>
+      ) : (
+        <ul style={{ margin: 0, paddingLeft: 18, color: '#374151' }}>
+          {list.map((item, index) => (
+            <li key={index} style={{ marginBottom: 6, lineHeight: 1.5 }}>
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 export default function PostIdeaSuggestionsPage() {
@@ -92,6 +153,23 @@ export default function PostIdeaSuggestionsPage() {
 
   const structured = payload?.structured
   const results = payload?.results ?? []
+  const weakMatch = Boolean(payload?.weakMatch)
+  const analysis = payload?.analysis ?? null
+  const timelineResults = useMemo(
+    () =>
+      [...results].sort(
+        (a, b) =>
+          getPublishTimestamp(b.post.publishTime) -
+          getPublishTimestamp(a.post.publishTime)
+      ),
+    [results]
+  )
+  const hasAnalysis = Boolean(
+    analysis &&
+      ((analysis.coveredAngles?.length ?? 0) > 0 ||
+        (analysis.keyActors?.length ?? 0) > 0 ||
+        (analysis.underexploredAngles?.length ?? 0) > 0)
+  )
 
   return (
     <PageContainer header={<h1>報題建議</h1>} title="報題建議">
@@ -171,7 +249,22 @@ export default function PostIdeaSuggestionsPage() {
 
         {payload && (
           <section style={{ marginTop: 28 }}>
-            <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>相似內容</h2>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 12,
+                margin: '0 0 12px',
+              }}
+            >
+              <h2 style={{ fontSize: 20, margin: 0 }}>相似內容</h2>
+              {results.length > 0 && (
+                <span style={{ color: '#6b7280', fontSize: 14 }}>
+                  共 {results.length} 篇，依發布時間排序
+                </span>
+              )}
+            </div>
+
             {results.length === 0 ? (
               <div
                 style={{
@@ -184,80 +277,177 @@ export default function PostIdeaSuggestionsPage() {
                 沒有找到足夠接近的既有文章。
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: 12 }}>
-                {results.map((result) => {
-                  const post = result.post
-                  const categories = post.categories?.map((item) => item.name)
-                  const tags = post.tags?.map((item) => item.name)
-                  return (
-                    <article
-                      key={post.id}
-                      style={{
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
-                        padding: 18,
-                        background: '#fff',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'baseline',
-                          justifyContent: 'space-between',
-                          gap: 16,
-                        }}
-                      >
-                        <h3 style={{ fontSize: 18, margin: 0 }}>
-                          <a href={`/posts/${post.id}`}>{post.title}</a>
-                        </h3>
+              <>
+                {weakMatch && (
+                  <div
+                    style={{
+                      border: '1px solid #fde68a',
+                      background: '#fffbeb',
+                      color: '#92400e',
+                      borderRadius: 8,
+                      padding: '10px 14px',
+                      marginBottom: 16,
+                      fontSize: 14,
+                    }}
+                  >
+                    沒有高度相關的既有文章，以下是語意上最接近的幾篇，僅供參考。
+                  </div>
+                )}
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: 20,
+                    paddingLeft: 24,
+                    borderLeft: '2px solid #e5e7eb',
+                  }}
+                >
+                  {timelineResults.map((result) => {
+                    const post = result.post
+                    const categories = post.categories?.map((item) => item.name)
+                    const tags = post.tags?.map((item) => item.name)
+                    const isStrong = result.relevanceTier !== 'weak'
+                    return (
+                      <article key={post.id} style={{ position: 'relative' }}>
                         <span
-                          style={{ color: '#4b5563', whiteSpace: 'nowrap' }}
+                          style={{
+                            position: 'absolute',
+                            left: -31,
+                            top: 6,
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            background: isStrong ? '#2563eb' : '#9ca3af',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 1px #e5e7eb',
+                          }}
+                        />
+                        <div
+                          style={{
+                            color: '#6b7280',
+                            fontSize: 13,
+                            marginBottom: 6,
+                          }}
                         >
-                          {formatPercent(result.similarity)}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          color: '#6b7280',
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 8,
-                          marginTop: 8,
-                        }}
-                      >
-                        {post.state && <span>{post.state}</span>}
-                        {post.publishTime && (
-                          <span>{formatDate(post.publishTime)}</span>
-                        )}
-                        {post.section?.name && <span>{post.section.name}</span>}
-                      </div>
-                      {(post.contentPreview || result.sourcePreview) && (
-                        <p style={{ color: '#374151', margin: '12px 0 0' }}>
-                          {post.contentPreview || result.sourcePreview}
-                        </p>
-                      )}
-                      <div
-                        style={{
-                          color: '#6b7280',
-                          display: 'grid',
-                          gap: 6,
-                          marginTop: 12,
-                        }}
-                      >
-                        <div>分類：{tagList(categories)}</div>
-                        <div>標籤：{tagList(tags)}</div>
-                        <div>
-                          命中：{tagList(result.matchedKeywords)} /{' '}
-                          {tagList(result.matchedHints)}
+                          {formatDateShort(post.publishTime)}
                         </div>
-                        <div>
-                          distance {Math.round(result.distance * 1000) / 1000}
-                          ，score {Math.round(result.score * 1000) / 1000}
+                        <div
+                          style={{
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 8,
+                            padding: 18,
+                            background: '#fff',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'space-between',
+                              gap: 16,
+                            }}
+                          >
+                            <h3 style={{ fontSize: 18, margin: 0 }}>
+                              <a href={`/posts/${post.id}`}>{post.title}</a>
+                            </h3>
+                            <span
+                              style={{
+                                color: '#4b5563',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {formatPercent(result.similarity)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              color: '#6b7280',
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 8,
+                              marginTop: 8,
+                            }}
+                          >
+                            {post.state && <span>{post.state}</span>}
+                            {post.publishTime && (
+                              <span>{formatDate(post.publishTime)}</span>
+                            )}
+                            {post.section?.name && (
+                              <span>{post.section.name}</span>
+                            )}
+                          </div>
+                          {(post.contentPreview || result.sourcePreview) && (
+                            <p style={{ color: '#374151', margin: '12px 0 0' }}>
+                              {post.contentPreview || result.sourcePreview}
+                            </p>
+                          )}
+                          <div
+                            style={{
+                              color: '#6b7280',
+                              display: 'grid',
+                              gap: 6,
+                              marginTop: 12,
+                            }}
+                          >
+                            <div>分類：{tagList(categories)}</div>
+                            <div>標籤：{tagList(tags)}</div>
+                            <div>
+                              命中：{tagList(result.matchedKeywords)} /{' '}
+                              {tagList(result.matchedHints)}
+                            </div>
+                            <div>
+                              distance{' '}
+                              {Math.round(result.distance * 1000) / 1000}，score{' '}
+                              {Math.round(result.score * 1000) / 1000}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </article>
-                  )
-                })}
+                      </article>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {payload && results.length > 0 && (
+          <section style={{ marginTop: 28 }}>
+            <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>
+              AI 報導覆蓋面分析
+            </h2>
+            {hasAnalysis && analysis ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gap: 16,
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                }}
+              >
+                <AnalysisCard
+                  title="過去報導的面向"
+                  items={analysis.coveredAngles}
+                />
+                <AnalysisCard
+                  title="涉入的機構與重要人物"
+                  items={analysis.keyActors}
+                />
+                <AnalysisCard
+                  title="尚未被充分探討的面向"
+                  items={analysis.underexploredAngles}
+                  accent
+                />
+              </div>
+            ) : (
+              <div
+                style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 8,
+                  padding: 20,
+                  background: '#fff',
+                  color: '#6b7280',
+                }}
+              >
+                AI 分析這次無法產生，可再按一次「報題建議」重試。
               </div>
             )}
           </section>

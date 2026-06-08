@@ -36,6 +36,9 @@ const {
   POST_IDEA_SUGGESTION_MAX_DISTANCE,
   POST_IDEA_SUGGESTION_CANDIDATE_LIMIT,
   POST_IDEA_SUGGESTION_RESULT_LIMIT,
+  POST_IDEA_SUGGESTION_STRONG_DISTANCE,
+  POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT,
+  POST_IDEA_SUGGESTION_MAX_RESULTS,
   PHOTO_SIMILARITY_MAX_DISTANCE,
   PHOTO_SIMILARITY_RESULT_LIMIT,
   FEATURE_TOGGLE_PHOTO_VECTOR,
@@ -149,6 +152,11 @@ export default {
     maxDistance: numberFromEnv(POST_IDEA_SUGGESTION_MAX_DISTANCE, 0.62),
     candidateLimit: numberFromEnv(POST_IDEA_SUGGESTION_CANDIDATE_LIMIT, 50),
     resultLimit: numberFromEnv(POST_IDEA_SUGGESTION_RESULT_LIMIT, 10),
+    // 自適應截斷：distance <= strongDistance 視為「高度相關」，全部顯示（上限 maxResults）；
+    // 若完全沒有高度相關者，只顯示最接近的 weakResultLimit 篇，避免無關查詢也塞滿列表。
+    strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.45),
+    weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 3),
+    maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 30),
   },
   photoSimilarity: {
     maxDistance: numberFromEnv(PHOTO_SIMILARITY_MAX_DISTANCE, 0.22),
