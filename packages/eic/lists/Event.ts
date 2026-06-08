@@ -116,6 +116,7 @@ const listConfigurations = list({
     heroImage: relationship({
       ref: 'Photo',
       label: '首圖',
+      many: false,
     }),
     organizer: text({
       label: '主辦單位',
