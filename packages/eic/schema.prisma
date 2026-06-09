@@ -452,6 +452,11 @@ model Photo {
   file_filename                 String?
   posts                         Post[]         @relation("Photo_posts")
   possibleDuplicates            Json?
+  imageLabelSuggestions         Json?
+  imageLabelRawResult           Json?
+  imageLabelStatus              String         @default("")
+  imageLabelFailReason          String         @default("")
+  imageLabelUpdatedAt           DateTime?
   createdAt                     DateTime?
   updatedAt                     DateTime?
   createdBy                     User?          @relation("Photo_createdBy", fields: [createdById], references: [id])

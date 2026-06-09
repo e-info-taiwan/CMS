@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Photo"
+  ADD COLUMN IF NOT EXISTS "imageLabelRawResult" JSONB,
+  ADD COLUMN IF NOT EXISTS "imageLabelSuggestions" JSONB,
+  ADD COLUMN IF NOT EXISTS "imageLabelStatus" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "imageLabelFailReason" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "imageLabelUpdatedAt" TIMESTAMP(3);

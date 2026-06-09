@@ -11,6 +11,7 @@ import {
   relationship,
   virtual,
   json,
+  timestamp,
 } from '@keystone-6/core/fields'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
@@ -197,6 +198,48 @@ const listConfigurations = list({
         itemView: {
           fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
         },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelSuggestions: json({
+      label: '圖片建議標籤',
+      ui: {
+        views: './lists/views/image-label-suggestions',
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelRawResult: json({
+      label: 'Google Vision 原始標籤',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelStatus: text({
+      label: '圖片標籤狀態',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelFailReason: text({
+      label: '圖片標籤失敗原因',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelUpdatedAt: timestamp({
+      label: '圖片標籤更新時間',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
         listView: { fieldMode: 'hidden' },
       },
     }),

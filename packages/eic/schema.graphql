@@ -1957,6 +1957,11 @@ type Photo {
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
   possibleDuplicates: JSON
+  imageLabelSuggestions: JSON
+  imageLabelRawResult: JSON
+  imageLabelStatus: String
+  imageLabelFailReason: String
+  imageLabelUpdatedAt: DateTime
   hasImageVector: Boolean
   createdAt: DateTime
   updatedAt: DateTime
@@ -2011,6 +2016,9 @@ input PhotoWhereInput {
   description: StringFilter
   phash: StringFilter
   posts: PostManyRelationFilter
+  imageLabelStatus: StringFilter
+  imageLabelFailReason: StringFilter
+  imageLabelUpdatedAt: DateTimeNullableFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -2022,6 +2030,9 @@ input PhotoOrderByInput {
   name: OrderDirection
   description: OrderDirection
   phash: OrderDirection
+  imageLabelStatus: OrderDirection
+  imageLabelFailReason: OrderDirection
+  imageLabelUpdatedAt: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -2035,6 +2046,11 @@ input PhotoUpdateInput {
   file: FileFieldInput
   posts: PostRelateToManyForUpdateInput
   possibleDuplicates: JSON
+  imageLabelSuggestions: JSON
+  imageLabelRawResult: JSON
+  imageLabelStatus: String
+  imageLabelFailReason: String
+  imageLabelUpdatedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -2059,6 +2075,11 @@ input PhotoCreateInput {
   file: FileFieldInput
   posts: PostRelateToManyForCreateInput
   possibleDuplicates: JSON
+  imageLabelSuggestions: JSON
+  imageLabelRawResult: JSON
+  imageLabelStatus: String
+  imageLabelFailReason: String
+  imageLabelUpdatedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
