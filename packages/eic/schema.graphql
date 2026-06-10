@@ -1957,6 +1957,11 @@ type Photo {
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
   possibleDuplicates: JSON
+  imageVectorStatus: String
+  imageVectorRetryCount: Int
+  imageVectorFailReason: String
+  imageVectorFailedAt: DateTime
+  imageVectorUpdatedAt: DateTime
   imageLabelSuggestions: JSON
   imageLabelRawResult: JSON
   imageLabelStatus: String
@@ -2016,6 +2021,11 @@ input PhotoWhereInput {
   description: StringFilter
   phash: StringFilter
   posts: PostManyRelationFilter
+  imageVectorStatus: StringFilter
+  imageVectorRetryCount: IntFilter
+  imageVectorFailReason: StringNullableFilter
+  imageVectorFailedAt: DateTimeNullableFilter
+  imageVectorUpdatedAt: DateTimeNullableFilter
   imageLabelStatus: StringFilter
   imageLabelFailReason: StringFilter
   imageLabelUpdatedAt: DateTimeNullableFilter
@@ -2030,6 +2040,11 @@ input PhotoOrderByInput {
   name: OrderDirection
   description: OrderDirection
   phash: OrderDirection
+  imageVectorStatus: OrderDirection
+  imageVectorRetryCount: OrderDirection
+  imageVectorFailReason: OrderDirection
+  imageVectorFailedAt: OrderDirection
+  imageVectorUpdatedAt: OrderDirection
   imageLabelStatus: OrderDirection
   imageLabelFailReason: OrderDirection
   imageLabelUpdatedAt: OrderDirection
@@ -2046,6 +2061,11 @@ input PhotoUpdateInput {
   file: FileFieldInput
   posts: PostRelateToManyForUpdateInput
   possibleDuplicates: JSON
+  imageVectorStatus: String
+  imageVectorRetryCount: Int
+  imageVectorFailReason: String
+  imageVectorFailedAt: DateTime
+  imageVectorUpdatedAt: DateTime
   imageLabelSuggestions: JSON
   imageLabelRawResult: JSON
   imageLabelStatus: String
@@ -2075,6 +2095,11 @@ input PhotoCreateInput {
   file: FileFieldInput
   posts: PostRelateToManyForCreateInput
   possibleDuplicates: JSON
+  imageVectorStatus: String
+  imageVectorRetryCount: Int
+  imageVectorFailReason: String
+  imageVectorFailedAt: DateTime
+  imageVectorUpdatedAt: DateTime
   imageLabelSuggestions: JSON
   imageLabelRawResult: JSON
   imageLabelStatus: String

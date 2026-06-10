@@ -6,6 +6,7 @@ import { Storage } from '@google-cloud/storage'
 import { list, graphql } from '@keystone-6/core'
 import {
   file,
+  integer,
   image,
   text,
   relationship,
@@ -198,6 +199,51 @@ const listConfigurations = list({
         itemView: {
           fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
         },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorStatus: text({
+      label: '圖片向量狀態',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorRetryCount: integer({
+      label: '圖片向量重試次數',
+      defaultValue: 0,
+      validation: { isRequired: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorFailReason: text({
+      label: '圖片向量失敗原因',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorFailedAt: timestamp({
+      label: '圖片向量失敗時間',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorUpdatedAt: timestamp({
+      label: '圖片向量更新時間',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
         listView: { fieldMode: 'hidden' },
       },
     }),

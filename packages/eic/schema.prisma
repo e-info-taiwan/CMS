@@ -452,6 +452,11 @@ model Photo {
   file_filename                 String?
   posts                         Post[]         @relation("Photo_posts")
   possibleDuplicates            Json?
+  imageVectorStatus             String         @default("")
+  imageVectorRetryCount         Int            @default(0)
+  imageVectorFailReason         String?
+  imageVectorFailedAt           DateTime?
+  imageVectorUpdatedAt          DateTime?
   imageLabelSuggestions         Json?
   imageLabelRawResult           Json?
   imageLabelStatus              String         @default("")
