@@ -274,6 +274,7 @@ const listConfigurations = list({
     }),
     imageLabelFailReason: text({
       label: '圖片標籤失敗原因',
+      db: { isNullable: true },
       ui: {
         createView: { fieldMode: 'hidden' },
         itemView: { fieldMode: 'read' },

@@ -460,7 +460,7 @@ model Photo {
   imageLabelSuggestions         Json?
   imageLabelRawResult           Json?
   imageLabelStatus              String         @default("")
-  imageLabelFailReason          String         @default("")
+  imageLabelFailReason          String?
   imageLabelUpdatedAt           DateTime?
   createdAt                     DateTime?
   updatedAt                     DateTime?
