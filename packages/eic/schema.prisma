@@ -451,6 +451,7 @@ model Photo {
   file_filesize                 Int?
   file_filename                 String?
   posts                         Post[]         @relation("Photo_posts")
+  tags                          Tag[]          @relation("Photo_tags")
   possibleDuplicates            Json?
   imageVectorStatus             String         @default("")
   imageVectorRetryCount         Int            @default(0)
@@ -747,6 +748,7 @@ model Tag {
   isFeatured          Boolean                      @default(false)
   sortOrder           Int?
   posts               Post[]                       @relation("Post_tags")
+  photos              Photo[]                      @relation("Photo_tags")
   createdAt           DateTime?
   updatedAt           DateTime?
   createdBy           User?                        @relation("Tag_createdBy", fields: [createdById], references: [id])

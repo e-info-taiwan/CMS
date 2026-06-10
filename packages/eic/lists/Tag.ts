@@ -69,6 +69,15 @@ const listConfigurations = list({
         itemView: { fieldMode: 'hidden' },
       },
     }),
+    photos: relationship({
+      ref: 'Photo.tags',
+      many: true,
+      label: '相關圖片',
+      ui: {
+        listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
+    }),
   },
   access: {
     operation: {

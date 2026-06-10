@@ -191,6 +191,11 @@ const listConfigurations = list({
         createView: { fieldMode: 'hidden' },
       },
     }),
+    tags: relationship({
+      ref: 'Tag.photos',
+      many: true,
+      label: '標籤',
+    }),
     possibleDuplicates: json({
       label: '可能重複的圖片 ID',
       ui: {

@@ -4,6 +4,10 @@ import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import {
+  applyPhotoImageLabelTags,
+  suggestPhotoTagsFromImageLabels,
+} from './services/photo-image-tag-suggestion'
 import { suggestPostIdea } from './services/post-idea-suggestion'
 import {
   findExactPHashDuplicatePhotos,
@@ -162,6 +166,17 @@ export default withAuth(
             return findNearPHashDuplicatePhotos(context, id as string)
           },
         }),
+        suggestPhotoTagsFromImageLabels: graphql.field({
+          type: graphql.nonNull(graphql.JSON),
+          args: {
+            photoId: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { photoId }, context) => {
+            return suggestPhotoTagsFromImageLabels(context, photoId as string)
+          },
+        }),
         similarRssArticlesByPostTitle: graphql.field({
           type: graphql.nonNull(graphql.list(base.object('RssArticle'))),
           args: {
@@ -193,6 +208,17 @@ export default withAuth(
               throw new Error('AI 標籤建議功能目前已停用')
             }
             return suggestAndApplyPostTags(context, postId as string)
+          },
+        }),
+        applyPhotoImageLabelTags: graphql.field({
+          type: graphql.nonNull(graphql.JSON),
+          args: {
+            photoId: graphql.arg({
+              type: graphql.nonNull(graphql.ID),
+            }),
+          },
+          resolve: async (_source, { photoId }, context) => {
+            return applyPhotoImageLabelTags(context, photoId as string)
           },
         }),
         suggestPostIdea: graphql.field({

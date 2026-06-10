@@ -1956,6 +1956,8 @@ type Photo {
   file: FileFieldOutput
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
+  tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
+  tagsCount(where: TagWhereInput! = {}): Int
   possibleDuplicates: JSON
   imageVectorStatus: String
   imageVectorRetryCount: Int
@@ -2021,6 +2023,7 @@ input PhotoWhereInput {
   description: StringFilter
   phash: StringFilter
   posts: PostManyRelationFilter
+  tags: TagManyRelationFilter
   imageVectorStatus: StringFilter
   imageVectorRetryCount: IntFilter
   imageVectorFailReason: StringNullableFilter
@@ -2033,6 +2036,12 @@ input PhotoWhereInput {
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
+}
+
+input TagManyRelationFilter {
+  every: TagWhereInput
+  some: TagWhereInput
+  none: TagWhereInput
 }
 
 input PhotoOrderByInput {
@@ -2060,6 +2069,7 @@ input PhotoUpdateInput {
   exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForUpdateInput
+  tags: TagRelateToManyForUpdateInput
   possibleDuplicates: JSON
   imageVectorStatus: String
   imageVectorRetryCount: Int
@@ -2081,6 +2091,13 @@ input ImageFieldInput {
   upload: Upload!
 }
 
+input TagRelateToManyForUpdateInput {
+  disconnect: [TagWhereUniqueInput!]
+  set: [TagWhereUniqueInput!]
+  create: [TagCreateInput!]
+  connect: [TagWhereUniqueInput!]
+}
+
 input PhotoUpdateArgs {
   where: PhotoWhereUniqueInput!
   data: PhotoUpdateInput!
@@ -2094,6 +2111,7 @@ input PhotoCreateInput {
   exif: JSON
   file: FileFieldInput
   posts: PostRelateToManyForCreateInput
+  tags: TagRelateToManyForCreateInput
   possibleDuplicates: JSON
   imageVectorStatus: String
   imageVectorRetryCount: Int
@@ -2109,6 +2127,11 @@ input PhotoCreateInput {
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
   updatedBy: UserRelateToOneForCreateInput
+}
+
+input TagRelateToManyForCreateInput {
+  create: [TagCreateInput!]
+  connect: [TagWhereUniqueInput!]
 }
 
 type Poll {
@@ -2471,12 +2494,6 @@ input AttachmentManyRelationFilter {
   none: AttachmentWhereInput
 }
 
-input TagManyRelationFilter {
-  every: TagWhereInput
-  some: TagWhereInput
-  none: TagWhereInput
-}
-
 input PollResultManyRelationFilter {
   every: PollResultWhereInput
   some: PollResultWhereInput
@@ -2599,13 +2616,6 @@ input AdRelateToOneForUpdateInput {
   disconnect: Boolean
 }
 
-input TagRelateToManyForUpdateInput {
-  disconnect: [TagWhereUniqueInput!]
-  set: [TagWhereUniqueInput!]
-  create: [TagCreateInput!]
-  connect: [TagWhereUniqueInput!]
-}
-
 input PollResultRelateToManyForUpdateInput {
   disconnect: [PollResultWhereUniqueInput!]
   set: [PollResultWhereUniqueInput!]
@@ -2703,11 +2713,6 @@ input AttachmentRelateToManyForCreateInput {
 input AdRelateToOneForCreateInput {
   create: AdCreateInput
   connect: AdWhereUniqueInput
-}
-
-input TagRelateToManyForCreateInput {
-  create: [TagCreateInput!]
-  connect: [TagWhereUniqueInput!]
 }
 
 input PollResultRelateToManyForCreateInput {
@@ -3044,6 +3049,8 @@ type Tag {
   sortOrder: Int
   posts(where: PostWhereInput! = {}, orderBy: [PostOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PostWhereUniqueInput): [Post!]
   postsCount(where: PostWhereInput! = {}): Int
+  photos(where: PhotoWhereInput! = {}, orderBy: [PhotoOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PhotoWhereUniqueInput): [Photo!]
+  photosCount(where: PhotoWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -3067,10 +3074,17 @@ input TagWhereInput {
   isFeatured: BooleanFilter
   sortOrder: IntNullableFilter
   posts: PostManyRelationFilter
+  photos: PhotoManyRelationFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
   updatedBy: UserWhereInput
+}
+
+input PhotoManyRelationFilter {
+  every: PhotoWhereInput
+  some: PhotoWhereInput
+  none: PhotoWhereInput
 }
 
 input TagOrderByInput {
@@ -3092,10 +3106,18 @@ input TagUpdateInput {
   isFeatured: Boolean
   sortOrder: Int
   posts: PostRelateToManyForUpdateInput
+  photos: PhotoRelateToManyForUpdateInput
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
   updatedBy: UserRelateToOneForUpdateInput
+}
+
+input PhotoRelateToManyForUpdateInput {
+  disconnect: [PhotoWhereUniqueInput!]
+  set: [PhotoWhereUniqueInput!]
+  create: [PhotoCreateInput!]
+  connect: [PhotoWhereUniqueInput!]
 }
 
 input TagUpdateArgs {
@@ -3111,10 +3133,16 @@ input TagCreateInput {
   isFeatured: Boolean
   sortOrder: Int
   posts: PostRelateToManyForCreateInput
+  photos: PhotoRelateToManyForCreateInput
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput
   updatedBy: UserRelateToOneForCreateInput
+}
+
+input PhotoRelateToManyForCreateInput {
+  create: [PhotoCreateInput!]
+  connect: [PhotoWhereUniqueInput!]
 }
 
 type Timeline {
@@ -3643,6 +3671,7 @@ type Mutation {
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
   suggestPostTagsWithAi(postId: ID!): JSON!
+  applyPhotoImageLabelTags(photoId: ID!): JSON!
   suggestPostIdea(input: String!): JSON!
 }
 
@@ -3764,6 +3793,7 @@ type Query {
   similarPhotos(id: ID!): [Photo]!
   exactPHashDuplicatePhotos(id: ID!): [Photo]!
   nearPHashDuplicatePhotos(id: ID!): [Photo]!
+  suggestPhotoTagsFromImageLabels(photoId: ID!): JSON!
   similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
 }
 

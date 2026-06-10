@@ -135,6 +135,15 @@ CMS 的 pHash 區塊會即時用 `Photo.phash` 查詢並分成兩組：
 
 `possibleDuplicates` 是 image-processor 寫入的 legacy JSON，不會影響 CMS 目前的 pHash 顯示分流。
 
+### Photo image label tags
+
+`Photo.imageLabelSuggestions` 由 image-processor 寫入 Google Vision `LABEL_DETECTION` 結果，CMS 不會把這些英文 label 直接當正式 `Tag`。
+
+Photo 編輯頁的「圖片建議標籤」會提供兩個人工操作：
+
+- 比對既有 Tags：呼叫 Gemini 將 Vision label 翻成台灣繁體中文，再用 `Tag.name` exact match；若沒有 exact match 且 `FEATURE_TOGGLE_TAG_VECTOR=true`，會用既有 `Tag` embedding 找距離小於等於 `TAG_SIMILARITY_DISTANCE_THRESHOLD` 的 Tag。
+- 套用匹配 Tags：只會把匹配到的既有 `Tag` connect 到 `Photo.tags`，不會自動建立新 Tag。
+
 ## Getting started on local environment
 ### Start postgres instance
 在起 lilith-readr 服務前，需要在 local 端先起 postgres database。
