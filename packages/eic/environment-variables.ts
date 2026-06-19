@@ -39,6 +39,7 @@ const {
   POST_IDEA_SUGGESTION_STRONG_DISTANCE,
   POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT,
   POST_IDEA_SUGGESTION_MAX_RESULTS,
+  POST_IDEA_SUGGESTION_LEXICAL_LIMIT,
   PHOTO_SIMILARITY_MAX_DISTANCE,
   PHOTO_SIMILARITY_RESULT_LIMIT,
   FEATURE_TOGGLE_PHOTO_VECTOR,
@@ -158,6 +159,9 @@ export default {
     strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.45),
     weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 5),
     maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 30),
+    // 混合檢索：用 entities/locations 對標題做字面比對，命中者一律視為「較相關」，
+    // 確保具體地名／機構（即使向量沒撈到或沒有 embedding）也會出現。
+    lexicalLimit: numberFromEnv(POST_IDEA_SUGGESTION_LEXICAL_LIMIT, 20),
   },
   photoSimilarity: {
     maxDistance: numberFromEnv(PHOTO_SIMILARITY_MAX_DISTANCE, 0.22),

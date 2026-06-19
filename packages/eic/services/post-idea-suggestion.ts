@@ -9,6 +9,9 @@ const POST_VECTOR_KIND_DOCUMENT = 'document'
 // 餵給 Gemini 做覆蓋面分析的文章數上限與每篇摘要長度，控制 token 與延遲。
 const ANALYSIS_POST_LIMIT = 12
 const ANALYSIS_PREVIEW_MAX_LENGTH = 320
+// 混合檢索：字面比對的詞最短長度與最多取幾個詞。
+const LEXICAL_MIN_TERM_LENGTH = 2
+const LEXICAL_MAX_TERMS = 8
 
 type PostIdeaStructuredData = {
   normalizedTitle: string
@@ -263,15 +266,129 @@ async function findPostVectorCandidates({
 const includesTerm = (text: string, term: string) =>
   Boolean(term) && text.toLowerCase().includes(term.toLowerCase())
 
+// 從結構化結果取出要拿去「字面比對」的詞：以地點、實體為主，較短的原始輸入也納入
+// （例如直接打「知本濕地」）。過濾掉太短的詞並去重。
+const collectLexicalTerms = (
+  structured: PostIdeaStructuredData,
+  originalInput: string
+) => {
+  const raw = [...structured.locations, ...structured.entities]
+  if (originalInput.length <= 12) {
+    raw.push(originalInput)
+  }
+  const seen = new Set<string>()
+  const terms: string[] = []
+  for (const item of raw) {
+    const text = normalizeText(item)
+    if (text.length < LEXICAL_MIN_TERM_LENGTH) {
+      continue
+    }
+    const key = text.toLowerCase()
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    terms.push(text)
+    if (terms.length >= LEXICAL_MAX_TERMS) {
+      break
+    }
+  }
+  return terms
+}
+
+const POST_SELECT_FIELDS = {
+  id: true,
+  title: true,
+  subtitle: true,
+  state: true,
+  publishTime: true,
+  contentPreview: true,
+  section: { select: { name: true } },
+  categories: { select: { name: true } },
+  tags: { select: { name: true } },
+} as const
+
+// 字面比對：標題／副標／內文摘要含有任一詞的文章。不需要 embedding，
+// 因此即使向量沒撈到、甚至該文沒有向量，具體地名／機構文章也會被找出來。
+async function findLexicalPosts({
+  context,
+  terms,
+  limit,
+}: {
+  context: KeystoneContext
+  terms: string[]
+  limit: number
+}): Promise<PostResult[]> {
+  if (terms.length === 0) {
+    return []
+  }
+  const orConditions = terms.flatMap((term) => [
+    { title: { contains: term } },
+    { subtitle: { contains: term } },
+    { contentPreview: { contains: term } },
+  ])
+  const posts = (await context.prisma.Post.findMany({
+    where: { OR: orConditions },
+    select: POST_SELECT_FIELDS,
+    take: limit,
+    orderBy: { publishTime: 'desc' },
+  })) as PostResult[]
+  return posts
+}
+
+// 針對指定文章補查向量距離（給字面命中、但不在向量候選裡的文章用）。
+async function findVectorDistancesForPosts({
+  context,
+  embedding,
+  postIds,
+}: {
+  context: KeystoneContext
+  embedding: number[]
+  postIds: number[]
+}) {
+  const map = new Map<number, { distance: number; sourcePreview: string }>()
+  if (postIds.length === 0) {
+    return map
+  }
+  const rows = (await context.prisma.$queryRawUnsafe(
+    `SELECT pv."post" AS "postId",
+            pv."sourcePreview",
+            pv."embedding" <=> CAST($1 AS vector) AS distance
+     FROM "PostVector" pv
+     WHERE pv."kind" = $2
+       AND pv."model" = $3
+       AND pv."embedding" IS NOT NULL
+       AND pv."post" = ANY($4::int[])`,
+    toVectorLiteral(embedding),
+    POST_VECTOR_KIND_DOCUMENT,
+    envVar.tagEmbedding.vertex.model,
+    postIds
+  )) as PostVectorCandidateRow[]
+
+  for (const row of rows) {
+    const postId = Number(row.postId)
+    const distance = toFiniteDistance(row.distance)
+    if (!Number.isFinite(postId) || distance === null) {
+      continue
+    }
+    map.set(postId, { distance, sourcePreview: row.sourcePreview ?? '' })
+  }
+  return map
+}
+
 const scorePost = ({
   post,
   sourcePreview,
   distance,
+  lexicalMatch,
+  matchedEntities,
   structured,
 }: {
   post: PostResult
   sourcePreview: string
-  distance: number
+  distance: number | null
+  lexicalMatch: boolean
+  matchedEntities: string[]
   structured: PostIdeaStructuredData
 }) => {
   const relationText = [
@@ -300,7 +417,10 @@ const scorePost = ({
     ...structured.tagHints,
   ].filter((term) => includesTerm(relationText, term))
 
-  const similarity = Math.max(0, Math.min(1, 1 - distance))
+  // distance 為 null 代表這篇是「字面命中但沒有向量距離」（例如沒有 embedding）。
+  const similarity =
+    distance === null ? null : Math.max(0, Math.min(1, 1 - distance))
+  const similarityBase = similarity ?? 0.5
   const keywordScore =
     keywordTerms.length > 0 ? matchedKeywords.length / keywordTerms.length : 0
   const hintTerms = [...structured.sectionHints, ...structured.tagHints]
@@ -318,10 +438,12 @@ const scorePost = ({
       ? 0.5
       : 0
     : 0
+  const lexicalScore = lexicalMatch ? 1 : 0
   const score =
-    similarity * 0.74 +
-    keywordScore * 0.14 +
-    hintScore * 0.08 +
+    similarityBase * 0.58 +
+    lexicalScore * 0.2 +
+    keywordScore * 0.12 +
+    hintScore * 0.06 +
     recencyScore * 0.04
 
   return {
@@ -330,6 +452,8 @@ const scorePost = ({
     distance,
     similarity,
     score,
+    lexicalMatch,
+    matchedEntities,
     matchedKeywords,
     matchedHints,
   }
@@ -530,12 +654,14 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
   }
 
   const queryText = buildIdeaQueryText(originalInput, structured)
-  let candidates: Awaited<ReturnType<typeof findPostVectorCandidates>>
+  const config = envVar.postIdeaSuggestion
+
+  let embedding: number[] = []
+  let vectorCandidates: Awaited<ReturnType<typeof findPostVectorCandidates>> =
+    []
   try {
-    const embedding = await tagEmbeddingService.generateVertexEmbedding(
-      queryText
-    )
-    candidates = await findPostVectorCandidates({ context, embedding })
+    embedding = await tagEmbeddingService.generateVertexEmbedding(queryText)
+    vectorCandidates = await findPostVectorCandidates({ context, embedding })
   } catch (error) {
     console.error('[post-idea-suggestion] vector search error', error)
     throw new GraphQLError('無法查詢文章向量，請稍後再試', {
@@ -543,7 +669,21 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     })
   }
 
-  if (candidates.length === 0) {
+  // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
+  const lexicalTerms = collectLexicalTerms(structured, originalInput)
+  let lexicalPosts: PostResult[] = []
+  try {
+    lexicalPosts = await findLexicalPosts({
+      context,
+      terms: lexicalTerms,
+      limit: config.lexicalLimit,
+    })
+  } catch (error) {
+    console.error('[post-idea-suggestion] lexical search error', error)
+    lexicalPosts = []
+  }
+
+  if (vectorCandidates.length === 0 && lexicalPosts.length === 0) {
     return {
       structured,
       queryText,
@@ -553,46 +693,88 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     }
   }
 
-  const posts = (await context.prisma.Post.findMany({
-    where: { id: { in: candidates.map((candidate) => candidate.postId) } },
-    select: {
-      id: true,
-      title: true,
-      subtitle: true,
-      state: true,
-      publishTime: true,
-      contentPreview: true,
-      section: { select: { name: true } },
-      categories: { select: { name: true } },
-      tags: { select: { name: true } },
-    },
-  })) as PostResult[]
+  const vectorMap = new Map(
+    vectorCandidates.map((candidate) => [candidate.postId, candidate])
+  )
+  const lexicalIds = new Set(lexicalPosts.map((post) => Number(post.id)))
 
-  const postsById = new Map(posts.map((post) => [Number(post.id), post]))
-  const scored = candidates
-    .map((candidate) => {
-      const post = postsById.get(candidate.postId)
+  // 字面命中但不在向量候選的文章，補查它們的向量距離（若有 embedding 的話）。
+  const lexicalOnlyIds = [...lexicalIds].filter((id) => !vectorMap.has(id))
+  let lexicalDistanceMap = new Map<
+    number,
+    { distance: number; sourcePreview: string }
+  >()
+  try {
+    lexicalDistanceMap = await findVectorDistancesForPosts({
+      context,
+      embedding,
+      postIds: lexicalOnlyIds,
+    })
+  } catch (error) {
+    console.error('[post-idea-suggestion] lexical distance lookup error', error)
+  }
+
+  // 合併兩邊的 id，補齊完整文章資料（lexicalPosts 已含完整欄位）。
+  const lexicalPostsById = new Map(
+    lexicalPosts.map((post) => [Number(post.id), post])
+  )
+  const allIds = Array.from(new Set([...vectorMap.keys(), ...lexicalIds]))
+  const vectorOnlyIds = allIds.filter((id) => !lexicalPostsById.has(id))
+  const fetchedPosts =
+    vectorOnlyIds.length > 0
+      ? ((await context.prisma.Post.findMany({
+          where: { id: { in: vectorOnlyIds } },
+          select: POST_SELECT_FIELDS,
+        })) as PostResult[])
+      : []
+  const postsById = new Map<number, PostResult>()
+  for (const post of lexicalPosts) {
+    postsById.set(Number(post.id), post)
+  }
+  for (const post of fetchedPosts) {
+    postsById.set(Number(post.id), post)
+  }
+
+  const matchedEntitiesFor = (post: PostResult) => {
+    if (lexicalTerms.length === 0) {
+      return []
+    }
+    const haystack = [
+      post.title,
+      post.subtitle ?? '',
+      post.contentPreview ?? '',
+    ].join(' ')
+    return lexicalTerms.filter((term) => includesTerm(haystack, term))
+  }
+
+  const scored = allIds
+    .map((id) => {
+      const post = postsById.get(id)
       if (!post) {
         return null
       }
+      const vector = vectorMap.get(id) ?? lexicalDistanceMap.get(id) ?? null
+      const lexicalMatch = lexicalIds.has(id)
       return scorePost({
         post,
-        sourcePreview: candidate.sourcePreview,
-        distance: candidate.distance,
+        sourcePreview: vector?.sourcePreview ?? '',
+        distance: vector ? vector.distance : null,
+        lexicalMatch,
+        matchedEntities: lexicalMatch ? matchedEntitiesFor(post) : [],
         structured,
       })
     })
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
-    .sort((a, b) => b.score - a.score || a.distance - b.distance)
+    .sort((a, b) => b.score - a.score)
 
-  // 相關／不相關分流：distance <= strongDistance 為「較相關」，其餘（仍在 maxDistance 內）
-  // 為「較不相關」。兩組都回傳、各自有上限，前端分開呈現，時間軸只放較相關那組。
-  const config = envVar.postIdeaSuggestion
-  const selectedStrong = scored
-    .filter((item) => item.distance <= config.strongDistance)
-    .slice(0, config.maxResults)
+  // 相關／不相關分流：字面命中、或向量距離 <= strongDistance 視為「較相關」；
+  // 其餘為「較不相關」。兩組都回傳、各自有上限，前端分開呈現，時間軸只放較相關。
+  const isStrong = (item: ReturnType<typeof scorePost>) =>
+    item.lexicalMatch ||
+    (item.distance !== null && item.distance <= config.strongDistance)
+  const selectedStrong = scored.filter(isStrong).slice(0, config.maxResults)
   const selectedWeak = scored
-    .filter((item) => item.distance > config.strongDistance)
+    .filter((item) => !isStrong(item))
     .slice(0, config.weakResultLimit)
   const weakMatch = selectedStrong.length === 0
 
@@ -616,6 +798,8 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     similarity: result.similarity,
     score: result.score,
     relevanceTier: tier,
+    lexicalMatch: result.lexicalMatch,
+    matchedEntities: result.matchedEntities,
     matchedKeywords: result.matchedKeywords,
     matchedHints: result.matchedHints,
   })

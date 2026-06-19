@@ -35,10 +35,12 @@ type SuggestionResult = {
     tags?: { name: string }[]
   }
   sourcePreview?: string
-  distance: number
-  similarity: number
+  distance: number | null
+  similarity: number | null
   score: number
   relevanceTier?: 'strong' | 'weak'
+  lexicalMatch?: boolean
+  matchedEntities?: string[]
   matchedKeywords?: string[]
   matchedHints?: string[]
 }
@@ -208,7 +210,9 @@ function ResultCard({ result }: { result: SuggestionResult }) {
           <a href={`/posts/${post.id}`}>{post.title}</a>
         </h3>
         <span style={{ color: '#4b5563', whiteSpace: 'nowrap' }}>
-          {formatPercent(result.similarity)}
+          {result.similarity != null
+            ? formatPercent(result.similarity)
+            : '實體命中'}
         </span>
       </div>
       <div
@@ -239,13 +243,18 @@ function ResultCard({ result }: { result: SuggestionResult }) {
       >
         <div>分類：{tagList(categories)}</div>
         <div>標籤：{tagList(tags)}</div>
+        {result.lexicalMatch && (result.matchedEntities?.length ?? 0) > 0 && (
+          <div>實體命中：{tagList(result.matchedEntities)}</div>
+        )}
         <div>
           命中：{tagList(result.matchedKeywords)} /{' '}
           {tagList(result.matchedHints)}
         </div>
         <div>
-          distance {Math.round(result.distance * 1000) / 1000}，score{' '}
-          {Math.round(result.score * 1000) / 1000}
+          {result.distance != null
+            ? `distance ${Math.round(result.distance * 1000) / 1000}`
+            : 'distance —（字面命中，無向量距離）'}
+          ，score {Math.round(result.score * 1000) / 1000}
         </div>
       </div>
     </article>
@@ -445,7 +454,9 @@ export default function PostIdeaSuggestionsPage() {
                                 {post.title}
                               </a>
                               <span style={{ color: '#9ca3af', fontSize: 13 }}>
-                                {formatPercent(result.similarity)}
+                                {result.similarity != null
+                                  ? formatPercent(result.similarity)
+                                  : '實體命中'}
                               </span>
                             </div>
                           </div>
