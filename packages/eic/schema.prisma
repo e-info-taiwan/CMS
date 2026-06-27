@@ -776,6 +776,7 @@ model Topic {
   isPinned                 Boolean        @default(false)
   sortOrder                Int?           @default(0)
   publishTime              DateTime?
+  manualOrderOfPosts       Json?
   createdAt                DateTime?
   updatedAt                DateTime?
   createdBy                User?          @relation("Topic_createdBy", fields: [createdById], references: [id])
