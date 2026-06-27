@@ -3322,6 +3322,8 @@ type Topic {
   isPinned: Boolean
   sortOrder: Int
   publishTime: DateTime
+  manualOrderOfPosts: JSON
+  postsInInputOrder: [Post]
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: User
@@ -3376,6 +3378,7 @@ input TopicUpdateInput {
   isPinned: Boolean
   sortOrder: Int
   publishTime: DateTime
+  manualOrderOfPosts: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForUpdateInput
@@ -3398,6 +3401,7 @@ input TopicCreateInput {
   isPinned: Boolean
   sortOrder: Int
   publishTime: DateTime
+  manualOrderOfPosts: JSON
   createdAt: DateTime
   updatedAt: DateTime
   createdBy: UserRelateToOneForCreateInput

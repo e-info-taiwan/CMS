@@ -74,6 +74,9 @@ const listConfigurations = list({
       ref: 'Post.topic',
       label: '專題關聯的文章',
       many: true,
+      ui: {
+        views: './lists/views/sorted-relationship',
+      },
     }),
     isPinned: checkbox({
       label: '置頂',
@@ -124,7 +127,26 @@ const listConfigurations = list({
   },
 })
 
-const extendedListConfigurations = utils.addTrackingFields(listConfigurations)
+const topicListWithManualOrder = utils.addManualOrderRelationshipFields(
+  [
+    {
+      fieldName: 'manualOrderOfPosts',
+      fieldLabel: '專題關聯的文章（按新增順序）',
+      targetFieldName: 'posts',
+      targetListName: 'Post',
+      targetListLabelField: 'title',
+    },
+  ],
+  listConfigurations,
+  {
+    parentListKey: 'Topic',
+    manualOrderJsonViews: './lists/views/manual-order-json-read',
+  }
+)
+
+const extendedListConfigurations = utils.addTrackingFields(
+  topicListWithManualOrder
+)
 
 if (
   envVar.invalidateCDNCache.projectId &&
