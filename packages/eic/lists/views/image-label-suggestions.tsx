@@ -284,7 +284,7 @@ export function Field() {
           onClick={apply}
           isDisabled={previewing || applying}
         >
-          {applying ? '套用中…' : '套用匹配 Tags'}
+          {applying ? '套用中…' : '自動生成標籤'}
         </Button>
       </div>
       {suggestionPayload?.candidates &&

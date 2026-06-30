@@ -1969,6 +1969,7 @@ type Photo {
   imageLabelStatus: String
   imageLabelFailReason: String
   imageLabelUpdatedAt: DateTime
+  autoGenerateImageTags: JSON
   hasImageVector: Boolean
   createdAt: DateTime
   updatedAt: DateTime

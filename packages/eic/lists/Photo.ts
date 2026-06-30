@@ -295,6 +295,22 @@ const listConfigurations = list({
         listView: { fieldMode: 'hidden' },
       },
     }),
+    autoGenerateImageTags: virtual({
+      label: '自動生成標籤',
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve(item: Record<string, unknown>) {
+          return { photoId: String(item?.id ?? '') }
+        },
+      }),
+      ui: {
+        views: './lists/views/photo-auto-generate-tags',
+        query: '',
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'read' },
+      },
+    }),
     hasImageVector: virtual({
       field: graphql.field({
         type: graphql.Boolean,
@@ -327,7 +343,7 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['name', 'imageFile'],
+      initialColumns: ['name', 'imageFile', 'tags', 'autoGenerateImageTags'],
       initialSort: {
         // @ts-ignore: `updatedAt` field does exist
         field: 'updatedAt',
