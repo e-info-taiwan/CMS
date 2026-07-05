@@ -3800,6 +3800,20 @@ type Query {
   nearPHashDuplicatePhotos(id: ID!): [Photo]!
   suggestPhotoTagsFromImageLabels(photoId: ID!): JSON!
   similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
+  memberFavoriteStats(memberId: ID!): MemberFavoriteStats!
+}
+
+type MemberFavoriteStats {
+  total: Int!
+  sections: [MemberFavoriteSectionStats!]!
+}
+
+type MemberFavoriteSectionStats {
+  sectionId: ID!
+  sectionName: String
+  sectionSlug: String
+  count: Int!
+  postIds: [ID!]!
 }
 
 union AuthenticatedItem = User
