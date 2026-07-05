@@ -5,6 +5,11 @@ import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
 import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
 import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
+import { getMemberFavoriteStats } from './services/member-favorite-stats'
+import type {
+  MemberFavoriteSectionStats,
+  MemberFavoriteStats,
+} from './services/member-favorite-stats'
 import express from 'express'
 import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
@@ -81,105 +86,122 @@ export default withAuth(
     },
     lists,
     session,
-    // For RSS feed generation for querying posts by rssTarget with where clause
-    extendGraphqlSchema: graphql.extend((base) => ({
-      query: {
-        postsForRssTarget: graphql.field({
-          type: graphql.nonNull(graphql.list(base.object('Post'))),
-          args: {
-            rssTarget: graphql.arg({
-              type: graphql.nonNull(graphql.String),
+    extendGraphqlSchema: graphql.extend((base) => {
+      const MemberFavoriteSectionStatsType =
+        graphql.object<MemberFavoriteSectionStats>()({
+          name: 'MemberFavoriteSectionStats',
+          fields: {
+            sectionId: graphql.field({ type: graphql.nonNull(graphql.ID) }),
+            sectionName: graphql.field({ type: graphql.String }),
+            sectionSlug: graphql.field({ type: graphql.String }),
+            count: graphql.field({ type: graphql.nonNull(graphql.Int) }),
+            postIds: graphql.field({
+              type: graphql.nonNull(graphql.list(graphql.nonNull(graphql.ID))),
             }),
           },
-          resolve: async (_source, { rssTarget }, context) => {
-            // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb，最多 25 篇以降低 DB 負載
-            const targetsJson = JSON.stringify([rssTarget])
-            const RSS_TARGET_LIMIT = 25
-            const rows = (await context.prisma.$queryRaw`
+        })
+
+      const MemberFavoriteStatsType = graphql.object<MemberFavoriteStats>()({
+        name: 'MemberFavoriteStats',
+        fields: {
+          total: graphql.field({ type: graphql.nonNull(graphql.Int) }),
+          sections: graphql.field({
+            type: graphql.nonNull(
+              graphql.list(graphql.nonNull(MemberFavoriteSectionStatsType))
+            ),
+          }),
+        },
+      })
+
+      return {
+        // For RSS feed generation for querying posts by rssTarget with where clause
+        query: {
+          postsForRssTarget: graphql.field({
+            type: graphql.nonNull(graphql.list(base.object('Post'))),
+            args: {
+              rssTarget: graphql.arg({
+                type: graphql.nonNull(graphql.String),
+              }),
+            },
+            resolve: async (_source, { rssTarget }, context) => {
+              // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb，最多 25 篇以降低 DB 負載
+              const targetsJson = JSON.stringify([rssTarget])
+              const RSS_TARGET_LIMIT = 25
+              const rows = (await context.prisma.$queryRaw`
               SELECT id FROM "Post"
               WHERE "rssTargets"::jsonb @> ${targetsJson}::jsonb
               ORDER BY "publishTime" DESC
               LIMIT ${RSS_TARGET_LIMIT}
             `) as { id: number }[]
-            const ids = rows.map((r) => r.id)
-            if (ids.length === 0) {
-              return []
-            }
-            const posts = await context.db.Post.findMany({
-              where: { id: { in: ids } },
-              orderBy: { publishTime: 'desc' },
-            })
-            return posts
-          },
-        }),
-        similarPhotos: graphql.field({
-          type: graphql.nonNull(graphql.list(base.object('Photo'))),
-          args: {
-            id: graphql.arg({
-              type: graphql.nonNull(graphql.ID),
-            }),
-          },
-          resolve: async (_source, { id }, context) => {
-            if (!envVar.featureToggle.photoVector) {
-              return []
-            }
-            const SIMILAR_LIMIT = 10
-            const rows = (await context.prisma.$queryRaw`
-              SELECT id FROM "Photo"
-              WHERE id != ${Number(id)} AND "imageVector" IS NOT NULL
-              ORDER BY "imageVector" <=> (SELECT "imageVector" FROM "Photo" WHERE id = ${Number(
-                id
-              )})
-              LIMIT ${SIMILAR_LIMIT}
-            `) as { id: number }[]
-            const ids = rows.map((r) => r.id)
-            if (ids.length === 0) {
-              return []
-            }
-            const photos = await context.db.Photo.findMany({
-              where: { id: { in: ids } },
-            })
-            // Map the results to maintain the order returned by pgvector
-            return ids
-              .map((queryId) => photos.find((p) => p.id === queryId.toString()))
-              .filter(Boolean)
-          },
-        }),
-        similarRssArticlesByPostTitle: graphql.field({
-          type: graphql.nonNull(graphql.list(base.object('RssArticle'))),
-          args: {
-            id: graphql.arg({
-              type: graphql.nonNull(graphql.ID),
-            }),
-          },
-          resolve: async (_source, { id }, context) => {
-            if (!envVar.featureToggle.postVector) {
-              return []
-            }
-            return findSimilarRssArticlesByPostTitle(context, id as string)
-          },
-        }),
-      },
-      mutation: {
-        suggestPostTagsWithAi: graphql.field({
-          type: graphql.nonNull(graphql.JSON),
-          args: {
-            postId: graphql.arg({
-              type: graphql.nonNull(graphql.ID),
-            }),
-          },
-          resolve: async (_source, { postId }, context) => {
-            if (
-              !envVar.featureToggle.postVector ||
-              !envVar.featureToggle.tagVector
-            ) {
-              throw new Error('AI 標籤建議功能目前已停用')
-            }
-            return suggestAndApplyPostTags(context, postId as string)
-          },
-        }),
-      },
-    })),
+              const ids = rows.map((r) => r.id)
+              if (ids.length === 0) {
+                return []
+              }
+              const posts = await context.db.Post.findMany({
+                where: { id: { in: ids } },
+                orderBy: { publishTime: 'desc' },
+              })
+              return posts
+            },
+          }),
+          similarPhotos: graphql.field({
+            type: graphql.nonNull(graphql.list(base.object('Photo'))),
+            args: {
+              id: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { id }, context) => {
+              return findSimilarPhotos(context, id as string)
+            },
+          }),
+          similarRssArticlesByPostTitle: graphql.field({
+            type: graphql.nonNull(graphql.list(base.object('RssArticle'))),
+            args: {
+              id: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { id }, context) => {
+              if (!envVar.featureToggle.postVector) {
+                return []
+              }
+              return findSimilarRssArticlesByPostTitle(context, id as string)
+            },
+          }),
+          memberFavoriteStats: graphql.field({
+            type: graphql.nonNull(MemberFavoriteStatsType),
+            args: {
+              memberId: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { memberId }, context) => {
+              return getMemberFavoriteStats(context, memberId as string)
+            },
+          }),
+        },
+        mutation: {
+          suggestPostTagsWithAi: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              postId: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { postId }, context) => {
+              if (
+                !envVar.featureToggle.postVector ||
+                !envVar.featureToggle.tagVector
+              ) {
+                throw new Error('AI 標籤建議功能目前已停用')
+              }
+              return suggestAndApplyPostTags(context, postId as string)
+            },
+          }),
+        },
+      }
+    }),
     storage: {
       files: {
         kind: 'local',

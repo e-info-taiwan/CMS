@@ -3628,6 +3628,20 @@ type Query {
   postsForRssTarget(rssTarget: String!): [Post]!
   similarPhotos(id: ID!): [Photo]!
   similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
+  memberFavoriteStats(memberId: ID!): MemberFavoriteStats!
+}
+
+type MemberFavoriteStats {
+  total: Int!
+  sections: [MemberFavoriteSectionStats!]!
+}
+
+type MemberFavoriteSectionStats {
+  sectionId: ID!
+  sectionName: String
+  sectionSlug: String
+  count: Int!
+  postIds: [ID!]!
 }
 
 union AuthenticatedItem = User
