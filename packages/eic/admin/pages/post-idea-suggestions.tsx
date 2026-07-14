@@ -329,6 +329,20 @@ export default function PostIdeaSuggestionsPage() {
 
   const results = payload?.results ?? []
   const keywordOptions = payload?.keywordOptions ?? []
+  const keywordOptionValues = useMemo(
+    () => Array.from(new Set(keywordOptions.map((option) => option.value))),
+    [keywordOptions]
+  )
+  const selectedKeywordSet = useMemo(
+    () => new Set(selectedKeywords),
+    [selectedKeywords]
+  )
+  const selectedKeywordsForSubmit = useMemo(
+    () =>
+      keywordOptionValues.filter((value) => selectedKeywordSet.has(value)),
+    [keywordOptionValues, selectedKeywordSet]
+  )
+  const selectedKeywordCount = selectedKeywordsForSubmit.length
   const needsKeywordSelection = Boolean(payload?.needsKeywordSelection)
   const weakMatch = Boolean(payload?.weakMatch)
   const analysis = payload?.analysis ?? null
@@ -410,7 +424,7 @@ export default function PostIdeaSuggestionsPage() {
                 }}
               >
                 {keywordOptions.map((option) => {
-                  const checked = selectedKeywords.includes(option.value)
+                  const checked = selectedKeywordSet.has(option.value)
                   return (
                     <label
                       key={`${option.group}:${option.value}`}
@@ -432,12 +446,16 @@ export default function PostIdeaSuggestionsPage() {
                       <input
                         type="checkbox"
                         checked={checked}
-                        onChange={(event) => {
-                          setSelectedKeywords((current) =>
-                            event.target.checked
-                              ? [...current, option.value]
-                              : current.filter((item) => item !== option.value)
-                          )
+                        onChange={() => {
+                          setSelectedKeywords((current) => {
+                            const next = new Set(current)
+                            if (next.has(option.value)) {
+                              next.delete(option.value)
+                            } else {
+                              next.add(option.value)
+                            }
+                            return Array.from(next)
+                          })
                         }}
                       />
                       <span>{option.label}</span>
@@ -458,19 +476,15 @@ export default function PostIdeaSuggestionsPage() {
               >
                 <Button
                   tone="active"
-                  onClick={() => run(selectedKeywords)}
+                  onClick={() => run(selectedKeywordsForSubmit)}
                   isDisabled={
-                    loading || !canSubmit || selectedKeywords.length === 0
+                    loading || !canSubmit || selectedKeywordCount === 0
                   }
                 >
                   {loading ? '比對中...' : '用勾選詞比對'}
                 </Button>
                 <Button
-                  onClick={() =>
-                    setSelectedKeywords(
-                      keywordOptions.map((option) => option.value)
-                    )
-                  }
+                  onClick={() => setSelectedKeywords(keywordOptionValues)}
                   isDisabled={loading}
                 >
                   全選
