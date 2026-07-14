@@ -6,8 +6,8 @@ import { FieldContainer, FieldLabel, TextArea } from '@keystone-ui/fields'
 import { useToasts } from '@keystone-ui/toast'
 
 const SUGGEST_POST_IDEA = gql`
-  mutation SuggestPostIdea($input: String!) {
-    suggestPostIdea(input: $input)
+  mutation SuggestPostIdea($input: String!, $selectedKeywords: [String!]) {
+    suggestPostIdea(input: $input, selectedKeywords: $selectedKeywords)
   }
 `
 
@@ -62,9 +62,18 @@ type CoverageAnalysis = {
   underexploredAngles?: string[]
 }
 
+type KeywordOption = {
+  value: string
+  label: string
+  group: 'keyword' | 'entity' | 'location' | 'sectionHint' | 'tagHint'
+}
+
 type SuggestionPayload = {
   structured?: StructuredIdea
   queryText?: string
+  keywordOptions?: KeywordOption[]
+  selectedKeywords?: string[]
+  needsKeywordSelection?: boolean
   weakMatch?: boolean
   results?: SuggestionResult[]
   analysis?: CoverageAnalysis | null
@@ -91,6 +100,23 @@ const formatDateShort = (value?: string) => {
     month: '2-digit',
     day: '2-digit',
   })
+}
+
+const keywordGroupLabel = (group: KeywordOption['group']) => {
+  switch (group) {
+    case 'keyword':
+      return '關鍵詞'
+    case 'entity':
+      return '實體'
+    case 'location':
+      return '地點'
+    case 'sectionHint':
+      return '分類'
+    case 'tagHint':
+      return '標籤'
+    default:
+      return '候選詞'
+  }
 }
 
 const getPublishTimestamp = (value?: string) => {
@@ -265,18 +291,26 @@ export default function PostIdeaSuggestionsPage() {
   const toasts = useToasts()
   const [input, setInput] = useState('')
   const [payload, setPayload] = useState<SuggestionPayload | null>(null)
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [mutate, { loading }] = useMutation(SUGGEST_POST_IDEA)
 
   const canSubmit = useMemo(() => input.trim().length >= 4, [input])
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (keywords?: string[]) => {
     if (!canSubmit) return
 
     try {
       const { data } = await mutate({
-        variables: { input: input.trim() },
+        variables: { input: input.trim(), selectedKeywords: keywords },
       })
       const nextPayload = data?.suggestPostIdea as SuggestionPayload | undefined
+      if (nextPayload?.needsKeywordSelection) {
+        setSelectedKeywords(
+          nextPayload.keywordOptions?.map((option) => option.value) ?? []
+        )
+      } else if (nextPayload?.selectedKeywords) {
+        setSelectedKeywords(nextPayload.selectedKeywords)
+      }
       setPayload(nextPayload ?? null)
     } catch (error: unknown) {
       const message =
@@ -292,6 +326,8 @@ export default function PostIdeaSuggestionsPage() {
   }, [canSubmit, input, mutate, toasts])
 
   const results = payload?.results ?? []
+  const keywordOptions = payload?.keywordOptions ?? []
+  const needsKeywordSelection = Boolean(payload?.needsKeywordSelection)
   const weakMatch = Boolean(payload?.weakMatch)
   const analysis = payload?.analysis ?? null
   const byPublishDesc = (a: SuggestionResult, b: SuggestionResult) =>
@@ -329,15 +365,16 @@ export default function PostIdeaSuggestionsPage() {
         <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
           <Button
             tone="active"
-            onClick={run}
+            onClick={() => run()}
             isDisabled={!canSubmit || loading}
           >
-            {loading ? '整理與比對中...' : '報題建議'}
+            {loading ? '整理中...' : '整理候選詞'}
           </Button>
           <Button
             onClick={() => {
               setInput('')
               setPayload(null)
+              setSelectedKeywords([])
             }}
             isDisabled={loading && !input}
           >
@@ -345,7 +382,104 @@ export default function PostIdeaSuggestionsPage() {
           </Button>
         </div>
 
-        {payload && (
+        {payload && keywordOptions.length > 0 && (
+          <section style={{ marginTop: 28 }}>
+            <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>
+              選擇要比對的關鍵詞
+            </h2>
+            <div
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 8,
+                padding: 18,
+                background: '#fff',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                {keywordOptions.map((option) => {
+                  const checked = selectedKeywords.includes(option.value)
+                  return (
+                    <label
+                      key={`${option.group}:${option.value}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        border: `1px solid ${
+                          checked ? '#2563eb' : '#d1d5db'
+                        }`,
+                        borderRadius: 8,
+                        padding: '7px 10px',
+                        color: checked ? '#1d4ed8' : '#374151',
+                        background: checked ? '#eff6ff' : '#fff',
+                        cursor: 'pointer',
+                        fontSize: 14,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          setSelectedKeywords((current) =>
+                            event.target.checked
+                              ? [...current, option.value]
+                              : current.filter((item) => item !== option.value)
+                          )
+                        }}
+                      />
+                      <span>{option.label}</span>
+                      <span style={{ color: '#9ca3af', fontSize: 12 }}>
+                        {keywordGroupLabel(option.group)}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  marginTop: 16,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Button
+                  tone="active"
+                  onClick={() => run(selectedKeywords)}
+                  isDisabled={
+                    loading || !canSubmit || selectedKeywords.length === 0
+                  }
+                >
+                  {loading ? '比對中...' : '用勾選詞比對'}
+                </Button>
+                <Button
+                  onClick={() =>
+                    setSelectedKeywords(
+                      keywordOptions.map((option) => option.value)
+                    )
+                  }
+                  isDisabled={loading}
+                >
+                  全選
+                </Button>
+                <Button
+                  onClick={() => setSelectedKeywords([])}
+                  isDisabled={loading}
+                >
+                  清空勾選
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {payload && !needsKeywordSelection && (
           <section style={{ marginTop: 28 }}>
             <div
               style={{
@@ -505,7 +639,7 @@ export default function PostIdeaSuggestionsPage() {
           </section>
         )}
 
-        {payload && results.length > 0 && (
+        {payload && !needsKeywordSelection && results.length > 0 && (
           <section style={{ marginTop: 28 }}>
             <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>完整分析</h2>
             {hasAnalysis && analysis ? (

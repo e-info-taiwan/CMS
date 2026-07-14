@@ -270,12 +270,19 @@ export default withAuth(
               input: graphql.arg({
                 type: graphql.nonNull(graphql.String),
               }),
+              selectedKeywords: graphql.arg({
+                type: graphql.list(graphql.nonNull(graphql.String)),
+              }),
             },
-            resolve: async (_source, { input }, context) => {
+            resolve: async (_source, { input, selectedKeywords }, context) => {
               if (!envVar.featureToggle.postVector) {
                 throw new Error('報題建議功能目前已停用')
               }
-              return suggestPostIdea(context, input as string)
+              return suggestPostIdea(
+                context,
+                input as string,
+                selectedKeywords as string[] | null | undefined
+              )
             },
           }),
         },

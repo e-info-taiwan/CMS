@@ -24,6 +24,19 @@ type PostIdeaStructuredData = {
   tagHints: string[]
 }
 
+type KeywordOptionGroup =
+  | 'keyword'
+  | 'entity'
+  | 'location'
+  | 'sectionHint'
+  | 'tagHint'
+
+type KeywordOption = {
+  value: string
+  label: string
+  group: KeywordOptionGroup
+}
+
 type AnalysisPointSource = {
   id: string
   title: string
@@ -195,12 +208,16 @@ ${input}`
 
 const buildIdeaQueryText = (
   originalInput: string,
-  structured: PostIdeaStructuredData
+  structured: PostIdeaStructuredData,
+  selectedKeywords?: string[]
 ) =>
   [
     `原始輸入：${originalInput}`,
     `整理後標題：${structured.normalizedTitle}`,
     `摘要：${structured.summary}`,
+    selectedKeywords && selectedKeywords.length > 0
+      ? `使用者確認要比對的關鍵詞：${selectedKeywords.join('、')}`
+      : '',
     `關鍵詞：${structured.keywords.join('、')}`,
     `實體：${structured.entities.join('、')}`,
     `地點：${structured.locations.join('、')}`,
@@ -210,6 +227,56 @@ const buildIdeaQueryText = (
   ]
     .filter((line) => !line.endsWith('：'))
     .join('\n')
+
+const collectKeywordOptions = (
+  structured: PostIdeaStructuredData
+): KeywordOption[] => {
+  const groups: { group: KeywordOptionGroup; values: string[] }[] = [
+    { group: 'keyword', values: structured.keywords },
+    { group: 'entity', values: structured.entities },
+    { group: 'location', values: structured.locations },
+    { group: 'sectionHint', values: structured.sectionHints },
+    { group: 'tagHint', values: structured.tagHints },
+  ]
+  const seen = new Set<string>()
+  const options: KeywordOption[] = []
+  for (const { group, values } of groups) {
+    for (const value of values) {
+      const label = normalizeText(value)
+      if (!label) {
+        continue
+      }
+      const key = label.toLowerCase()
+      if (seen.has(key)) {
+        continue
+      }
+      seen.add(key)
+      options.push({ value: label, label, group })
+    }
+  }
+  return options
+}
+
+const normalizeSelectedKeywords = (value: unknown) =>
+  normalizeStringArray(value, 30)
+
+const filterStructuredBySelectedKeywords = (
+  structured: PostIdeaStructuredData,
+  selectedKeywords: string[]
+): PostIdeaStructuredData => {
+  const selected = new Set(selectedKeywords.map((item) => item.toLowerCase()))
+  const keepSelected = (items: string[]) =>
+    items.filter((item) => selected.has(item.toLowerCase()))
+
+  return {
+    ...structured,
+    keywords: keepSelected(structured.keywords),
+    entities: keepSelected(structured.entities),
+    locations: keepSelected(structured.locations),
+    sectionHints: keepSelected(structured.sectionHints),
+    tagHints: keepSelected(structured.tagHints),
+  }
+}
 
 const toFiniteDistance = (value: unknown) => {
   const distance = Number(value)
@@ -270,9 +337,14 @@ const includesTerm = (text: string, term: string) =>
 // （例如直接打「知本濕地」）。過濾掉太短的詞並去重。
 const collectLexicalTerms = (
   structured: PostIdeaStructuredData,
-  originalInput: string
+  originalInput: string,
+  selectedKeywords: string[] = []
 ) => {
-  const raw = [...structured.locations, ...structured.entities]
+  const raw = [
+    ...selectedKeywords,
+    ...structured.locations,
+    ...structured.entities,
+  ]
   if (originalInput.length <= 12) {
     raw.push(originalInput)
   }
@@ -615,7 +687,11 @@ ${articleLines}
   return parseCoverageAnalysis(text, fedPosts)
 }
 
-export async function suggestPostIdea(context: KeystoneContext, input: string) {
+export async function suggestPostIdea(
+  context: KeystoneContext,
+  input: string,
+  selectedKeywordsInput?: string[] | null
+) {
   assertUserCanSuggestPostIdea(context)
 
   if (!envVar.featureToggle.postVector) {
@@ -653,7 +729,43 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     })
   }
 
-  const queryText = buildIdeaQueryText(originalInput, structured)
+  const keywordOptions = collectKeywordOptions(structured)
+  if (keywordOptions.length === 0) {
+    keywordOptions.push({
+      value: originalInput,
+      label: originalInput,
+      group: 'keyword',
+    })
+  }
+  const selectedKeywords =
+    selectedKeywordsInput == null
+      ? undefined
+      : normalizeSelectedKeywords(selectedKeywordsInput)
+
+  if (selectedKeywords === undefined) {
+    return {
+      structured,
+      queryText: buildIdeaQueryText(originalInput, structured),
+      keywordOptions,
+      needsKeywordSelection: true,
+      weakMatch: false,
+      results: [],
+      analysis: null,
+    }
+  }
+
+  if (selectedKeywords.length === 0) {
+    throw new GraphQLError('請至少選擇一個要比對的關鍵詞', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  structured = filterStructuredBySelectedKeywords(structured, selectedKeywords)
+  const queryText = buildIdeaQueryText(
+    originalInput,
+    structured,
+    selectedKeywords
+  )
   const config = envVar.postIdeaSuggestion
 
   let embedding: number[] = []
@@ -670,7 +782,11 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
   }
 
   // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
-  const lexicalTerms = collectLexicalTerms(structured, originalInput)
+  const lexicalTerms = collectLexicalTerms(
+    structured,
+    originalInput,
+    selectedKeywords
+  )
   let lexicalPosts: PostResult[] = []
   try {
     lexicalPosts = await findLexicalPosts({
@@ -687,6 +803,9 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
     return {
       structured,
       queryText,
+      keywordOptions,
+      selectedKeywords,
+      needsKeywordSelection: false,
       weakMatch: false,
       results: [],
       analysis: null,
@@ -830,6 +949,9 @@ export async function suggestPostIdea(context: KeystoneContext, input: string) {
   return {
     structured,
     queryText,
+    keywordOptions,
+    selectedKeywords,
+    needsKeywordSelection: false,
     weakMatch,
     results,
     analysis,
