@@ -294,7 +294,9 @@ export default function PostIdeaSuggestionsPage() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [mutate, { loading }] = useMutation(SUGGEST_POST_IDEA)
 
-  const canSubmit = useMemo(() => input.trim().length >= 4, [input])
+  const trimmedInputLength = input.trim().length
+  const canSubmit = useMemo(() => trimmedInputLength >= 3, [trimmedInputLength])
+  const showInputTooShortHint = trimmedInputLength > 0 && trimmedInputLength < 3
 
   const run = useCallback(async (keywords?: string[]) => {
     if (!canSubmit) return
@@ -360,6 +362,11 @@ export default function PostIdeaSuggestionsPage() {
             placeholder="輸入尚未成形的題目、線索、關鍵字、想追的衝突或問題"
             style={{ minHeight: 180 }}
           />
+          {showInputTooShortHint && (
+            <div style={{ color: '#b45309', fontSize: 13, marginTop: 6 }}>
+              至少輸入 3 個字才能送出。
+            </div>
+          )}
         </FieldContainer>
 
         <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>

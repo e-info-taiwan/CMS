@@ -701,8 +701,8 @@ export async function suggestPostIdea(
   }
 
   const originalInput = normalizeText(input)
-  if (originalInput.length < 4) {
-    throw new GraphQLError('請輸入較完整的報題發想', {
+  if (originalInput.length < 3) {
+    throw new GraphQLError('至少輸入 3 個字才能送出', {
       extensions: { code: 'BAD_USER_INPUT' },
     })
   }
