@@ -1,5 +1,7 @@
 FROM node:22-slim
 
+ARG GCSFUSE_VERSION=3.11.2
+
 ## Install system dependencies, `gcsfuse` in particular.
 RUN set -e; \
     apt-get update -y && apt-get install -y \
@@ -10,12 +12,12 @@ RUN set -e; \
     openssl \
     lsb-release; \
     gcsFuseRepo=gcsfuse-`lsb_release -c -s`; \
-    echo "deb http://packages.cloud.google.com/apt $gcsFuseRepo main" | \
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/gcsfuse.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/gcsfuse.gpg] https://packages.cloud.google.com/apt $gcsFuseRepo main" | \
     tee /etc/apt/sources.list.d/gcsfuse.list; \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    apt-key add -; \
     apt-get update; \
-    apt-get install -y gcsfuse \
+    apt-get install -y "gcsfuse=${GCSFUSE_VERSION}" \
     && apt-get clean
 
 ENV APP_DIR /app
