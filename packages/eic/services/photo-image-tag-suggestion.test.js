@@ -173,6 +173,50 @@ test('suggestPhotoTagsFromImageLabels uses tag embedding fallback within the con
   ])
 })
 
+test('suggestPhotoTagsFromImageLabels matches a detected person with the 人物 tag', async () => {
+  mockGenerateContent.mockResolvedValue({
+    text: JSON.stringify({
+      translations: [{ label: '人物', translatedName: '人類' }],
+    }),
+  })
+
+  const findTag = jest.fn().mockImplementation(({ where }) =>
+    Promise.resolve(
+      where.name === '人物' ? { id: 13, name: '人物' } : null
+    )
+  )
+  const context = {
+    session: createSession(),
+    prisma: {
+      Photo: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 12,
+          imageLabelSuggestions: [
+            { tag: 'human', label: 'Human', score: 0.9 },
+          ],
+          tags: [],
+        }),
+      },
+      Tag: { findUnique: findTag },
+    },
+  }
+
+  const {
+    suggestPhotoTagsFromImageLabels,
+  } = require('./photo-image-tag-suggestion')
+
+  const result = await suggestPhotoTagsFromImageLabels(context, 12)
+
+  expect(findTag).toHaveBeenCalledWith({ where: { name: '人物' } })
+  expect(result.candidates[0]).toMatchObject({
+    sourceTag: 'person',
+    sourceLabel: '人物',
+    translatedName: '人物',
+    matchedTag: { id: '13', name: '人物' },
+    matchType: 'exact',
+  })
+})
+
 test('applyPhotoImageLabelTags connects only matched tags that are not already related', async () => {
   mockGenerateContent.mockResolvedValue({
     text: JSON.stringify({

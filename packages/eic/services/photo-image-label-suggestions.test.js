@@ -52,3 +52,20 @@ test('normalizePhotoImageLabelSuggestions keeps valid unique suggestions ordered
     },
   ])
 })
+
+test('normalizePhotoImageLabelSuggestions consolidates people labels as 人物', () => {
+  const {
+    normalizePhotoImageLabelSuggestions,
+  } = require('./photo-image-label-suggestions')
+
+  const result = normalizePhotoImageLabelSuggestions([
+    { tag: 'person', label: 'Person', score: 0.91 },
+    { tag: 'human', label: 'Human', score: 0.95 },
+    { tag: 'animal', label: 'Animal', score: 0.92 },
+  ])
+
+  expect(result).toEqual([
+    { tag: 'person', label: '人物', score: 0.95 },
+    { tag: 'animal', label: 'Animal', score: 0.92 },
+  ])
+})

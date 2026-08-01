@@ -8,6 +8,22 @@ export type PhotoImageLabelSuggestion = {
 
 const DEFAULT_LIMIT = 10
 
+const PERSON_LABELS = new Set([
+  'person',
+  'people',
+  'human',
+  'man',
+  'woman',
+  'boy',
+  'girl',
+  'child',
+  'children',
+  'infant',
+  'face',
+  'human face',
+  'portrait',
+])
+
 const normalizeTag = (value: unknown) =>
   typeof value === 'string'
     ? value.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -15,6 +31,13 @@ const normalizeTag = (value: unknown) =>
 
 const normalizeLabel = (value: unknown, fallback: string) =>
   typeof value === 'string' && value.trim() ? value.trim() : fallback
+
+/**
+ * Google Vision may use several labels for people.  Keep the CMS-facing tag
+ * consistent so all of them can match the existing 「人物」 Tag.
+ */
+export const isPersonImageLabel = (...values: unknown[]) =>
+  values.some((value) => PERSON_LABELS.has(normalizeTag(value)))
 
 export const normalizePhotoImageLabelSuggestions = (
   rawSuggestions: unknown,
@@ -37,9 +60,11 @@ export const normalizePhotoImageLabelSuggestions = (
       continue
     }
 
+    const label = normalizeLabel(raw.label, tag)
+    const isPerson = isPersonImageLabel(tag, label)
     const suggestion: PhotoImageLabelSuggestion = {
-      tag,
-      label: normalizeLabel(raw.label, tag),
+      tag: isPerson ? 'person' : tag,
+      label: isPerson ? '人物' : label,
       score,
     }
     const topicality = Number(raw.topicality)
@@ -50,9 +75,9 @@ export const normalizePhotoImageLabelSuggestions = (
       suggestion.source = raw.source.trim()
     }
 
-    const existing = byTag.get(tag)
+    const existing = byTag.get(suggestion.tag)
     if (!existing || suggestion.score > existing.score) {
-      byTag.set(tag, suggestion)
+      byTag.set(suggestion.tag, suggestion)
     }
   }
 

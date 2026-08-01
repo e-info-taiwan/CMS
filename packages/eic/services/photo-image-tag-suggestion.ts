@@ -2,7 +2,10 @@ import { GoogleGenAI } from '@google/genai'
 import type { KeystoneContext } from '@keystone-6/core/types'
 import { GraphQLError } from 'graphql'
 import envVar from '../environment-variables'
-import { normalizePhotoImageLabelSuggestions } from './photo-image-label-suggestions'
+import {
+  isPersonImageLabel,
+  normalizePhotoImageLabelSuggestions,
+} from './photo-image-label-suggestions'
 import { tagEmbeddingService } from './tag-embedding'
 
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor'] as const
@@ -263,8 +266,12 @@ export async function suggestPhotoTagsFromImageLabels(
   const seenMatchedIds = new Set<string>()
 
   for (const suggestion of suggestions) {
-    const translatedName =
-      translations.get(suggestion.label.toLowerCase()) || suggestion.label
+    const translatedName = isPersonImageLabel(
+      suggestion.tag,
+      suggestion.label
+    )
+      ? '人物'
+      : translations.get(suggestion.label.toLowerCase()) || suggestion.label
     const match = await findMatchingTag(context, translatedName)
     const matchedTag = match?.tag ?? null
     if (matchedTag && !seenMatchedIds.has(matchedTag.id)) {
