@@ -164,7 +164,7 @@ export default {
     lexicalLimit: numberFromEnv(POST_IDEA_SUGGESTION_LEXICAL_LIMIT, 20),
   },
   photoSimilarity: {
-    maxDistance: numberFromEnv(PHOTO_SIMILARITY_MAX_DISTANCE, 0.22),
+    maxDistance: numberFromEnv(PHOTO_SIMILARITY_MAX_DISTANCE, 0.12),
     resultLimit: numberFromEnv(PHOTO_SIMILARITY_RESULT_LIMIT, 10),
   },
   featureToggle: {

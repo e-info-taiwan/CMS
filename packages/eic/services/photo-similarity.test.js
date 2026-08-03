@@ -9,7 +9,7 @@ beforeEach(() => {
   process.env = {
     ...ORIGINAL_ENV,
     FEATURE_TOGGLE_PHOTO_VECTOR: 'true',
-    PHOTO_SIMILARITY_MAX_DISTANCE: '0.22',
+    PHOTO_SIMILARITY_MAX_DISTANCE: '0.12',
     PHOTO_SIMILARITY_RESULT_LIMIT: '4',
   }
 })
@@ -42,7 +42,7 @@ test('findSimilarPhotos filters by max vector distance and preserves pgvector or
   )
   expect(query).toContain('LIMIT $3')
   expect(sourceId).toBe(123)
-  expect(maxDistance).toBe(0.22)
+  expect(maxDistance).toBe(0.12)
   expect(resultLimit).toBe(4)
   expect(findMany).toHaveBeenCalledWith({ where: { id: { in: [30, 10] } } })
   expect(result).toEqual([photo30, photo10])
