@@ -108,6 +108,13 @@ const idFieldAlias = '____id____'
 
 const labelFieldAlias = '____label____'
 
+// label 可能已含先前渲染疊加的 "(id)" 後綴，需先剝除避免重複疊加。
+const withPostIdSuffix = (label: string, id: string) => {
+  const suffix = `(${id})`
+  const base = label.endsWith(suffix) ? label.slice(0, -suffix.length) : label
+  return `${base}${suffix}`
+}
+
 const LoadingIndicatorContext = createContext<{
   count: number
   ref: (element: HTMLElement | null) => void
@@ -243,7 +250,7 @@ export const RelationshipSelect = ({
       ({ [idFieldAlias]: value, [labelFieldAlias]: label, ...data }) => {
         const baseLabel = label || value
         const displayLabel =
-          list.key === 'Post' ? `${baseLabel}(${value})` : baseLabel
+          list.key === 'Post' ? withPostIdSuffix(baseLabel, value) : baseLabel
         return {
           value,
           label: displayLabel,
@@ -350,7 +357,7 @@ export const RelationshipSelect = ({
                   value: state.value.id,
                   label:
                     list.key === 'Post'
-                      ? `${state.value.label}(${state.value.id})`
+                      ? withPostIdSuffix(state.value.label, state.value.id)
                       : state.value.label,
                   // eslint-disable-next-line
                   // @ts-ignore
@@ -391,7 +398,9 @@ export const RelationshipSelect = ({
         value={state.value.map((value) => ({
           value: value.id,
           label:
-            list.key === 'Post' ? `${value.label}(${value.id})` : value.label,
+            list.key === 'Post'
+              ? withPostIdSuffix(value.label, value.id)
+              : value.label,
           data: value.data,
         }))}
         options={options}
