@@ -3677,7 +3677,7 @@ type Mutation {
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
   suggestPostTagsWithAi(postId: ID!): JSON!
   applyPhotoImageLabelTags(photoId: ID!): JSON!
-  suggestPostIdea(input: String!): JSON!
+  suggestPostIdea(input: String!, selectedKeywords: [String!]): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
