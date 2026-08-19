@@ -12,6 +12,9 @@ const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 // 混合檢索：字面比對的詞最短長度與最多取幾個詞。
 const LEXICAL_MIN_TERM_LENGTH = 2
 const LEXICAL_MAX_TERMS = 8
+const KEYWORD_OPTION_LIMIT = 6
+const ENTITY_OPTION_LIMIT = 5
+const LOCATION_OPTION_LIMIT = 5
 
 type PostIdeaStructuredData = {
   normalizedTitle: string
@@ -28,8 +31,6 @@ type KeywordOptionGroup =
   | 'keyword'
   | 'entity'
   | 'location'
-  | 'sectionHint'
-  | 'tagHint'
 
 type KeywordOption = {
   value: string
@@ -139,9 +140,9 @@ const parseStructuredIdea = (text: string): PostIdeaStructuredData => {
   return {
     normalizedTitle,
     summary,
-    keywords: normalizeStringArray(payload.keywords, 10),
-    entities: normalizeStringArray(payload.entities, 10),
-    locations: normalizeStringArray(payload.locations, 10),
+    keywords: normalizeStringArray(payload.keywords, KEYWORD_OPTION_LIMIT),
+    entities: normalizeStringArray(payload.entities, ENTITY_OPTION_LIMIT),
+    locations: normalizeStringArray(payload.locations, LOCATION_OPTION_LIMIT),
     timeScope: normalizeText(payload.timeScope),
     sectionHints: normalizeStringArray(payload.sectionHints, 5),
     tagHints: normalizeStringArray(payload.tagHints, 10),
@@ -235,8 +236,6 @@ const collectKeywordOptions = (
     { group: 'keyword', values: structured.keywords },
     { group: 'entity', values: structured.entities },
     { group: 'location', values: structured.locations },
-    { group: 'sectionHint', values: structured.sectionHints },
-    { group: 'tagHint', values: structured.tagHints },
   ]
   const seen = new Set<string>()
   const options: KeywordOption[] = []
@@ -253,6 +252,26 @@ const collectKeywordOptions = (
       seen.add(key)
       options.push({ value: label, label, group })
     }
+  }
+  return options
+}
+
+const includeSelectedKeywordOptions = (
+  options: KeywordOption[],
+  selectedKeywords: string[]
+) => {
+  const seen = new Set(options.map((option) => option.value.toLowerCase()))
+  for (const keyword of selectedKeywords) {
+    const label = normalizeText(keyword)
+    if (!label) {
+      continue
+    }
+    const key = label.toLowerCase()
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    options.push({ value: label, label, group: 'keyword' })
   }
   return options
 }
@@ -741,6 +760,9 @@ export async function suggestPostIdea(
     selectedKeywordsInput == null
       ? undefined
       : normalizeSelectedKeywords(selectedKeywordsInput)
+  if (selectedKeywords) {
+    includeSelectedKeywordOptions(keywordOptions, selectedKeywords)
+  }
 
   if (selectedKeywords === undefined) {
     return {
