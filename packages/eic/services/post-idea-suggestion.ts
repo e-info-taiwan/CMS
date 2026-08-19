@@ -77,6 +77,39 @@ type PostResult = {
   tags: { name: string }[]
 }
 
+type PostIdeaDebugPost = {
+  id: string
+  title: string
+  distance: number | null
+  score: number | null
+  lexicalMatch: boolean
+  matchedEntities: string[]
+  matchedKeywords: string[]
+}
+
+type PostIdeaSuggestionDebug = {
+  originalInput: string
+  queryText: string
+  keywordOptions: string[]
+  selectedKeywords: string[]
+  structured: PostIdeaStructuredData
+  lexicalTerms: string[]
+  vectorCandidateCount: number
+  lexicalPosts: PostIdeaDebugPost[]
+  selectedStrong: PostIdeaDebugPost[]
+  selectedWeak: PostIdeaDebugPost[]
+  analysisPosts: PostIdeaDebugPost[]
+}
+
+type ScoredPostForDebug = {
+  post: PostResult
+  distance: number | null
+  score: number
+  lexicalMatch: boolean
+  matchedEntities: string[]
+  matchedKeywords: string[]
+}
+
 const normalizeText = (value: unknown) =>
   typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
 
@@ -307,6 +340,28 @@ const toFiniteDistance = (value: unknown) => {
   const distance = Number(value)
   return Number.isFinite(distance) ? distance : null
 }
+
+const summarizeDebugPost = (
+  result: ScoredPostForDebug
+): PostIdeaDebugPost => ({
+  id: String(result.post.id),
+  title: result.post.title,
+  distance: result.distance,
+  score: result.score,
+  lexicalMatch: result.lexicalMatch,
+  matchedEntities: result.matchedEntities,
+  matchedKeywords: result.matchedKeywords,
+})
+
+const summarizeRawPost = (post: PostResult): PostIdeaDebugPost => ({
+  id: String(post.id),
+  title: post.title,
+  distance: null,
+  score: null,
+  lexicalMatch: true,
+  matchedEntities: [],
+  matchedKeywords: [],
+})
 
 async function findPostVectorCandidates({
   context,
@@ -843,14 +898,28 @@ export async function suggestPostIdea(
   }
 
   if (selectedKeywords === undefined) {
+    const queryText = buildIdeaQueryText(originalInput, structured)
     return {
       structured,
-      queryText: buildIdeaQueryText(originalInput, structured),
+      queryText,
       keywordOptions,
       needsKeywordSelection: true,
       weakMatch: false,
       results: [],
       analysis: null,
+      debug: {
+        originalInput,
+        queryText,
+        keywordOptions: keywordOptions.map((option) => option.value),
+        selectedKeywords: [],
+        structured,
+        lexicalTerms: [],
+        vectorCandidateCount: 0,
+        lexicalPosts: [],
+        selectedStrong: [],
+        selectedWeak: [],
+        analysisPosts: [],
+      } as PostIdeaSuggestionDebug,
     }
   }
 
@@ -908,6 +977,19 @@ export async function suggestPostIdea(
       weakMatch: false,
       results: [],
       analysis: null,
+      debug: {
+        originalInput,
+        queryText,
+        keywordOptions: keywordOptions.map((option) => option.value),
+        selectedKeywords,
+        structured,
+        lexicalTerms,
+        vectorCandidateCount: vectorCandidates.length,
+        lexicalPosts: [],
+        selectedStrong: [],
+        selectedWeak: [],
+        analysisPosts: [],
+      } as PostIdeaSuggestionDebug,
     }
   }
 
@@ -1030,6 +1112,19 @@ export async function suggestPostIdea(
   // 完整分析：優先讀顯示為相關的文章；沒有時仍用最接近的少量候選，讓 AI 能判斷「資料庫沒有直接報導」。
   const analysisSource =
     selectedStrong.length > 0 ? selectedStrong : scored.slice(0, 5)
+  const debug: PostIdeaSuggestionDebug = {
+    originalInput,
+    queryText,
+    keywordOptions: keywordOptions.map((option) => option.value),
+    selectedKeywords,
+    structured,
+    lexicalTerms,
+    vectorCandidateCount: vectorCandidates.length,
+    lexicalPosts: lexicalPosts.map(summarizeRawPost),
+    selectedStrong: selectedStrong.map(summarizeDebugPost),
+    selectedWeak: selectedWeak.map(summarizeDebugPost),
+    analysisPosts: analysisSource.map(summarizeDebugPost),
+  }
   let analysis: PostIdeaCoverageAnalysis | null = null
   try {
     analysis = await withTimeout(
@@ -1058,5 +1153,6 @@ export async function suggestPostIdea(
     weakMatch,
     results,
     analysis,
+    debug,
   }
 }
