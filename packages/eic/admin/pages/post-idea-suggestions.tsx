@@ -337,10 +337,6 @@ function DebugPostList({ posts }: { posts?: DebugPost[] }) {
 }
 
 function DebugSection({ debug }: { debug?: SuggestionDebug }) {
-  if (!debug) {
-    return null
-  }
-
   const rowStyle: React.CSSProperties = {
     display: 'grid',
     gap: 6,
@@ -349,6 +345,7 @@ function DebugSection({ debug }: { debug?: SuggestionDebug }) {
 
   return (
     <details
+      open
       style={{
         marginTop: 28,
         border: '1px dashed #cbd5e1',
@@ -361,6 +358,11 @@ function DebugSection({ debug }: { debug?: SuggestionDebug }) {
       <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
         Debug：報題建議流程
       </summary>
+      {!debug ? (
+        <div style={{ marginTop: 16, color: '#9ca3af' }}>
+          尚未收到 debug 資料。
+        </div>
+      ) : (
       <div style={{ marginTop: 16, fontSize: 13, lineHeight: 1.5 }}>
         <div style={rowStyle}>
           <strong>原始輸入</strong>
@@ -414,6 +416,7 @@ function DebugSection({ debug }: { debug?: SuggestionDebug }) {
           <DebugPostList posts={debug.analysisPosts} />
         </div>
       </div>
+      )}
     </details>
   )
 }
@@ -704,6 +707,8 @@ export default function PostIdeaSuggestionsPage() {
           </section>
         )}
 
+        {payload && <DebugSection debug={payload.debug} />}
+
         {payload && !needsKeywordSelection && (results.length > 0 || hasAnalysis) && (
           <CoverageAnalysisSection
             analysis={analysis}
@@ -871,7 +876,6 @@ export default function PostIdeaSuggestionsPage() {
           </section>
         )}
 
-        {payload && <DebugSection debug={payload.debug} />}
       </div>
     </PageContainer>
   )
