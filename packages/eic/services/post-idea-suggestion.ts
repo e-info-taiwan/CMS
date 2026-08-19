@@ -13,17 +13,9 @@ const COVERAGE_ANALYSIS_TIMEOUT_MS = 18_000
 // 混合檢索：字面比對的詞最短長度與最多取幾個詞。
 const LEXICAL_MIN_TERM_LENGTH = 2
 const LEXICAL_MAX_TERMS = 8
-const KEYWORD_OPTION_LIMIT = 12
-const ENTITY_OPTION_LIMIT = 5
-const LOCATION_OPTION_LIMIT = 5
-const VECTOR_MAX_DISTANCE_CAP = 0.38
-const VECTOR_CANDIDATE_LIMIT_CAP = 15
-const STRONG_DISTANCE_CAP = 0.3
-const SEMANTIC_ONLY_STRONG_DISTANCE_CAP = 0.12
-const WEAK_RESULT_LIMIT_CAP = 0
-const MAX_RESULTS_CAP = 8
-const LEXICAL_LIMIT_CAP = 5
-const MIN_RELEVANCE_SCORE_CAP = 0.55
+const KEYWORD_OPTION_LIMIT = 8
+const ENTITY_OPTION_LIMIT = 10
+const LOCATION_OPTION_LIMIT = 10
 const BROAD_KEYWORD_BLOCKLIST = new Set([
   '台灣',
   '全球',
@@ -31,7 +23,6 @@ const BROAD_KEYWORD_BLOCKLIST = new Set([
   '國際',
   '世界',
 ])
-const COMPOUND_ANCHOR_TERMS = ['太陽光電', '光電', '濕地']
 
 type PostIdeaStructuredData = {
   normalizedTitle: string
@@ -235,7 +226,7 @@ async function callGeminiForStructuredIdea(
 {
   "normalizedTitle": "用一句完整中文標題整理報題方向",
   "summary": "用 1 到 3 句整理核心議題、衝突、可能角度",
-  "keywords": ["請提供 8 到 12 個具體關鍵詞，避免地點、機關名稱、人物、國家範圍或過於抽象的詞"],
+  "keywords": ["最多 8 個具體關鍵詞，避免地點、機關名稱、人物、國家範圍或過於抽象的詞"],
   "entities": ["人物、機關、組織、公司"],
   "locations": ["地點"],
   "timeScope": "近期、歷史脈絡、長期追蹤，或空字串",
@@ -264,14 +255,13 @@ const buildIdeaQueryText = (
   structured: PostIdeaStructuredData,
   selectedKeywords?: string[]
 ) => {
-  if (selectedKeywords && selectedKeywords.length > 0) {
-    return `報題比對關鍵詞：${selectedKeywords.join('、')}`
-  }
-
   return [
     `原始輸入：${originalInput}`,
     `整理後標題：${structured.normalizedTitle}`,
     `摘要：${structured.summary}`,
+    selectedKeywords && selectedKeywords.length > 0
+      ? `使用者確認要比對的關鍵詞：${selectedKeywords.join('、')}`
+      : '',
     `關鍵詞：${structured.keywords.join('、')}`,
     `實體：${structured.entities.join('、')}`,
     `地點：${structured.locations.join('、')}`,
@@ -286,14 +276,6 @@ const buildIdeaQueryText = (
 const collectKeywordOptions = (
   structured: PostIdeaStructuredData
 ): KeywordOption[] => {
-  const excluded = new Set(
-    [
-      ...structured.entities,
-      ...structured.locations,
-      ...structured.sectionHints,
-      ...structured.tagHints,
-    ].map((item) => item.toLowerCase())
-  )
   const groups: { group: KeywordOptionGroup; values: string[] }[] = [
     { group: 'keyword', values: structured.keywords },
   ]
@@ -309,7 +291,7 @@ const collectKeywordOptions = (
       if (seen.has(key)) {
         continue
       }
-      if (excluded.has(key) || BROAD_KEYWORD_BLOCKLIST.has(label)) {
+      if (BROAD_KEYWORD_BLOCKLIST.has(label)) {
         continue
       }
       seen.add(key)
@@ -321,65 +303,6 @@ const collectKeywordOptions = (
 
 const normalizeSelectedKeywords = (value: unknown) =>
   normalizeStringArray(value, 30)
-
-const filterStructuredBySelectedKeywords = (
-  structured: PostIdeaStructuredData,
-  selectedKeywords: string[]
-): PostIdeaStructuredData => {
-  const selected = new Set(selectedKeywords.map((item) => item.toLowerCase()))
-  const keepSelected = (items: string[]) =>
-    items.filter((item) => selected.has(item.toLowerCase()))
-
-  return {
-    ...structured,
-    keywords: keepSelected(structured.keywords),
-    entities: keepSelected(structured.entities),
-    locations: keepSelected(structured.locations),
-    sectionHints: keepSelected(structured.sectionHints),
-    tagHints: keepSelected(structured.tagHints),
-  }
-}
-
-const collectAnchorTerms = (
-  structured: PostIdeaStructuredData,
-  originalInput: string
-) => {
-  const raw = [...structured.entities, ...structured.locations]
-  if (originalInput.length <= 16) {
-    raw.push(originalInput)
-    for (const term of COMPOUND_ANCHOR_TERMS) {
-      if (term === '光電' && originalInput.includes('太陽光電')) {
-        continue
-      }
-      if (!originalInput.includes(term)) {
-        continue
-      }
-      const parts = originalInput.split(term)
-      raw.push(term)
-      for (const part of parts) {
-        if (part.length >= LEXICAL_MIN_TERM_LENGTH && part.length <= 8) {
-          raw.push(part)
-        }
-      }
-    }
-  }
-
-  const seen = new Set<string>()
-  const anchors: string[] = []
-  for (const value of raw) {
-    const text = normalizeText(value)
-    if (text.length < LEXICAL_MIN_TERM_LENGTH) {
-      continue
-    }
-    const key = text.toLowerCase()
-    if (seen.has(key) || BROAD_KEYWORD_BLOCKLIST.has(text)) {
-      continue
-    }
-    seen.add(key)
-    anchors.push(text)
-  }
-  return anchors
-}
 
 const toFiniteDistance = (value: unknown) => {
   const distance = Number(value)
@@ -394,11 +317,6 @@ async function findPostVectorCandidates({
   embedding: number[]
 }) {
   const config = envVar.postIdeaSuggestion
-  const maxDistance = Math.min(config.maxDistance, VECTOR_MAX_DISTANCE_CAP)
-  const candidateLimit = Math.min(
-    config.candidateLimit,
-    VECTOR_CANDIDATE_LIMIT_CAP
-  )
   const rows = (await context.prisma.$queryRawUnsafe(
     `SELECT pv."post" AS "postId",
             pv."sourcePreview",
@@ -413,8 +331,8 @@ async function findPostVectorCandidates({
     toVectorLiteral(embedding),
     POST_VECTOR_KIND_DOCUMENT,
     envVar.tagEmbedding.vertex.model,
-    maxDistance,
-    candidateLimit
+    config.maxDistance,
+    config.candidateLimit
   )) as PostVectorCandidateRow[]
 
   return rows
@@ -879,24 +797,11 @@ export async function suggestPostIdea(
     })
   }
 
-  const originalStructured = structured
-  const anchorTerms = collectAnchorTerms(originalStructured, originalInput)
-  structured = filterStructuredBySelectedKeywords(
-    originalStructured,
-    selectedKeywords
-  )
   const queryText = buildIdeaQueryText(
     originalInput,
     structured,
-    [...anchorTerms, ...selectedKeywords]
+    selectedKeywords
   )
-  const scoringStructured: PostIdeaStructuredData = {
-    ...structured,
-    keywords: normalizeStringArray(
-      [...anchorTerms, ...selectedKeywords],
-      KEYWORD_OPTION_LIMIT + anchorTerms.length
-    ),
-  }
   const config = envVar.postIdeaSuggestion
 
   let embedding: number[] = []
@@ -914,16 +819,16 @@ export async function suggestPostIdea(
 
   // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
   const lexicalTerms = collectLexicalTerms(
-    scoringStructured,
+    structured,
     originalInput,
-    [...anchorTerms, ...selectedKeywords]
+    selectedKeywords
   )
   let lexicalPosts: PostResult[] = []
   try {
     lexicalPosts = await findLexicalPosts({
       context,
       terms: lexicalTerms,
-      limit: Math.min(config.lexicalLimit, LEXICAL_LIMIT_CAP),
+      limit: config.lexicalLimit,
     })
   } catch (error) {
     console.error('[post-idea-suggestion] lexical search error', error)
@@ -932,7 +837,7 @@ export async function suggestPostIdea(
 
   if (vectorCandidates.length === 0 && lexicalPosts.length === 0) {
     return {
-      structured: originalStructured,
+      structured,
       queryText,
       keywordOptions,
       selectedKeywords,
@@ -1011,42 +916,21 @@ export async function suggestPostIdea(
         distance: vector ? vector.distance : null,
         lexicalMatch,
         matchedEntities: lexicalMatch ? matchedEntitiesFor(post) : [],
-        structured: scoringStructured,
+        structured,
       })
     })
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score)
 
-  // 相關／不相關分流：避免只因向量距離看似接近，就把文字完全沒命中的文章列為相關。
-  const isStrong = (item: ReturnType<typeof scorePost>) => {
-    const matchedKeyword = item.matchedKeywords.length > 0
-    const matchedAnchor = item.matchedKeywords.some((keyword) =>
-      anchorTerms.includes(keyword)
-    )
-    const strongDistance =
-      item.distance !== null &&
-      item.distance <= Math.min(config.strongDistance, STRONG_DISTANCE_CAP)
-    const veryStrongSemantic =
-      item.distance !== null &&
-      item.distance <= SEMANTIC_ONLY_STRONG_DISTANCE_CAP
-    if (veryStrongSemantic) {
-      return true
-    }
-    if (item.lexicalMatch && matchedAnchor) {
-      return true
-    }
-    return (
-      matchedKeyword &&
-      (item.lexicalMatch || strongDistance) &&
-      item.score >= MIN_RELEVANCE_SCORE_CAP
-    )
-  }
-  const selectedStrong = scored
-    .filter(isStrong)
-    .slice(0, Math.min(config.maxResults, MAX_RESULTS_CAP))
+  // 相關／不相關分流：字面命中、或向量距離 <= strongDistance 視為「較相關」；
+  // 其餘為「較不相關」。兩組都回傳、各自有上限，前端分開呈現，時間軸只放較相關。
+  const isStrong = (item: ReturnType<typeof scorePost>) =>
+    item.lexicalMatch ||
+    (item.distance !== null && item.distance <= config.strongDistance)
+  const selectedStrong = scored.filter(isStrong).slice(0, config.maxResults)
   const selectedWeak = scored
     .filter((item) => !isStrong(item))
-    .slice(0, Math.min(config.weakResultLimit, WEAK_RESULT_LIMIT_CAP))
+    .slice(0, config.weakResultLimit)
   const weakMatch = selectedStrong.length === 0
 
   const toResult = (
@@ -1088,7 +972,7 @@ export async function suggestPostIdea(
     analysis = await withTimeout(
       callGeminiForCoverageAnalysis({
         originalInput,
-        structured: originalStructured,
+        structured,
         posts: analysisSource.map((item) => ({
           post: item.post,
           sourcePreview: item.sourcePreview,
@@ -1103,7 +987,7 @@ export async function suggestPostIdea(
   }
 
   return {
-    structured: originalStructured,
+    structured,
     queryText,
     keywordOptions,
     selectedKeywords,
