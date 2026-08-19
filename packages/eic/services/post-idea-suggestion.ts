@@ -7,9 +7,9 @@ import { tagEmbeddingService, toVectorLiteral } from './tag-embedding'
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 const POST_VECTOR_KIND_DOCUMENT = 'document'
 // 餵給 Gemini 做覆蓋面分析的文章數上限與每篇摘要長度，控制 token 與延遲。
-const ANALYSIS_POST_LIMIT = 5
+const ANALYSIS_POST_LIMIT = 10
 const ANALYSIS_PREVIEW_MAX_LENGTH = 320
-const COVERAGE_ANALYSIS_TIMEOUT_MS = 18_000
+const COVERAGE_ANALYSIS_TIMEOUT_MS = 30_000
 // 混合檢索：字面比對的詞最短長度。
 const LEXICAL_MIN_TERM_LENGTH = 2
 const KEYWORD_OPTION_LIMIT = 8
@@ -21,6 +21,18 @@ const BROAD_KEYWORD_BLOCKLIST = new Set([
   '國內',
   '國際',
   '世界',
+])
+const GENERIC_STANDALONE_LEXICAL_TERMS = new Set([
+  '開發',
+  '爭議',
+  '政策',
+  '政策爭議',
+  '開發案',
+  '環境部',
+  '地方政府',
+  '開發商',
+  '環保團體',
+  '能源局',
 ])
 
 type PostIdeaStructuredData = {
@@ -93,12 +105,15 @@ type PostIdeaSuggestionDebug = {
   keywordOptions: string[]
   selectedKeywords: string[]
   structured: PostIdeaStructuredData
+  anchorTerms: string[]
+  conceptTerms: string[]
   lexicalTerms: string[]
   vectorCandidateCount: number
   lexicalPosts: PostIdeaDebugPost[]
   selectedStrong: PostIdeaDebugPost[]
   selectedWeak: PostIdeaDebugPost[]
   analysisPosts: PostIdeaDebugPost[]
+  analysisError: string | null
 }
 
 type ScoredPostForDebug = {
@@ -482,19 +497,7 @@ const collectInputAnchorTerms = (
   return anchors
 }
 
-// 從結構化結果取出要拿去「字面比對」的詞：以地點、實體為主，較短的原始輸入也納入
-// （例如直接打「知本濕地」）。過濾掉太短的詞並去重。
-const collectLexicalTerms = (
-  structured: PostIdeaStructuredData,
-  originalInput: string,
-  selectedKeywords: string[] = []
-) => {
-  const raw = [
-    ...structured.locations,
-    ...structured.entities,
-    ...collectInputAnchorTerms(originalInput, selectedKeywords),
-    ...selectedKeywords,
-  ]
+const uniqueSearchTerms = (raw: string[]) => {
   const seen = new Set<string>()
   const terms: string[] = []
   for (const item of raw) {
@@ -510,6 +513,49 @@ const collectLexicalTerms = (
     terms.push(text)
   }
   return terms
+}
+
+const isGenericStandaloneTerm = (term: string) =>
+  term.length < 3 || GENERIC_STANDALONE_LEXICAL_TERMS.has(term)
+
+// 將使用者原始發想拆成兩種搜尋訊號：
+// anchorTerms 是主題錨點，可單獨撈文章；conceptTerms 是角度詞，只做加分或 fallback。
+const collectLexicalSearchTerms = (
+  structured: PostIdeaStructuredData,
+  originalInput: string,
+  selectedKeywords: string[] = []
+) => {
+  const normalizedInput = normalizeText(originalInput)
+  const inputAnchors = collectInputAnchorTerms(normalizedInput, selectedKeywords)
+  const locationTerms = structured.locations
+  const entityTerms = structured.entities.filter((term) =>
+    normalizedInput.includes(term)
+  )
+  const anchorTerms = uniqueSearchTerms([
+    ...locationTerms,
+    ...entityTerms,
+    ...inputAnchors,
+  ]).filter(
+    (term) =>
+      !selectedKeywords.some(
+        (keyword) => keyword.toLowerCase() === term.toLowerCase()
+      ) && !isGenericStandaloneTerm(term)
+  )
+  const conceptTerms = uniqueSearchTerms([
+    ...selectedKeywords,
+    ...structured.keywords,
+    ...structured.entities,
+  ])
+  const fallbackConceptTerms = conceptTerms.filter(
+    (term) => !isGenericStandaloneTerm(term)
+  )
+
+  return {
+    anchorTerms,
+    conceptTerms,
+    fallbackConceptTerms,
+    lexicalTerms: uniqueSearchTerms([...anchorTerms, ...conceptTerms]),
+  }
 }
 
 const POST_SELECT_FIELDS = {
@@ -528,13 +574,16 @@ const POST_SELECT_FIELDS = {
 // 因此即使向量沒撈到、甚至該文沒有向量，具體地名／機構文章也會被找出來。
 async function findLexicalPosts({
   context,
-  terms,
+  anchorTerms,
+  fallbackConceptTerms,
   limit,
 }: {
   context: KeystoneContext
-  terms: string[]
+  anchorTerms: string[]
+  fallbackConceptTerms: string[]
   limit: number
 }): Promise<PostResult[]> {
+  const terms = anchorTerms.length > 0 ? anchorTerms : fallbackConceptTerms
   if (terms.length === 0) {
     return []
   }
@@ -642,25 +691,12 @@ const scorePost = ({
   const hintTerms = [...structured.sectionHints, ...structured.tagHints]
   const hintScore =
     hintTerms.length > 0 ? matchedHints.length / hintTerms.length : 0
-  const shouldBoostRecent = /近期|最近|最新|今年|本週|本月|今日|昨天/.test(
-    structured.timeScope
-  )
-  const ageDays =
-    (Date.now() - post.publishTime.getTime()) / (1000 * 60 * 60 * 24)
-  const recencyScore = shouldBoostRecent
-    ? ageDays <= 90
-      ? 1
-      : ageDays <= 365
-      ? 0.5
-      : 0
-    : 0
   const lexicalScore = lexicalMatch ? 1 : 0
   const score =
     similarityBase * 0.58 +
-    lexicalScore * 0.2 +
+    lexicalScore * 0.24 +
     keywordScore * 0.12 +
-    hintScore * 0.06 +
-    recencyScore * 0.04
+    hintScore * 0.06
 
   return {
     post,
@@ -673,6 +709,54 @@ const scorePost = ({
     matchedKeywords,
     matchedHints,
   }
+}
+
+const takeUniqueScoredPosts = (
+  target: ReturnType<typeof scorePost>[],
+  posts: ReturnType<typeof scorePost>[],
+  limit: number
+) => {
+  const seen = new Set(target.map((item) => item.post.id))
+  for (const item of posts) {
+    if (seen.has(item.post.id)) {
+      continue
+    }
+    seen.add(item.post.id)
+    target.push(item)
+    if (target.length >= limit) {
+      break
+    }
+  }
+}
+
+const selectAnalysisPosts = ({
+  selectedStrong,
+  scored,
+  anchorTerms,
+}: {
+  selectedStrong: ReturnType<typeof scorePost>[]
+  scored: ReturnType<typeof scorePost>[]
+  anchorTerms: string[]
+}) => {
+  const anchorSet = new Set(anchorTerms.map((term) => term.toLowerCase()))
+  const hasAnchorMatch = (item: ReturnType<typeof scorePost>) =>
+    item.matchedEntities.some((term) => anchorSet.has(term.toLowerCase()))
+  const selected: ReturnType<typeof scorePost>[] = []
+
+  takeUniqueScoredPosts(
+    selected,
+    selectedStrong.filter(hasAnchorMatch),
+    ANALYSIS_POST_LIMIT
+  )
+  takeUniqueScoredPosts(
+    selected,
+    selectedStrong.filter((item) => item.distance !== null),
+    ANALYSIS_POST_LIMIT
+  )
+  takeUniqueScoredPosts(selected, selectedStrong, ANALYSIS_POST_LIMIT)
+  takeUniqueScoredPosts(selected, scored, ANALYSIS_POST_LIMIT)
+
+  return selected.slice(0, ANALYSIS_POST_LIMIT)
 }
 
 const truncateForAnalysis = (value: string) =>
@@ -913,12 +997,15 @@ export async function suggestPostIdea(
         keywordOptions: keywordOptions.map((option) => option.value),
         selectedKeywords: [],
         structured,
+        anchorTerms: [],
+        conceptTerms: [],
         lexicalTerms: [],
         vectorCandidateCount: 0,
         lexicalPosts: [],
         selectedStrong: [],
         selectedWeak: [],
         analysisPosts: [],
+        analysisError: null,
       } as PostIdeaSuggestionDebug,
     }
   }
@@ -950,16 +1037,19 @@ export async function suggestPostIdea(
   }
 
   // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
-  const lexicalTerms = collectLexicalTerms(
+  const lexicalSearchTerms = collectLexicalSearchTerms(
     structured,
     originalInput,
     selectedKeywords
   )
+  const { anchorTerms, conceptTerms, fallbackConceptTerms, lexicalTerms } =
+    lexicalSearchTerms
   let lexicalPosts: PostResult[] = []
   try {
     lexicalPosts = await findLexicalPosts({
       context,
-      terms: lexicalTerms,
+      anchorTerms,
+      fallbackConceptTerms,
       limit: config.lexicalLimit,
     })
   } catch (error) {
@@ -983,12 +1073,15 @@ export async function suggestPostIdea(
         keywordOptions: keywordOptions.map((option) => option.value),
         selectedKeywords,
         structured,
+        anchorTerms,
+        conceptTerms,
         lexicalTerms,
         vectorCandidateCount: vectorCandidates.length,
         lexicalPosts: [],
         selectedStrong: [],
         selectedWeak: [],
         analysisPosts: [],
+        analysisError: null,
       } as PostIdeaSuggestionDebug,
     }
   }
@@ -1109,23 +1202,14 @@ export async function suggestPostIdea(
     ...selectedWeak.map((item) => toResult(item, 'weak')),
   ]
 
-  // 完整分析：優先讀顯示為相關的文章；沒有時仍用最接近的少量候選，讓 AI 能判斷「資料庫沒有直接報導」。
-  const analysisSource =
-    selectedStrong.length > 0 ? selectedStrong : scored.slice(0, 5)
-  const debug: PostIdeaSuggestionDebug = {
-    originalInput,
-    queryText,
-    keywordOptions: keywordOptions.map((option) => option.value),
-    selectedKeywords,
-    structured,
-    lexicalTerms,
-    vectorCandidateCount: vectorCandidates.length,
-    lexicalPosts: lexicalPosts.map(summarizeRawPost),
-    selectedStrong: selectedStrong.map(summarizeDebugPost),
-    selectedWeak: selectedWeak.map(summarizeDebugPost),
-    analysisPosts: analysisSource.map(summarizeDebugPost),
-  }
+  // 完整分析：優先讀命中主題錨點的文章，再補向量接近與高分文章。
+  const analysisSource = selectAnalysisPosts({
+    selectedStrong,
+    scored,
+    anchorTerms,
+  })
   let analysis: PostIdeaCoverageAnalysis | null = null
+  let analysisError: string | null = null
   try {
     analysis = await withTimeout(
       callGeminiForCoverageAnalysis({
@@ -1141,7 +1225,24 @@ export async function suggestPostIdea(
     )
   } catch (error) {
     console.error('[post-idea-suggestion] coverage analysis error', error)
+    analysisError = error instanceof Error ? error.message : String(error)
     analysis = null
+  }
+  const debug: PostIdeaSuggestionDebug = {
+    originalInput,
+    queryText,
+    keywordOptions: keywordOptions.map((option) => option.value),
+    selectedKeywords,
+    structured,
+    anchorTerms,
+    conceptTerms,
+    lexicalTerms,
+    vectorCandidateCount: vectorCandidates.length,
+    lexicalPosts: lexicalPosts.map(summarizeRawPost),
+    selectedStrong: selectedStrong.map(summarizeDebugPost),
+    selectedWeak: selectedWeak.map(summarizeDebugPost),
+    analysisPosts: analysisSource.map(summarizeDebugPost),
+    analysisError,
   }
 
   return {

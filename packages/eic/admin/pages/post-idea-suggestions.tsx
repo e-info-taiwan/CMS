@@ -91,12 +91,15 @@ type SuggestionDebug = {
   queryText?: string
   keywordOptions?: string[]
   selectedKeywords?: string[]
+  anchorTerms?: string[]
+  conceptTerms?: string[]
   lexicalTerms?: string[]
   vectorCandidateCount?: number
   lexicalPosts?: DebugPost[]
   selectedStrong?: DebugPost[]
   selectedWeak?: DebugPost[]
   analysisPosts?: DebugPost[]
+  analysisError?: string | null
 }
 
 type SuggestionPayload = {
@@ -377,6 +380,14 @@ function DebugSection({ debug }: { debug?: SuggestionDebug }) {
           <div>{tagList(debug.selectedKeywords)}</div>
         </div>
         <div style={rowStyle}>
+          <strong>主題錨點</strong>
+          <div>{tagList(debug.anchorTerms)}</div>
+        </div>
+        <div style={rowStyle}>
+          <strong>概念詞</strong>
+          <div>{tagList(debug.conceptTerms)}</div>
+        </div>
+        <div style={rowStyle}>
           <strong>字面搜尋詞</strong>
           <div>{tagList(debug.lexicalTerms)}</div>
         </div>
@@ -414,6 +425,10 @@ function DebugSection({ debug }: { debug?: SuggestionDebug }) {
         <div style={rowStyle}>
           <strong>完整分析實際讀取文章</strong>
           <DebugPostList posts={debug.analysisPosts} />
+        </div>
+        <div style={rowStyle}>
+          <strong>完整分析錯誤</strong>
+          <div>{debug.analysisError || '無'}</div>
         </div>
       </div>
       )}
