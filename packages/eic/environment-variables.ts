@@ -150,17 +150,17 @@ export default {
     resultLimit: numberFromEnv(POST_TITLE_SIMILARITY_RESULT_LIMIT, 8),
   },
   postIdeaSuggestion: {
-    maxDistance: numberFromEnv(POST_IDEA_SUGGESTION_MAX_DISTANCE, 0.45),
-    candidateLimit: numberFromEnv(POST_IDEA_SUGGESTION_CANDIDATE_LIMIT, 25),
+    maxDistance: numberFromEnv(POST_IDEA_SUGGESTION_MAX_DISTANCE, 0.38),
+    candidateLimit: numberFromEnv(POST_IDEA_SUGGESTION_CANDIDATE_LIMIT, 15),
     resultLimit: numberFromEnv(POST_IDEA_SUGGESTION_RESULT_LIMIT, 10),
     // 相關／不相關分流：distance <= strongDistance 視為「較相關」（時間軸與完整清單主區，
     // 上限 maxResults）；strongDistance < distance <= maxDistance 視為「較不相關」，
     // 另以收折區呈現（上限 weakResultLimit）。
-    strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.35),
+    strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.3),
     weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 0),
-    maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 12),
+    maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 8),
     // 混合檢索：只用使用者確認的關鍵詞做字面比對，避免地點／機構拉大範圍。
-    lexicalLimit: numberFromEnv(POST_IDEA_SUGGESTION_LEXICAL_LIMIT, 8),
+    lexicalLimit: numberFromEnv(POST_IDEA_SUGGESTION_LEXICAL_LIMIT, 5),
   },
   photoSimilarity: {
     maxDistance: numberFromEnv(PHOTO_SIMILARITY_MAX_DISTANCE, 0.12),

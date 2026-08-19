@@ -15,12 +15,12 @@ const LEXICAL_MAX_TERMS = 8
 const KEYWORD_OPTION_LIMIT = 12
 const ENTITY_OPTION_LIMIT = 5
 const LOCATION_OPTION_LIMIT = 5
-const VECTOR_MAX_DISTANCE_CAP = 0.45
-const VECTOR_CANDIDATE_LIMIT_CAP = 25
-const STRONG_DISTANCE_CAP = 0.35
+const VECTOR_MAX_DISTANCE_CAP = 0.38
+const VECTOR_CANDIDATE_LIMIT_CAP = 15
+const STRONG_DISTANCE_CAP = 0.3
 const WEAK_RESULT_LIMIT_CAP = 0
-const MAX_RESULTS_CAP = 12
-const LEXICAL_LIMIT_CAP = 8
+const MAX_RESULTS_CAP = 8
+const LEXICAL_LIMIT_CAP = 5
 const BROAD_KEYWORD_BLOCKLIST = new Set([
   '台灣',
   '全球',
@@ -193,7 +193,7 @@ async function callGeminiForStructuredIdea(
 {
   "normalizedTitle": "用一句完整中文標題整理報題方向",
   "summary": "用 1 到 3 句整理核心議題、衝突、可能角度",
-  "keywords": ["最多 12 個關鍵詞"],
+  "keywords": ["請提供 8 到 12 個具體關鍵詞，避免地點、機關名稱、人物、國家範圍或過於抽象的詞"],
   "entities": ["人物、機關、組織、公司"],
   "locations": ["地點"],
   "timeScope": "近期、歷史脈絡、長期追蹤，或空字串",
