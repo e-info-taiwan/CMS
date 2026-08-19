@@ -7,8 +7,9 @@ import { tagEmbeddingService, toVectorLiteral } from './tag-embedding'
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 const POST_VECTOR_KIND_DOCUMENT = 'document'
 // 餵給 Gemini 做覆蓋面分析的文章數上限與每篇摘要長度，控制 token 與延遲。
-const ANALYSIS_POST_LIMIT = 12
+const ANALYSIS_POST_LIMIT = 5
 const ANALYSIS_PREVIEW_MAX_LENGTH = 320
+const COVERAGE_ANALYSIS_TIMEOUT_MS = 18_000
 // 混合檢索：字面比對的詞最短長度與最多取幾個詞。
 const LEXICAL_MIN_TERM_LENGTH = 2
 const LEXICAL_MAX_TERMS = 8
@@ -160,6 +161,44 @@ const parseStructuredIdea = (text: string): PostIdeaStructuredData => {
     tagHints: normalizeStringArray(payload.tagHints, 10),
   }
 }
+
+const normalizeStructuredIdeaPayload = (
+  value: unknown
+): PostIdeaStructuredData | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  const payload = value as Record<string, unknown>
+  const normalizedTitle = normalizeText(payload.normalizedTitle)
+  const summary = normalizeText(payload.summary)
+  if (!normalizedTitle && !summary) {
+    return null
+  }
+
+  return {
+    normalizedTitle,
+    summary,
+    keywords: normalizeStringArray(payload.keywords, KEYWORD_OPTION_LIMIT),
+    entities: normalizeStringArray(payload.entities, ENTITY_OPTION_LIMIT),
+    locations: normalizeStringArray(payload.locations, LOCATION_OPTION_LIMIT),
+    timeScope: normalizeText(payload.timeScope),
+    sectionHints: normalizeStringArray(payload.sectionHints, 5),
+    tagHints: normalizeStringArray(payload.tagHints, 10),
+  }
+}
+
+const withTimeout = <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+) =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    }),
+  ])
 
 const assertUserCanSuggestPostIdea = (context: KeystoneContext) => {
   const session = context.session as
@@ -717,7 +756,8 @@ ${articleLines}
 export async function suggestPostIdea(
   context: KeystoneContext,
   input: string,
-  selectedKeywordsInput?: string[] | null
+  selectedKeywordsInput?: string[] | null,
+  structuredInput?: unknown
 ) {
   assertUserCanSuggestPostIdea(context)
 
@@ -734,32 +774,33 @@ export async function suggestPostIdea(
     })
   }
 
-  let structured: PostIdeaStructuredData
-  try {
-    structured = await callGeminiForStructuredIdea(originalInput)
-  } catch (error) {
-    console.error('[post-idea-suggestion] Gemini error', error)
-    if (error instanceof Error) {
-      if (error.message === 'GEMINI_API_KEY_NOT_CONFIGURED') {
-        throw new GraphQLError('AI 服務未設定 API 金鑰', {
-          extensions: { code: 'CONFIG_ERROR' },
-        })
-      }
-      if (error.message.startsWith('POST_IDEA_JSON_')) {
-        throw new GraphQLError('AI 回傳的報題結構格式異常，請再試一次', {
-          extensions: { code: 'GEMINI_PARSE_ERROR' },
-        })
-      }
-    }
-    throw new GraphQLError('AI 服務暫時無法使用，請稍後再試', {
-      extensions: { code: 'AI_ERROR' },
-    })
-  }
-
   const selectedKeywords =
     selectedKeywordsInput == null
       ? undefined
       : normalizeSelectedKeywords(selectedKeywordsInput)
+  let structured = normalizeStructuredIdeaPayload(structuredInput)
+  if (!structured) {
+    try {
+      structured = await callGeminiForStructuredIdea(originalInput)
+    } catch (error) {
+      console.error('[post-idea-suggestion] Gemini error', error)
+      if (error instanceof Error) {
+        if (error.message === 'GEMINI_API_KEY_NOT_CONFIGURED') {
+          throw new GraphQLError('AI 服務未設定 API 金鑰', {
+            extensions: { code: 'CONFIG_ERROR' },
+          })
+        }
+        if (error.message.startsWith('POST_IDEA_JSON_')) {
+          throw new GraphQLError('AI 回傳的報題結構格式異常，請再試一次', {
+            extensions: { code: 'GEMINI_PARSE_ERROR' },
+          })
+        }
+      }
+      throw new GraphQLError('AI 服務暫時無法使用，請稍後再試', {
+        extensions: { code: 'AI_ERROR' },
+      })
+    }
+  }
   let keywordOptions =
     selectedKeywords === undefined
       ? collectKeywordOptions(structured)
@@ -984,14 +1025,18 @@ export async function suggestPostIdea(
     selectedStrong.length > 0 ? selectedStrong : scored.slice(0, 5)
   let analysis: PostIdeaCoverageAnalysis | null = null
   try {
-    analysis = await callGeminiForCoverageAnalysis({
-      originalInput,
-      structured,
-      posts: analysisSource.map((item) => ({
-        post: item.post,
-        sourcePreview: item.sourcePreview,
-      })),
-    })
+    analysis = await withTimeout(
+      callGeminiForCoverageAnalysis({
+        originalInput,
+        structured,
+        posts: analysisSource.map((item) => ({
+          post: item.post,
+          sourcePreview: item.sourcePreview,
+        })),
+      }),
+      COVERAGE_ANALYSIS_TIMEOUT_MS,
+      'POST_IDEA_ANALYSIS_TIMEOUT'
+    )
   } catch (error) {
     console.error('[post-idea-suggestion] coverage analysis error', error)
     analysis = null

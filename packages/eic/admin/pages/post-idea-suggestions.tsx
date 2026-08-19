@@ -6,8 +6,16 @@ import { FieldContainer, FieldLabel, TextArea } from '@keystone-ui/fields'
 import { useToasts } from '@keystone-ui/toast'
 
 const SUGGEST_POST_IDEA = gql`
-  mutation SuggestPostIdea($input: String!, $selectedKeywords: [String!]) {
-    suggestPostIdea(input: $input, selectedKeywords: $selectedKeywords)
+  mutation SuggestPostIdea(
+    $input: String!
+    $selectedKeywords: [String!]
+    $structuredInput: JSON
+  ) {
+    suggestPostIdea(
+      input: $input
+      selectedKeywords: $selectedKeywords
+      structuredInput: $structuredInput
+    )
   }
 `
 
@@ -352,7 +360,11 @@ export default function PostIdeaSuggestionsPage() {
 
     try {
       const { data } = await mutate({
-        variables: { input: input.trim(), selectedKeywords: keywords },
+        variables: {
+          input: input.trim(),
+          selectedKeywords: keywords,
+          structuredInput: keywords ? payload?.structured ?? null : null,
+        },
       })
       const nextPayload = data?.suggestPostIdea as SuggestionPayload | undefined
       if (nextPayload?.needsKeywordSelection) {
@@ -374,7 +386,7 @@ export default function PostIdeaSuggestionsPage() {
         tone: 'negative',
       })
     }
-  }, [canSubmit, input, mutate, toasts])
+  }, [canSubmit, input, mutate, payload?.structured, toasts])
 
   const results = payload?.results ?? []
   const rawKeywordOptions = payload?.keywordOptions ?? []

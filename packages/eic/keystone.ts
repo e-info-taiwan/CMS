@@ -273,15 +273,23 @@ export default withAuth(
               selectedKeywords: graphql.arg({
                 type: graphql.list(graphql.nonNull(graphql.String)),
               }),
+              structuredInput: graphql.arg({
+                type: graphql.JSON,
+              }),
             },
-            resolve: async (_source, { input, selectedKeywords }, context) => {
+            resolve: async (
+              _source,
+              { input, selectedKeywords, structuredInput },
+              context
+            ) => {
               if (!envVar.featureToggle.postVector) {
                 throw new Error('報題建議功能目前已停用')
               }
               return suggestPostIdea(
                 context,
                 input as string,
-                selectedKeywords as string[] | null | undefined
+                selectedKeywords as string[] | null | undefined,
+                structuredInput
               )
             },
           }),
