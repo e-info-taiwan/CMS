@@ -10,9 +10,8 @@ const POST_VECTOR_KIND_DOCUMENT = 'document'
 const ANALYSIS_POST_LIMIT = 5
 const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 const COVERAGE_ANALYSIS_TIMEOUT_MS = 18_000
-// 混合檢索：字面比對的詞最短長度與最多取幾個詞。
+// 混合檢索：字面比對的詞最短長度。
 const LEXICAL_MIN_TERM_LENGTH = 2
-const LEXICAL_MAX_TERMS = 8
 const KEYWORD_OPTION_LIMIT = 8
 const ENTITY_OPTION_LIMIT = 10
 const LOCATION_OPTION_LIMIT = 10
@@ -359,6 +358,31 @@ async function findPostVectorCandidates({
 const includesTerm = (text: string, term: string) =>
   Boolean(term) && text.toLowerCase().includes(term.toLowerCase())
 
+const collectInputAnchorTerms = (
+  originalInput: string,
+  selectedKeywords: string[]
+) => {
+  const input = normalizeText(originalInput)
+  if (!input || input.length > 16) {
+    return []
+  }
+
+  const anchors = [input]
+  for (const keyword of selectedKeywords) {
+    const text = normalizeText(keyword)
+    if (!text || !input.includes(text)) {
+      continue
+    }
+    for (const part of input.split(text)) {
+      const anchor = normalizeText(part)
+      if (anchor.length >= LEXICAL_MIN_TERM_LENGTH && anchor.length <= 10) {
+        anchors.push(anchor)
+      }
+    }
+  }
+  return anchors
+}
+
 // 從結構化結果取出要拿去「字面比對」的詞：以地點、實體為主，較短的原始輸入也納入
 // （例如直接打「知本濕地」）。過濾掉太短的詞並去重。
 const collectLexicalTerms = (
@@ -367,13 +391,11 @@ const collectLexicalTerms = (
   selectedKeywords: string[] = []
 ) => {
   const raw = [
-    ...selectedKeywords,
     ...structured.locations,
     ...structured.entities,
+    ...collectInputAnchorTerms(originalInput, selectedKeywords),
+    ...selectedKeywords,
   ]
-  if (originalInput.length <= 12) {
-    raw.push(originalInput)
-  }
   const seen = new Set<string>()
   const terms: string[] = []
   for (const item of raw) {
@@ -387,9 +409,6 @@ const collectLexicalTerms = (
     }
     seen.add(key)
     terms.push(text)
-    if (terms.length >= LEXICAL_MAX_TERMS) {
-      break
-    }
   }
   return terms
 }
