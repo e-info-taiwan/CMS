@@ -15,6 +15,19 @@ const LEXICAL_MAX_TERMS = 8
 const KEYWORD_OPTION_LIMIT = 6
 const ENTITY_OPTION_LIMIT = 5
 const LOCATION_OPTION_LIMIT = 5
+const VECTOR_MAX_DISTANCE_CAP = 0.45
+const VECTOR_CANDIDATE_LIMIT_CAP = 25
+const STRONG_DISTANCE_CAP = 0.35
+const WEAK_RESULT_LIMIT_CAP = 0
+const MAX_RESULTS_CAP = 12
+const LEXICAL_LIMIT_CAP = 8
+const BROAD_KEYWORD_BLOCKLIST = new Set([
+  '台灣',
+  '全球',
+  '國內',
+  '國際',
+  '世界',
+])
 
 type PostIdeaStructuredData = {
   normalizedTitle: string
@@ -208,14 +221,15 @@ const buildIdeaQueryText = (
   originalInput: string,
   structured: PostIdeaStructuredData,
   selectedKeywords?: string[]
-) =>
-  [
+) => {
+  if (selectedKeywords && selectedKeywords.length > 0) {
+    return `報題比對關鍵詞：${selectedKeywords.join('、')}`
+  }
+
+  return [
     `原始輸入：${originalInput}`,
     `整理後標題：${structured.normalizedTitle}`,
     `摘要：${structured.summary}`,
-    selectedKeywords && selectedKeywords.length > 0
-      ? `使用者確認要比對的關鍵詞：${selectedKeywords.join('、')}`
-      : '',
     `關鍵詞：${structured.keywords.join('、')}`,
     `實體：${structured.entities.join('、')}`,
     `地點：${structured.locations.join('、')}`,
@@ -225,10 +239,19 @@ const buildIdeaQueryText = (
   ]
     .filter((line) => !line.endsWith('：'))
     .join('\n')
+}
 
 const collectKeywordOptions = (
   structured: PostIdeaStructuredData
 ): KeywordOption[] => {
+  const excluded = new Set(
+    [
+      ...structured.entities,
+      ...structured.locations,
+      ...structured.sectionHints,
+      ...structured.tagHints,
+    ].map((item) => item.toLowerCase())
+  )
   const groups: { group: KeywordOptionGroup; values: string[] }[] = [
     { group: 'keyword', values: structured.keywords },
   ]
@@ -242,6 +265,9 @@ const collectKeywordOptions = (
       }
       const key = label.toLowerCase()
       if (seen.has(key)) {
+        continue
+      }
+      if (excluded.has(key) || BROAD_KEYWORD_BLOCKLIST.has(label)) {
         continue
       }
       seen.add(key)
@@ -305,6 +331,11 @@ async function findPostVectorCandidates({
   embedding: number[]
 }) {
   const config = envVar.postIdeaSuggestion
+  const maxDistance = Math.min(config.maxDistance, VECTOR_MAX_DISTANCE_CAP)
+  const candidateLimit = Math.min(
+    config.candidateLimit,
+    VECTOR_CANDIDATE_LIMIT_CAP
+  )
   const rows = (await context.prisma.$queryRawUnsafe(
     `SELECT pv."post" AS "postId",
             pv."sourcePreview",
@@ -319,8 +350,8 @@ async function findPostVectorCandidates({
     toVectorLiteral(embedding),
     POST_VECTOR_KIND_DOCUMENT,
     envVar.tagEmbedding.vertex.model,
-    config.maxDistance,
-    config.candidateLimit
+    maxDistance,
+    candidateLimit
   )) as PostVectorCandidateRow[]
 
   return rows
@@ -809,7 +840,7 @@ export async function suggestPostIdea(
     lexicalPosts = await findLexicalPosts({
       context,
       terms: lexicalTerms,
-      limit: config.lexicalLimit,
+      limit: Math.min(config.lexicalLimit, LEXICAL_LIMIT_CAP),
     })
   } catch (error) {
     console.error('[post-idea-suggestion] lexical search error', error)
@@ -907,11 +938,14 @@ export async function suggestPostIdea(
   // 其餘為「較不相關」。兩組都回傳、各自有上限，前端分開呈現，時間軸只放較相關。
   const isStrong = (item: ReturnType<typeof scorePost>) =>
     item.lexicalMatch ||
-    (item.distance !== null && item.distance <= config.strongDistance)
-  const selectedStrong = scored.filter(isStrong).slice(0, config.maxResults)
+    (item.distance !== null &&
+      item.distance <= Math.min(config.strongDistance, STRONG_DISTANCE_CAP))
+  const selectedStrong = scored
+    .filter(isStrong)
+    .slice(0, Math.min(config.maxResults, MAX_RESULTS_CAP))
   const selectedWeak = scored
     .filter((item) => !isStrong(item))
-    .slice(0, config.weakResultLimit)
+    .slice(0, Math.min(config.weakResultLimit, WEAK_RESULT_LIMIT_CAP))
   const weakMatch = selectedStrong.length === 0
 
   const toResult = (
