@@ -339,6 +339,32 @@ const filterStructuredBySelectedKeywords = (
   }
 }
 
+const collectAnchorTerms = (
+  structured: PostIdeaStructuredData,
+  originalInput: string
+) => {
+  const raw = [...structured.entities, ...structured.locations]
+  if (originalInput.length <= 16) {
+    raw.push(originalInput)
+  }
+
+  const seen = new Set<string>()
+  const anchors: string[] = []
+  for (const value of raw) {
+    const text = normalizeText(value)
+    if (text.length < LEXICAL_MIN_TERM_LENGTH) {
+      continue
+    }
+    const key = text.toLowerCase()
+    if (seen.has(key) || BROAD_KEYWORD_BLOCKLIST.has(text)) {
+      continue
+    }
+    seen.add(key)
+    anchors.push(text)
+  }
+  return anchors
+}
+
 const toFiniteDistance = (value: unknown) => {
   const distance = Number(value)
   return Number.isFinite(distance) ? distance : null
@@ -837,12 +863,24 @@ export async function suggestPostIdea(
     })
   }
 
-  structured = filterStructuredBySelectedKeywords(structured, selectedKeywords)
+  const originalStructured = structured
+  const anchorTerms = collectAnchorTerms(originalStructured, originalInput)
+  structured = filterStructuredBySelectedKeywords(
+    originalStructured,
+    selectedKeywords
+  )
   const queryText = buildIdeaQueryText(
     originalInput,
     structured,
-    selectedKeywords
+    [...anchorTerms, ...selectedKeywords]
   )
+  const scoringStructured: PostIdeaStructuredData = {
+    ...structured,
+    keywords: normalizeStringArray(
+      [...anchorTerms, ...selectedKeywords],
+      KEYWORD_OPTION_LIMIT + anchorTerms.length
+    ),
+  }
   const config = envVar.postIdeaSuggestion
 
   let embedding: number[] = []
@@ -860,9 +898,9 @@ export async function suggestPostIdea(
 
   // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
   const lexicalTerms = collectLexicalTerms(
-    structured,
+    scoringStructured,
     originalInput,
-    selectedKeywords
+    [...anchorTerms, ...selectedKeywords]
   )
   let lexicalPosts: PostResult[] = []
   try {
@@ -878,7 +916,7 @@ export async function suggestPostIdea(
 
   if (vectorCandidates.length === 0 && lexicalPosts.length === 0) {
     return {
-      structured,
+      structured: originalStructured,
       queryText,
       keywordOptions,
       selectedKeywords,
@@ -957,7 +995,7 @@ export async function suggestPostIdea(
         distance: vector ? vector.distance : null,
         lexicalMatch,
         matchedEntities: lexicalMatch ? matchedEntitiesFor(post) : [],
-        structured,
+        structured: scoringStructured,
       })
     })
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
@@ -966,6 +1004,9 @@ export async function suggestPostIdea(
   // 相關／不相關分流：避免只因向量距離看似接近，就把文字完全沒命中的文章列為相關。
   const isStrong = (item: ReturnType<typeof scorePost>) => {
     const matchedKeyword = item.matchedKeywords.length > 0
+    const matchedAnchor = item.matchedKeywords.some((keyword) =>
+      anchorTerms.includes(keyword)
+    )
     const strongDistance =
       item.distance !== null &&
       item.distance <= Math.min(config.strongDistance, STRONG_DISTANCE_CAP)
@@ -973,6 +1014,9 @@ export async function suggestPostIdea(
       item.distance !== null &&
       item.distance <= SEMANTIC_ONLY_STRONG_DISTANCE_CAP
     if (veryStrongSemantic) {
+      return true
+    }
+    if (item.lexicalMatch && matchedAnchor) {
       return true
     }
     return (
@@ -1028,7 +1072,7 @@ export async function suggestPostIdea(
     analysis = await withTimeout(
       callGeminiForCoverageAnalysis({
         originalInput,
-        structured,
+        structured: originalStructured,
         posts: analysisSource.map((item) => ({
           post: item.post,
           sourcePreview: item.sourcePreview,
@@ -1043,7 +1087,7 @@ export async function suggestPostIdea(
   }
 
   return {
-    structured,
+    structured: originalStructured,
     queryText,
     keywordOptions,
     selectedKeywords,
