@@ -12,7 +12,7 @@ const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 // 混合檢索：字面比對的詞最短長度與最多取幾個詞。
 const LEXICAL_MIN_TERM_LENGTH = 2
 const LEXICAL_MAX_TERMS = 8
-const KEYWORD_OPTION_LIMIT = 6
+const KEYWORD_OPTION_LIMIT = 12
 const ENTITY_OPTION_LIMIT = 5
 const LOCATION_OPTION_LIMIT = 5
 const VECTOR_MAX_DISTANCE_CAP = 0.45
@@ -193,7 +193,7 @@ async function callGeminiForStructuredIdea(
 {
   "normalizedTitle": "用一句完整中文標題整理報題方向",
   "summary": "用 1 到 3 句整理核心議題、衝突、可能角度",
-  "keywords": ["最多 6 個關鍵詞"],
+  "keywords": ["最多 12 個關鍵詞"],
   "entities": ["人物、機關、組織、公司"],
   "locations": ["地點"],
   "timeScope": "近期、歷史脈絡、長期追蹤，或空字串",
