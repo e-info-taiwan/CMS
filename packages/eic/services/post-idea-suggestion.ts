@@ -31,6 +31,7 @@ const BROAD_KEYWORD_BLOCKLIST = new Set([
   '國際',
   '世界',
 ])
+const COMPOUND_ANCHOR_TERMS = ['太陽光電', '光電', '濕地']
 
 type PostIdeaStructuredData = {
   normalizedTitle: string
@@ -346,6 +347,21 @@ const collectAnchorTerms = (
   const raw = [...structured.entities, ...structured.locations]
   if (originalInput.length <= 16) {
     raw.push(originalInput)
+    for (const term of COMPOUND_ANCHOR_TERMS) {
+      if (term === '光電' && originalInput.includes('太陽光電')) {
+        continue
+      }
+      if (!originalInput.includes(term)) {
+        continue
+      }
+      const parts = originalInput.split(term)
+      raw.push(term)
+      for (const part of parts) {
+        if (part.length >= LEXICAL_MIN_TERM_LENGTH && part.length <= 8) {
+          raw.push(part)
+        }
+      }
+    }
   }
 
   const seen = new Set<string>()
