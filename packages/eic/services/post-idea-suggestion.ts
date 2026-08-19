@@ -358,16 +358,60 @@ async function findPostVectorCandidates({
 const includesTerm = (text: string, term: string) =>
   Boolean(term) && text.toLowerCase().includes(term.toLowerCase())
 
+type WordSegment = {
+  segment: string
+  isWordLike?: boolean
+}
+
+type WordSegmenter = {
+  segment(input: string): Iterable<WordSegment>
+}
+
+type SegmenterConstructor = new (
+  locale: string,
+  options: { granularity: 'word' }
+) => WordSegmenter
+
+const segmentInputTerms = (input: string) => {
+  const terms: string[] = []
+  const normalized = normalizeText(input)
+  if (!normalized) {
+    return terms
+  }
+
+  if (normalized.length <= 24) {
+    terms.push(normalized)
+  }
+
+  const intlWithSegmenter = globalThis.Intl as typeof Intl & {
+    Segmenter?: SegmenterConstructor
+  }
+  if (intlWithSegmenter?.Segmenter) {
+    const segmenter = new intlWithSegmenter.Segmenter('zh-TW', {
+      granularity: 'word',
+    })
+    for (const segment of segmenter.segment(normalized)) {
+      if (segment.isWordLike) {
+        terms.push(segment.segment)
+      }
+    }
+  } else {
+    terms.push(...normalized.split(/[，。！？、；：,.!?\s]+/))
+  }
+
+  return terms
+}
+
 const collectInputAnchorTerms = (
   originalInput: string,
   selectedKeywords: string[]
 ) => {
   const input = normalizeText(originalInput)
-  if (!input || input.length > 16) {
+  if (!input) {
     return []
   }
 
-  const anchors = [input]
+  const anchors = segmentInputTerms(input)
   for (const keyword of selectedKeywords) {
     const text = normalizeText(keyword)
     if (!text || !input.includes(text)) {
