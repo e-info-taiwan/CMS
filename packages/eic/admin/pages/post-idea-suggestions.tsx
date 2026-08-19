@@ -65,7 +65,7 @@ type CoverageAnalysis = {
 type KeywordOption = {
   value: string
   label: string
-  group: 'keyword' | 'entity' | 'location'
+  group: 'keyword'
 }
 
 type SuggestionPayload = {
@@ -106,10 +106,6 @@ const keywordGroupLabel = (group: KeywordOption['group']) => {
   switch (group) {
     case 'keyword':
       return '關鍵詞'
-    case 'entity':
-      return '實體'
-    case 'location':
-      return '地點'
     default:
       return '候選詞'
   }

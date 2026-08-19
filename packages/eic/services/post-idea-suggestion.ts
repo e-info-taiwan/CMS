@@ -27,10 +27,7 @@ type PostIdeaStructuredData = {
   tagHints: string[]
 }
 
-type KeywordOptionGroup =
-  | 'keyword'
-  | 'entity'
-  | 'location'
+type KeywordOptionGroup = 'keyword'
 
 type KeywordOption = {
   value: string
@@ -183,7 +180,7 @@ async function callGeminiForStructuredIdea(
 {
   "normalizedTitle": "用一句完整中文標題整理報題方向",
   "summary": "用 1 到 3 句整理核心議題、衝突、可能角度",
-  "keywords": ["最多 10 個關鍵詞"],
+  "keywords": ["最多 6 個關鍵詞"],
   "entities": ["人物、機關、組織、公司"],
   "locations": ["地點"],
   "timeScope": "近期、歷史脈絡、長期追蹤，或空字串",
@@ -234,8 +231,6 @@ const collectKeywordOptions = (
 ): KeywordOption[] => {
   const groups: { group: KeywordOptionGroup; values: string[] }[] = [
     { group: 'keyword', values: structured.keywords },
-    { group: 'entity', values: structured.entities },
-    { group: 'location', values: structured.locations },
   ]
   const seen = new Set<string>()
   const options: KeywordOption[] = []
