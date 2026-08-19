@@ -65,7 +65,7 @@ type CoverageAnalysis = {
 type KeywordOption = {
   value: string
   label: string
-  group: 'keyword'
+  group?: string
 }
 
 type SuggestionPayload = {
@@ -100,15 +100,6 @@ const formatDateShort = (value?: string) => {
     month: '2-digit',
     day: '2-digit',
   })
-}
-
-const keywordGroupLabel = (group: KeywordOption['group']) => {
-  switch (group) {
-    case 'keyword':
-      return '關鍵詞'
-    default:
-      return '候選詞'
-  }
 }
 
 const getPublishTimestamp = (value?: string) => {
@@ -320,7 +311,14 @@ export default function PostIdeaSuggestionsPage() {
   }, [canSubmit, input, mutate, toasts])
 
   const results = payload?.results ?? []
-  const keywordOptions = payload?.keywordOptions ?? []
+  const rawKeywordOptions = payload?.keywordOptions ?? []
+  const keywordOptions = useMemo(
+    () =>
+      rawKeywordOptions.filter(
+        (option) => !option.group || option.group === 'keyword'
+      ),
+    [rawKeywordOptions]
+  )
   const keywordOptionValues = useMemo(
     () => Array.from(new Set(keywordOptions.map((option) => option.value))),
     [keywordOptions]
@@ -451,9 +449,6 @@ export default function PostIdeaSuggestionsPage() {
                         }}
                       />
                       <span>{option.label}</span>
-                      <span style={{ color: '#9ca3af', fontSize: 12 }}>
-                        {keywordGroupLabel(option.group)}
-                      </span>
                     </label>
                   )
                 })}
