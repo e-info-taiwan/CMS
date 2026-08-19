@@ -18,9 +18,11 @@ const LOCATION_OPTION_LIMIT = 5
 const VECTOR_MAX_DISTANCE_CAP = 0.38
 const VECTOR_CANDIDATE_LIMIT_CAP = 15
 const STRONG_DISTANCE_CAP = 0.3
+const SEMANTIC_ONLY_STRONG_DISTANCE_CAP = 0.12
 const WEAK_RESULT_LIMIT_CAP = 0
 const MAX_RESULTS_CAP = 8
 const LEXICAL_LIMIT_CAP = 5
+const MIN_RELEVANCE_SCORE_CAP = 0.55
 const BROAD_KEYWORD_BLOCKLIST = new Set([
   '台灣',
   '全球',
@@ -273,26 +275,6 @@ const collectKeywordOptions = (
       seen.add(key)
       options.push({ value: label, label, group })
     }
-  }
-  return options
-}
-
-const includeSelectedKeywordOptions = (
-  options: KeywordOption[],
-  selectedKeywords: string[]
-) => {
-  const seen = new Set(options.map((option) => option.value.toLowerCase()))
-  for (const keyword of selectedKeywords) {
-    const label = normalizeText(keyword)
-    if (!label) {
-      continue
-    }
-    const key = label.toLowerCase()
-    if (seen.has(key)) {
-      continue
-    }
-    seen.add(key)
-    options.push({ value: label, label, group: 'keyword' })
   }
   return options
 }
@@ -774,20 +756,26 @@ export async function suggestPostIdea(
     })
   }
 
-  const keywordOptions = collectKeywordOptions(structured)
-  if (keywordOptions.length === 0) {
-    keywordOptions.push({
-      value: originalInput,
-      label: originalInput,
-      group: 'keyword',
-    })
-  }
   const selectedKeywords =
     selectedKeywordsInput == null
       ? undefined
       : normalizeSelectedKeywords(selectedKeywordsInput)
-  if (selectedKeywords) {
-    includeSelectedKeywordOptions(keywordOptions, selectedKeywords)
+  let keywordOptions =
+    selectedKeywords === undefined
+      ? collectKeywordOptions(structured)
+      : selectedKeywords.map((keyword) => ({
+          value: keyword,
+          label: keyword,
+          group: 'keyword' as const,
+        }))
+  if (keywordOptions.length === 0) {
+    keywordOptions = [
+      {
+        value: originalInput,
+        label: originalInput,
+        group: 'keyword',
+      },
+    ]
   }
 
   if (selectedKeywords === undefined) {
@@ -934,12 +922,24 @@ export async function suggestPostIdea(
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score)
 
-  // 相關／不相關分流：字面命中、或向量距離 <= strongDistance 視為「較相關」；
-  // 其餘為「較不相關」。兩組都回傳、各自有上限，前端分開呈現，時間軸只放較相關。
-  const isStrong = (item: ReturnType<typeof scorePost>) =>
-    item.lexicalMatch ||
-    (item.distance !== null &&
-      item.distance <= Math.min(config.strongDistance, STRONG_DISTANCE_CAP))
+  // 相關／不相關分流：避免只因向量距離看似接近，就把文字完全沒命中的文章列為相關。
+  const isStrong = (item: ReturnType<typeof scorePost>) => {
+    const matchedKeyword = item.matchedKeywords.length > 0
+    const strongDistance =
+      item.distance !== null &&
+      item.distance <= Math.min(config.strongDistance, STRONG_DISTANCE_CAP)
+    const veryStrongSemantic =
+      item.distance !== null &&
+      item.distance <= SEMANTIC_ONLY_STRONG_DISTANCE_CAP
+    if (veryStrongSemantic) {
+      return true
+    }
+    return (
+      matchedKeyword &&
+      (item.lexicalMatch || strongDistance) &&
+      item.score >= MIN_RELEVANCE_SCORE_CAP
+    )
+  }
   const selectedStrong = scored
     .filter(isStrong)
     .slice(0, Math.min(config.maxResults, MAX_RESULTS_CAP))
@@ -979,9 +979,9 @@ export async function suggestPostIdea(
     ...selectedWeak.map((item) => toResult(item, 'weak')),
   ]
 
-  // 完整分析：讀完相關報導後產出。優先餵「較相關」那組，沒有時退而用較不相關。
+  // 完整分析：優先讀顯示為相關的文章；沒有時仍用最接近的少量候選，讓 AI 能判斷「資料庫沒有直接報導」。
   const analysisSource =
-    selectedStrong.length > 0 ? selectedStrong : selectedWeak
+    selectedStrong.length > 0 ? selectedStrong : scored.slice(0, 5)
   let analysis: PostIdeaCoverageAnalysis | null = null
   try {
     analysis = await callGeminiForCoverageAnalysis({

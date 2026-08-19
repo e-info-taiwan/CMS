@@ -82,7 +82,8 @@ type SuggestionPayload = {
 const tagList = (items?: string[]) =>
   items && items.length > 0 ? items.join('、') : '無'
 
-const formatPercent = (value: number) => `${Math.round(value * 1000) / 10}%`
+const formatDistance = (value: number) =>
+  Math.round(value * 1000) / 1000
 
 const formatDate = (value?: string) => {
   if (!value) return ''
@@ -219,9 +220,9 @@ function ResultCard({ result }: { result: SuggestionResult }) {
           <a href={`/posts/${post.id}`}>{post.title}</a>
         </h3>
         <span style={{ color: '#4b5563', whiteSpace: 'nowrap' }}>
-          {result.similarity != null
-            ? formatPercent(result.similarity)
-            : '實體命中'}
+          {result.distance != null
+            ? `向量距離 ${formatDistance(result.distance)}`
+            : '字面命中'}
         </span>
       </div>
       <div
@@ -253,7 +254,7 @@ function ResultCard({ result }: { result: SuggestionResult }) {
         <div>分類：{tagList(categories)}</div>
         <div>標籤：{tagList(tags)}</div>
         {result.lexicalMatch && (result.matchedEntities?.length ?? 0) > 0 && (
-          <div>實體命中：{tagList(result.matchedEntities)}</div>
+          <div>字面命中：{tagList(result.matchedEntities)}</div>
         )}
         <div>
           命中：{tagList(result.matchedKeywords)} /{' '}
@@ -261,12 +262,77 @@ function ResultCard({ result }: { result: SuggestionResult }) {
         </div>
         <div>
           {result.distance != null
-            ? `distance ${Math.round(result.distance * 1000) / 1000}`
+            ? `distance ${formatDistance(result.distance)}`
             : 'distance —（字面命中，無向量距離）'}
           ，score {Math.round(result.score * 1000) / 1000}
         </div>
       </div>
     </article>
+  )
+}
+
+function CoverageAnalysisSection({
+  analysis,
+  hasAnalysis,
+}: {
+  analysis: CoverageAnalysis | null
+  hasAnalysis: boolean
+}) {
+  return (
+    <section style={{ marginTop: 28 }}>
+      <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>完整分析</h2>
+      {hasAnalysis && analysis ? (
+        <div style={{ display: 'grid', gap: 16 }}>
+          {analysis.overallAssessment && (
+            <div
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 8,
+                padding: 18,
+                background: '#fff',
+                color: '#1f2937',
+                lineHeight: 1.6,
+              }}
+            >
+              {analysis.overallAssessment}
+            </div>
+          )}
+          <div
+            style={{
+              display: 'grid',
+              gap: 16,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            }}
+          >
+            <AnalysisPointCard
+              title="過去報導的面向"
+              points={analysis.coveredAngles}
+            />
+            <AnalysisPointCard
+              title="涉入的機構與重要人物"
+              points={analysis.keyActors}
+            />
+            <AnalysisStringCard
+              title="尚未被充分探討的面向"
+              items={analysis.underexploredAngles}
+              accent
+            />
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 20,
+            background: '#fff',
+            color: '#6b7280',
+          }}
+        >
+          AI 分析這次無法產生，可再按一次「報題建議」重試。
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -487,6 +553,13 @@ export default function PostIdeaSuggestionsPage() {
           </section>
         )}
 
+        {payload && !needsKeywordSelection && (results.length > 0 || hasAnalysis) && (
+          <CoverageAnalysisSection
+            analysis={analysis}
+            hasAnalysis={hasAnalysis}
+          />
+        )}
+
         {payload && !needsKeywordSelection && (
           <section style={{ marginTop: 28 }}>
             <div
@@ -596,9 +669,9 @@ export default function PostIdeaSuggestionsPage() {
                                 {post.title}
                               </a>
                               <span style={{ color: '#9ca3af', fontSize: 13 }}>
-                                {result.similarity != null
-                                  ? formatPercent(result.similarity)
-                                  : '實體命中'}
+                                {result.distance != null
+                                  ? `距離 ${formatDistance(result.distance)}`
+                                  : '字面命中'}
                               </span>
                             </div>
                           </div>
@@ -647,62 +720,6 @@ export default function PostIdeaSuggestionsPage() {
           </section>
         )}
 
-        {payload && !needsKeywordSelection && results.length > 0 && (
-          <section style={{ marginTop: 28 }}>
-            <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>完整分析</h2>
-            {hasAnalysis && analysis ? (
-              <div style={{ display: 'grid', gap: 16 }}>
-                {analysis.overallAssessment && (
-                  <div
-                    style={{
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 8,
-                      padding: 18,
-                      background: '#fff',
-                      color: '#1f2937',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {analysis.overallAssessment}
-                  </div>
-                )}
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: 16,
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  }}
-                >
-                  <AnalysisPointCard
-                    title="過去報導的面向"
-                    points={analysis.coveredAngles}
-                  />
-                  <AnalysisPointCard
-                    title="涉入的機構與重要人物"
-                    points={analysis.keyActors}
-                  />
-                  <AnalysisStringCard
-                    title="尚未被充分探討的面向"
-                    items={analysis.underexploredAngles}
-                    accent
-                  />
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8,
-                  padding: 20,
-                  background: '#fff',
-                  color: '#6b7280',
-                }}
-              >
-                AI 分析這次無法產生，可再按一次「報題建議」重試。
-              </div>
-            )}
-          </section>
-        )}
       </div>
     </PageContainer>
   )
