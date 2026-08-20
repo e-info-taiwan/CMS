@@ -9,7 +9,7 @@
 - [x] `Post`：將 `titleEmbedding` 更新 hook 以 feature toggle 控制，關閉時不執行
 - [x] `RssArticle`：將 `titleEmbedding` 更新 hook 以 feature toggle 控制，關閉時不執行
 - [x] `Photo`：將 `possibleDuplicates` 欄位在 feature toggle 關閉時隱藏
-- [x] `Post`：將 `aiTagSuggestionButton`、`titleSimilarPosts` 在 feature toggle 關閉時隱藏
+- [x] `Post`：將 AI 標籤建議與 `titleSimilarPosts` 在 feature toggle 關閉時隱藏
 - [x] `keystone` GraphQL：
   - [x] `similarPhotos` 在 `photoVector` 關閉時回傳空陣列
   - [x] `similarRssArticlesByPostTitle` 在 `postVector` 關閉時回傳空陣列

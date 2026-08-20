@@ -2396,7 +2396,6 @@ type Post {
   ad: Ad
   tags(where: TagWhereInput! = {}, orderBy: [TagOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TagWhereUniqueInput): [Tag!]
   tagsCount(where: TagWhereInput! = {}): Int
-  aiTagSuggestionButton: JSON
   titleSimilarPosts: JSON
   rssTargets: [String!]
   poll: Poll

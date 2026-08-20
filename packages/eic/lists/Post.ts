@@ -587,24 +587,11 @@ const listConfigurations = list({
       ref: 'Tag.posts',
       label: '標籤',
       many: true,
-    }),
-    aiTagSuggestionButton: virtual({
-      field: graphql.field({
-        type: graphql.JSON,
-        resolve() {
-          return { kind: 'aiTagSuggestion' }
-        },
-      }),
       ui: {
-        views: './lists/views/post/ai-tag-suggestion-button',
-        createView: { fieldMode: 'hidden' },
-        listView: { fieldMode: 'hidden' },
-        itemView: {
-          fieldMode:
-            envVar.featureToggle.postVector && envVar.featureToggle.tagVector
-              ? 'edit'
-              : 'hidden',
-        },
+        views:
+          envVar.featureToggle.postVector && envVar.featureToggle.tagVector
+            ? './lists/views/post/tags-with-ai-suggestion'
+            : undefined,
       },
     }),
     titleSimilarPosts: virtual({
