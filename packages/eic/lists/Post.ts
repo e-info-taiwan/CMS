@@ -588,10 +588,7 @@ const listConfigurations = list({
       label: '標籤',
       many: true,
       ui: {
-        views:
-          envVar.featureToggle.postVector && envVar.featureToggle.tagVector
-            ? './lists/views/post/tags-with-ai-suggestion'
-            : undefined,
+        views: './lists/views/post/tags-with-ai-suggestion',
       },
     }),
     titleSimilarPosts: virtual({
