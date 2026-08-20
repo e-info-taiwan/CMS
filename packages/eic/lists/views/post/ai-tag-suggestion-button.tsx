@@ -43,15 +43,10 @@ export function Field() {
         message: names ? `已連結：${names}` : '完成',
         tone: 'positive',
       })
-      try {
-        client.cache.evict({
-          id: client.cache.identify({ __typename: 'Post', id: itemId }),
-          fieldName: 'tags',
-        })
-        client.cache.gc()
-      } catch (e) {
-        console.warn('[ai-tag-suggestion] cache evict', e)
-      }
+      // The item form keeps its own relationship value.  Evicting this field
+      // alone does not update that value when it started empty, so refetch the
+      // active edit query after the mutation has connected the tags.
+      await client.refetchQueries({ include: 'active' })
     } catch (e: unknown) {
       const msg =
         e && typeof e === 'object' && 'message' in e
