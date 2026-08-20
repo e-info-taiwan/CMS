@@ -43,10 +43,12 @@ export function Field() {
         message: names ? `已連結：${names}` : '完成',
         tone: 'positive',
       })
-      // The item form keeps its own relationship value.  Evicting this field
-      // alone does not update that value when it started empty, so refetch the
-      // active edit query after the mutation has connected the tags.
-      await client.refetchQueries({ include: 'active' })
+      // The item form keeps its own relationship value. Evicting this field
+      // alone does not update that value when it started empty, so refetch its
+      // ItemPage query after the mutation has connected the tags. Do not
+      // refetch every active query: an unrelated field query can fail and make
+      // a successfully applied suggestion appear to have failed.
+      await client.refetchQueries({ include: ['ItemPage'] })
     } catch (e: unknown) {
       const msg =
         e && typeof e === 'object' && 'message' in e
