@@ -28,6 +28,7 @@ const GENERIC_STANDALONE_LEXICAL_TERMS = new Set([
   '政策',
   '政策爭議',
   '開發案',
+  '開發爭議',
   '環境部',
   '地方政府',
   '開發商',
@@ -481,7 +482,7 @@ const collectInputAnchorTerms = (
     return []
   }
 
-  const anchors = segmentInputTerms(input)
+  const anchors = input.length <= 24 ? [input] : []
   for (const keyword of selectedKeywords) {
     const text = normalizeText(keyword)
     if (!text || !input.includes(text)) {
@@ -493,6 +494,9 @@ const collectInputAnchorTerms = (
         anchors.push(anchor)
       }
     }
+  }
+  if (anchors.length === 0 && selectedKeywords.length === 0) {
+    anchors.push(...segmentInputTerms(input))
   }
   return anchors
 }
@@ -1173,7 +1177,20 @@ export async function suggestPostIdea(
   const isStrong = (item: ReturnType<typeof scorePost>) =>
     item.lexicalMatch ||
     (item.distance !== null && item.distance <= config.strongDistance)
-  const selectedStrong = scored.filter(isStrong).slice(0, config.maxResults)
+  const anchorSet = new Set(anchorTerms.map((term) => term.toLowerCase()))
+  const hasAnchorMatch = (item: ReturnType<typeof scorePost>) =>
+    anchorSet.size > 0 &&
+    item.matchedEntities.some((term) => anchorSet.has(term.toLowerCase()))
+  const strongPool = scored.filter(isStrong)
+  const selectedStrong: ReturnType<typeof scorePost>[] = []
+  if (anchorSet.size > 0) {
+    takeUniqueScoredPosts(
+      selectedStrong,
+      strongPool.filter(hasAnchorMatch),
+      config.maxResults
+    )
+  }
+  takeUniqueScoredPosts(selectedStrong, strongPool, config.maxResults)
   const selectedWeak = scored
     .filter((item) => !isStrong(item))
     .slice(0, config.weakResultLimit)
