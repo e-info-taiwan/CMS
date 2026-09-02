@@ -814,6 +814,7 @@ const parseAnalysisPoints = (
     if (!text) {
       continue
     }
+    text = replaceInternalPostReferences(text, fedPosts)
     const seen = new Set<string>()
     const sources: AnalysisPointSource[] = []
     for (const n of rawSources) {
@@ -837,6 +838,26 @@ const parseAnalysisPoints = (
   return points
 }
 
+const replaceInternalPostReferences = (
+  value: unknown,
+  fedPosts: { post: PostResult }[]
+) => {
+  const text = normalizeText(value)
+  if (!text) {
+    return ''
+  }
+
+  const replacementFor = (match: string, rawIndex: string) => {
+    const index = Number(rawIndex)
+    const post = Number.isInteger(index) ? fedPosts[index - 1]?.post : null
+    return post ? `〈${post.title}〉` : match
+  }
+
+  return text
+    .replace(/第\s*([1-9]\d*)\s*(?:篇|則)?\s*報導/g, replacementFor)
+    .replace(/報導\s*([1-9]\d*)/g, replacementFor)
+}
+
 const parseCoverageAnalysis = (
   text: string,
   fedPosts: { post: PostResult }[]
@@ -852,10 +873,16 @@ const parseCoverageAnalysis = (
   }
   const payload = parsed as Record<string, unknown>
   return {
-    overallAssessment: normalizeText(payload.overallAssessment),
+    overallAssessment: replaceInternalPostReferences(
+      payload.overallAssessment,
+      fedPosts
+    ),
     coveredAngles: parseAnalysisPoints(payload.coveredAngles, fedPosts, 12),
     keyActors: parseAnalysisPoints(payload.keyActors, fedPosts, 12),
-    underexploredAngles: normalizeStringArray(payload.underexploredAngles, 12),
+    underexploredAngles: normalizeStringArray(
+      payload.underexploredAngles,
+      12
+    ).map((item) => replaceInternalPostReferences(item, fedPosts)),
   }
 }
 
@@ -923,6 +950,7 @@ ${articleLines}
 
 規則：
 - coveredAngles 與 keyActors 的每一點，都必須在 sources 用上面報導的「編號」標出是從哪幾篇看出來的，至少一篇；不要杜撰沒列在上面的內容。
+- 編號只可以放在 sources 陣列，不要在 overallAssessment、coveredAngles.text、keyActors.text 或 underexploredAngles 文字中寫「報導 1」「第 2 篇報導」這類內部編號；需要提到文章時，請直接寫文章標題。
 - 條目數量依實際內容而定，不要為了整齊硬湊；每個欄位的條數本來就會不一樣，沒有的就少列或給空陣列 []。`
 
   const result = await ai.models.generateContent({
