@@ -722,8 +722,6 @@ export default function PostIdeaSuggestionsPage() {
           </section>
         )}
 
-        {payload && <DebugSection debug={payload.debug} />}
-
         {payload && !needsKeywordSelection && (results.length > 0 || hasAnalysis) && (
           <CoverageAnalysisSection
             analysis={analysis}
