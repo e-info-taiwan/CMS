@@ -76,32 +76,6 @@ type KeywordOption = {
   group?: string
 }
 
-type DebugPost = {
-  id: string
-  title: string
-  distance: number | null
-  score: number | null
-  lexicalMatch: boolean
-  matchedEntities?: string[]
-  matchedKeywords?: string[]
-}
-
-type SuggestionDebug = {
-  originalInput?: string
-  queryText?: string
-  keywordOptions?: string[]
-  selectedKeywords?: string[]
-  anchorTerms?: string[]
-  conceptTerms?: string[]
-  lexicalTerms?: string[]
-  vectorCandidateCount?: number
-  lexicalPosts?: DebugPost[]
-  selectedStrong?: DebugPost[]
-  selectedWeak?: DebugPost[]
-  analysisPosts?: DebugPost[]
-  analysisError?: string | null
-}
-
 type SuggestionPayload = {
   structured?: StructuredIdea
   queryText?: string
@@ -111,7 +85,6 @@ type SuggestionPayload = {
   weakMatch?: boolean
   results?: SuggestionResult[]
   analysis?: CoverageAnalysis | null
-  debug?: SuggestionDebug
 }
 
 const tagList = (items?: string[]) =>
@@ -303,136 +276,6 @@ function ResultCard({ result }: { result: SuggestionResult }) {
         </div>
       </div>
     </article>
-  )
-}
-
-function DebugPostList({ posts }: { posts?: DebugPost[] }) {
-  const list = posts ?? []
-  if (list.length === 0) {
-    return <div style={{ color: '#9ca3af' }}>無</div>
-  }
-  return (
-    <ol style={{ margin: 0, paddingLeft: 20 }}>
-      {list.map((post) => (
-        <li key={post.id} style={{ marginBottom: 8 }}>
-          <a href={`/posts/${post.id}`}>{post.title}</a>
-          <span style={{ color: '#6b7280' }}>
-            {' '}
-            #{post.id}
-            {post.distance != null
-              ? ` · distance ${formatDistance(post.distance)}`
-              : ' · 無向量距離'}
-            {post.score != null
-              ? ` · score ${Math.round(post.score * 1000) / 1000}`
-              : ''}
-            {post.lexicalMatch ? ' · 字面命中' : ''}
-            {(post.matchedEntities?.length ?? 0) > 0
-              ? ` · 命中詞 ${tagList(post.matchedEntities)}`
-              : ''}
-            {(post.matchedKeywords?.length ?? 0) > 0
-              ? ` · 關鍵詞 ${tagList(post.matchedKeywords)}`
-              : ''}
-          </span>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function DebugSection({ debug }: { debug?: SuggestionDebug }) {
-  const rowStyle: React.CSSProperties = {
-    display: 'grid',
-    gap: 6,
-    marginBottom: 14,
-  }
-
-  return (
-    <details
-      open
-      style={{
-        marginTop: 28,
-        border: '1px dashed #cbd5e1',
-        borderRadius: 8,
-        padding: 16,
-        background: '#f8fafc',
-        color: '#334155',
-      }}
-    >
-      <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
-        Debug：報題建議流程
-      </summary>
-      {!debug ? (
-        <div style={{ marginTop: 16, color: '#9ca3af' }}>
-          尚未收到 debug 資料。
-        </div>
-      ) : (
-      <div style={{ marginTop: 16, fontSize: 13, lineHeight: 1.5 }}>
-        <div style={rowStyle}>
-          <strong>原始輸入</strong>
-          <div>{debug.originalInput || '無'}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>候選詞</strong>
-          <div>{tagList(debug.keywordOptions)}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>送出勾選詞</strong>
-          <div>{tagList(debug.selectedKeywords)}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>主題錨點</strong>
-          <div>{tagList(debug.anchorTerms)}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>概念詞</strong>
-          <div>{tagList(debug.conceptTerms)}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>字面搜尋詞</strong>
-          <div>{tagList(debug.lexicalTerms)}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>向量候選數</strong>
-          <div>{debug.vectorCandidateCount ?? 0}</div>
-        </div>
-        <div style={rowStyle}>
-          <strong>向量查詢文字</strong>
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              margin: 0,
-              padding: 12,
-              background: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: 6,
-            }}
-          >
-            {debug.queryText || '無'}
-          </pre>
-        </div>
-        <div style={rowStyle}>
-          <strong>字面命中文章</strong>
-          <DebugPostList posts={debug.lexicalPosts} />
-        </div>
-        <div style={rowStyle}>
-          <strong>較相關文章</strong>
-          <DebugPostList posts={debug.selectedStrong} />
-        </div>
-        <div style={rowStyle}>
-          <strong>較不相關文章</strong>
-          <DebugPostList posts={debug.selectedWeak} />
-        </div>
-        <div style={rowStyle}>
-          <strong>完整分析實際讀取文章</strong>
-          <DebugPostList posts={debug.analysisPosts} />
-        </div>
-        <div style={rowStyle}>
-          <strong>完整分析錯誤</strong>
-          <div>{debug.analysisError || '無'}</div>
-        </div>
-      </div>
-      )}
-    </details>
   )
 }
 
