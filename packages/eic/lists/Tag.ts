@@ -6,7 +6,6 @@ import { relationship, checkbox, integer, text } from '@keystone-6/core/fields'
 import {
   tagEmbeddingService,
   toVectorLiteral,
-  SimilarTag,
 } from '../services/tag-embedding'
 import envVar from '../environment-variables'
 
@@ -15,35 +14,22 @@ const { allowRoles, admin, moderator, editor } = utils.accessControl
 const formatDuplicateTagMessage = (tag: { id: number; name: string }) =>
   `已有相同名稱的標籤「${tag.name}」（ID: ${tag.id}），請改用既有標籤或更換名稱。`
 
-const formatSimilarTagMessage = (tags: SimilarTag[]) => {
-  const tagNames = tags
-    .slice(0, 3)
-    .map(
-      (tag) =>
-        `「${tag.name}」（相似度 ${Math.round(tag.similarity * 1000) / 10}%）`
-    )
-    .join('、')
-
-  return `已有相似標籤：${tagNames}。請優先使用既有標籤，或調整標籤名稱後再新增。`
-}
-
 const listConfigurations = list({
   fields: {
     name: text({
       isIndexed: 'unique',
       label: '標籤名稱',
       validation: { isRequired: true },
+      ui: {
+        views: './lists/views/tag-name-similarity-check',
+      },
     }),
     checkSimilarity: checkbox({
       label: '檢查相似標籤',
       defaultValue: true,
       ui: {
-        createView: {
-          fieldMode: envVar.featureToggle.tagVector ? 'edit' : 'hidden',
-        },
-        itemView: {
-          fieldMode: envVar.featureToggle.tagVector ? 'edit' : 'hidden',
-        },
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -180,38 +166,6 @@ extendedListConfigurations.hooks = {
       return
     }
 
-    if (
-      !envVar.featureToggle.tagVector ||
-      !envVar.tagEmbedding.similarityCheck.enabled ||
-      resolvedData.checkSimilarity === false
-    ) {
-      return
-    }
-
-    try {
-      const embedding = await tagEmbeddingService.generateVertexEmbedding(
-        currentName
-      )
-      const tagId = Number(item?.id)
-      const similarTags = await tagEmbeddingService.findSimilarTags({
-        prisma: context.prisma,
-        embedding,
-        excludeId: Number.isFinite(tagId) ? tagId : undefined,
-      })
-      const tooSimilarTags = similarTags.filter(
-        (tag) =>
-          tag.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
-      )
-
-      if (tooSimilarTags.length > 0) {
-        addValidationError(formatSimilarTagMessage(tooSimilarTags))
-      }
-    } catch (error) {
-      console.error('[Tag embedding] failed to validate similar tags', error)
-      addValidationError(
-        '無法檢查相似標籤，請稍後再試；若持續發生，請聯繫管理員確認 Vertex AI 設定。'
-      )
-    }
   },
   afterOperation: async (args: AfterOperationArgs) => {
     const { operation, item, originalItem, context } = args
@@ -235,17 +189,9 @@ extendedListConfigurations.hooks = {
     const previousName = String(originalItem?.name ?? '').trim()
     const shouldRefreshEmbedding =
       operation === 'create' || currentName !== previousName
-    const shouldResetSimilarityCheck = item?.checkSimilarity === false
 
     if (!Number.isFinite(tagId)) {
       return
-    }
-
-    if (shouldResetSimilarityCheck) {
-      await context.prisma.$executeRawUnsafe(
-        'UPDATE "Tag" SET "checkSimilarity" = true WHERE id = $1',
-        tagId
-      )
     }
 
     if (!shouldRefreshEmbedding) {

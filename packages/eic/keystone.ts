@@ -16,6 +16,7 @@ import {
 import { findSimilarPhotos } from './services/photo-similarity'
 import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
 import { getMemberFavoriteStats } from './services/member-favorite-stats'
+import { checkTagNameSimilarity } from './services/tag-similarity-check'
 import type {
   MemberFavoriteSectionStats,
   MemberFavoriteStats,
@@ -137,6 +138,15 @@ export default withAuth(
       return {
         // For RSS feed generation for querying posts by rssTarget with where clause
         query: {
+          checkTagNameSimilarity: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              name: graphql.arg({ type: graphql.nonNull(graphql.String) }),
+            },
+            resolve: async (_source, { name }, context) => {
+              return checkTagNameSimilarity(context, name)
+            },
+          }),
           postsForRssTarget: graphql.field({
             type: graphql.nonNull(graphql.list(base.object('Post'))),
             args: {
