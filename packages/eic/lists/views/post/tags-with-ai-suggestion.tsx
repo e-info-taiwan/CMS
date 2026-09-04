@@ -1,99 +1,62 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Button } from '@keystone-ui/button'
 import { useToasts } from '@keystone-ui/toast'
-import {
-  gql,
-  useApolloClient,
-  useMutation,
-} from '@keystone-6/core/admin-ui/apollo'
+import { gql, useApolloClient, useMutation } from '@keystone-6/core/admin-ui/apollo'
 import type { FieldProps } from '@keystone-6/core/types'
-import {
-  CardValue,
-  Cell,
-  controller,
-  Field as RelationshipField,
-} from '@keystone-6/core/fields/types/relationship/views'
+import { CardValue, Cell, controller, Field as RelationshipField } from '@keystone-6/core/fields/types/relationship/views'
 
 export { CardValue, Cell, controller }
 
-const SUGGEST_POST_TAGS = gql`
-  mutation SuggestPostTagsWithAi($postId: ID!) {
-    suggestPostTagsWithAi(postId: $postId)
-  }
-`
+const SUGGEST_POST_TAGS = gql`mutation SuggestPostTagsWithAi($postId: ID!) { suggestPostTagsWithAi(postId: $postId) }`
+const APPLY_POST_TAGS = gql`mutation ApplyPostTagCandidates($postId: ID!, $selections: JSON!) { applyPostTagCandidates(postId: $postId, selections: $selections) }`
+type Candidate = { key: string; suggestedName: string; kind: 'featured-existing' | 'existing' | 'new'; existingTag?: { id: string; name: string; isFeatured: boolean } }
+type SuggestPayload = { candidates?: Candidate[] }
+type ApplyPayload = { tags?: { id: string; name: string }[] }
 
-type SuggestPayload = {
-  tags?: { id: string; name: string }[]
-}
+const colors = { 'featured-existing': '#ecfdf5', existing: '#eff6ff', new: '#fff7ed' }
+const labels = { 'featured-existing': '首頁既有標籤', existing: '既有標籤', new: '新建標籤' }
 
-/**
- * Keeps the AI action in the relationship field so it can update the same
- * form value that Keystone serializes when the article is saved.
- */
 export function Field(props: FieldProps<typeof controller>) {
   const { value, onChange } = props
   const client = useApolloClient()
   const toasts = useToasts()
-  const [mutate, { loading }] = useMutation(SUGGEST_POST_TAGS)
-
+  const [suggest, { loading: suggesting }] = useMutation(SUGGEST_POST_TAGS)
+  const [apply, { loading: applying }] = useMutation(APPLY_POST_TAGS)
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const itemId = value.kind === 'many' ? value.id : null
 
-  const run = useCallback(async () => {
-    if (!itemId || value.kind !== 'many' || !onChange) return
-
+  const findSuggestions = useCallback(async () => {
+    if (!itemId) return
     try {
-      const { data } = await mutate({ variables: { postId: itemId } })
-      const payload = data?.suggestPostTagsWithAi as SuggestPayload | undefined
-      const suggestedTags = payload?.tags ?? []
-      const existingIds = new Set(value.value.map((tag) => tag.id))
-      const newTags = suggestedTags
-        .filter((tag) => !existingIds.has(tag.id))
-        .map((tag) => ({ id: tag.id, label: tag.name }))
-
-      onChange({
-        ...value,
-        value: [...value.value, ...newTags],
-      })
-
-      const names = suggestedTags.map((tag) => tag.name).join('、')
-      toasts.addToast({
-        title: '已套用標籤',
-        message: names ? `已連結：${names}` : '完成',
-        tone: 'positive',
-      })
-
-      // Keep Keystone's form baseline in sync with the mutation's direct DB
-      // write. The field has already been updated above, so a refresh failure
-      // cannot hide the applied tags or turn this success into an error.
-      void client.refetchQueries({ include: ['ItemPage'] }).catch((error) => {
-        console.warn('[ai-tag-suggestion] ItemPage refresh failed', error)
-      })
+      const { data } = await suggest({ variables: { postId: itemId } })
+      setCandidates((data?.suggestPostTagsWithAi as SuggestPayload | undefined)?.candidates ?? [])
+      setSelected(new Set())
     } catch (error: unknown) {
-      const message =
-        error && typeof error === 'object' && 'message' in error
-          ? String((error as { message: string }).message)
-          : '請稍後再試'
-      toasts.addToast({
-        title: '建議標籤失敗',
-        message,
-        tone: 'negative',
-      })
+      toasts.addToast({ title: '建議標籤失敗', message: error instanceof Error ? error.message : '請稍後再試', tone: 'negative' })
     }
-  }, [client, itemId, mutate, onChange, toasts, value])
+  }, [itemId, suggest, toasts])
 
-  return (
-    <>
-      <RelationshipField {...props} />
-      {itemId && value.kind === 'many' && (
-        <div style={{ marginTop: 8 }}>
-          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 8px' }}>
-            依內文呼叫 Gemini 產生 3〜5 個標籤，並合併到此欄位。
-          </p>
-          <Button onClick={run} isDisabled={loading || onChange === undefined} tone="active">
-            {loading ? '處理中…' : 'AI 建議並套用標籤'}
-          </Button>
-        </div>
-      )}
-    </>
-  )
+  const applySelected = useCallback(async () => {
+    if (!itemId || value.kind !== 'many' || !onChange || selected.size === 0) return
+    const selections = candidates.filter((item) => selected.has(item.key)).map((item) => item.existingTag ? { existingTagId: item.existingTag.id } : { name: item.suggestedName })
+    try {
+      const { data } = await apply({ variables: { postId: itemId, selections } })
+      const tags = (data?.applyPostTagCandidates as ApplyPayload | undefined)?.tags ?? []
+      const ids = new Set(value.value.map((tag) => tag.id))
+      onChange({ ...value, value: [...value.value, ...tags.filter((tag) => !ids.has(tag.id)).map((tag) => ({ id: tag.id, label: tag.name }))] })
+      setCandidates([])
+      setSelected(new Set())
+      toasts.addToast({ title: '已套用標籤', message: tags.map((tag) => tag.name).join('、'), tone: 'positive' })
+      void client.refetchQueries({ include: ['ItemPage'] })
+    } catch (error: unknown) {
+      toasts.addToast({ title: '套用標籤失敗', message: error instanceof Error ? error.message : '請稍後再試', tone: 'negative' })
+    }
+  }, [apply, candidates, client, itemId, onChange, selected, toasts, value])
+
+  return <><RelationshipField {...props} />{itemId && value.kind === 'many' && <div style={{ marginTop: 8 }}>
+    <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 8px' }}>AI 只產生候選；確認後才連結既有標籤或建立新標籤。</p>
+    <Button onClick={findSuggestions} isDisabled={suggesting || applying} tone="active">{suggesting ? '分析中…' : 'AI 產生標籤候選'}</Button>
+    {candidates.length > 0 && <div style={{ marginTop: 12 }}>{candidates.map((candidate) => <label key={candidate.key} style={{ background: colors[candidate.kind], borderRadius: 6, display: 'block', marginTop: 8, padding: '8px 10px' }}><input type="checkbox" checked={selected.has(candidate.key)} onChange={() => setSelected((current) => { const next = new Set(current); next.has(candidate.key) ? next.delete(candidate.key) : next.add(candidate.key); return next })} /> <strong>{candidate.existingTag?.name ?? candidate.suggestedName}</strong> <span style={{ color: '#6b7280' }}>({labels[candidate.kind]})</span>{candidate.existingTag && candidate.existingTag.name !== candidate.suggestedName ? `，取代 AI 建議「${candidate.suggestedName}」` : ''}</label>)}<div style={{ marginTop: 12 }}><Button onClick={applySelected} isDisabled={selected.size === 0 || applying} tone="positive">{applying ? '套用中…' : '套用選取的標籤'}</Button></div></div>}
+  </div>}</>
 }

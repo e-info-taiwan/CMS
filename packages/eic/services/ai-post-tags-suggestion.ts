@@ -8,9 +8,16 @@ import { tagEmbeddingService } from './tag-embedding'
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 
 export type SuggestPostTagsResult = {
-  tags: { id: string; name: string }[]
+  candidates: PostTagCandidate[]
   geminiSuggestions: string[]
   possibleTypos: { original: string; suggested: string }[]
+}
+
+export type PostTagCandidate = {
+  key: string
+  suggestedName: string
+  kind: 'featured-existing' | 'existing' | 'new'
+  existingTag?: { id: string; name: string; isFeatured: boolean }
 }
 
 export function extractDraftToPlainParagraphs(
@@ -135,17 +142,6 @@ function parseGeminiTagAndTypoJson(text: string): GeminiTagAndTypoResponse {
   }
 }
 
-function formatTypoCandidatesForStorage(
-  possibleTypos: { original: string; suggested: string }[]
-): string {
-  if (possibleTypos.length === 0) {
-    return ''
-  }
-  return possibleTypos
-    .map((item, idx) => `${idx + 1}. ${item.original} -> ${item.suggested}`)
-    .join('\n')
-}
-
 async function callGeminiForTagSuggestions(
   plainText: string
 ): Promise<GeminiTagAndTypoResponse> {
@@ -227,10 +223,10 @@ async function assertUserCanSuggestTagsForPost(
   }
 }
 
-async function resolveOrCreateTag(
+async function resolveTagCandidate(
   context: KeystoneContext,
   suggestedName: string
-): Promise<{ id: string; name: string }> {
+): Promise<PostTagCandidate> {
   const name = suggestedName.trim()
   if (!name) {
     throw new Error('EMPTY_TAG_NAME')
@@ -238,9 +234,19 @@ async function resolveOrCreateTag(
 
   const existingByName = await context.prisma.Tag.findUnique({
     where: { name },
+    select: { id: true, name: true, isFeatured: true },
   })
   if (existingByName) {
-    return { id: String(existingByName.id), name: existingByName.name }
+    return {
+      key: `existing-${existingByName.id}`,
+      suggestedName: name,
+      kind: existingByName.isFeatured ? 'featured-existing' : 'existing',
+      existingTag: {
+        id: String(existingByName.id),
+        name: existingByName.name,
+        isFeatured: existingByName.isFeatured,
+      },
+    }
   }
 
   try {
@@ -249,12 +255,21 @@ async function resolveOrCreateTag(
       prisma: context.prisma,
       embedding,
     })
-    const best = similar[0]
-    if (
-      best &&
-      best.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
-    ) {
-      return { id: String(best.id), name: best.name }
+    const matching = similar.filter(
+      (tag) => tag.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
+    )
+    const best = matching.find((tag) => tag.isFeatured) ?? matching[0]
+    if (best) {
+      return {
+        key: `existing-${best.id}`,
+        suggestedName: name,
+        kind: best.isFeatured ? 'featured-existing' : 'existing',
+        existingTag: {
+          id: String(best.id),
+          name: best.name,
+          isFeatured: best.isFeatured,
+        },
+      }
     }
   } catch (err) {
     console.error(
@@ -267,18 +282,11 @@ async function resolveOrCreateTag(
     )
   }
 
-  const created = await context.db.Tag.createOne({
-    data: {
-      name,
-      checkSimilarity: false,
-    },
-  })
-
-  return { id: String(created.id), name: String(created.name ?? name) }
+  return { key: `new-${name}`, suggestedName: name, kind: 'new' }
 }
 
 /**
- * 讀取文章 draft 內容、呼叫 Gemini 建議標籤、依向量比對或新建標籤，並 connect 到文章。
+ * 讀取文章 draft 內容、呼叫 Gemini 建議標籤並比對既有標籤；不建立或連結任何標籤。
  */
 export async function suggestAndApplyPostTags(
   context: KeystoneContext,
@@ -349,31 +357,73 @@ export async function suggestAndApplyPostTags(
     })
   }
 
-  const resolved: { id: string; name: string }[] = []
-  const seenIds = new Set<string>()
+  const candidates: PostTagCandidate[] = []
+  const seenKeys = new Set<string>()
 
   for (const label of geminiSuggestions) {
-    const tag = await resolveOrCreateTag(context, label)
-    if (seenIds.has(tag.id)) continue
-    seenIds.add(tag.id)
-    resolved.push(tag)
+    const candidate = await resolveTagCandidate(context, label)
+    if (seenKeys.has(candidate.key)) continue
+    seenKeys.add(candidate.key)
+    candidates.push(candidate)
   }
 
-  if (resolved.length === 0) {
+  if (candidates.length === 0) {
     throw new GraphQLError('未能產生任何標籤', {
       extensions: { code: 'BAD_USER_INPUT' },
     })
   }
 
+  return { candidates, geminiSuggestions, possibleTypos }
+}
+
+export async function applyPostTagCandidates(
+  context: KeystoneContext,
+  postIdInput: string | number,
+  selections: unknown
+): Promise<{ tags: { id: string; name: string }[] }> {
+  const postId = Number(postIdInput)
+  if (!Number.isFinite(postId) || !Array.isArray(selections)) {
+    throw new GraphQLError('套用的標籤資料無效', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+  await assertUserCanSuggestTagsForPost(context, postId)
+
+  const tags: { id: string; name: string }[] = []
+  const seenIds = new Set<string>()
+  for (const selection of selections) {
+    if (!selection || typeof selection !== 'object') continue
+    const item = selection as { existingTagId?: unknown; name?: unknown }
+    let tag: { id: string; name: string } | null = null
+    const existingId = Number(item.existingTagId)
+    if (Number.isFinite(existingId)) {
+      const existing = await context.prisma.Tag.findUnique({
+        where: { id: existingId },
+        select: { id: true, name: true },
+      })
+      if (existing) tag = { id: String(existing.id), name: existing.name }
+    } else {
+      const name = String(item.name ?? '').trim()
+      if (!name) continue
+      const existing = await context.prisma.Tag.findUnique({ where: { name } })
+      const created =
+        existing ??
+        (await context.db.Tag.createOne({ data: { name } }))
+      tag = { id: String(created.id), name: String(created.name ?? name) }
+    }
+    if (tag && !seenIds.has(tag.id)) {
+      seenIds.add(tag.id)
+      tags.push(tag)
+    }
+  }
+  if (tags.length === 0) {
+    throw new GraphQLError('請至少選擇一個標籤', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
   await context.prisma.Post.update({
     where: { id: postId },
-    data: {
-      aiPossibleTypos: formatTypoCandidatesForStorage(possibleTypos),
-      tags: {
-        connect: resolved.map((t) => ({ id: Number(t.id) })),
-      },
-    },
+    data: { tags: { connect: tags.map((tag) => ({ id: Number(tag.id) })) } },
   })
-
-  return { tags: resolved, geminiSuggestions, possibleTypos }
+  return { tags }
 }

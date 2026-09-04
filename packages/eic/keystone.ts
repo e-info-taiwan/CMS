@@ -3,7 +3,10 @@ import { listDefinition as lists } from './lists'
 import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
-import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import {
+  applyPostTagCandidates,
+  suggestAndApplyPostTags,
+} from './services/ai-post-tags-suggestion'
 import {
   applyPhotoImageLabelTags,
   suggestPhotoTagsFromImageLabels,
@@ -261,6 +264,16 @@ export default withAuth(
                 throw new Error('AI 標籤建議功能目前已停用')
               }
               return suggestAndApplyPostTags(context, postId as string)
+            },
+          }),
+          applyPostTagCandidates: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              postId: graphql.arg({ type: graphql.nonNull(graphql.ID) }),
+              selections: graphql.arg({ type: graphql.nonNull(graphql.JSON) }),
+            },
+            resolve: async (_source, { postId, selections }, context) => {
+              return applyPostTagCandidates(context, postId as string, selections)
             },
           }),
           applyPhotoImageLabelTags: graphql.field({

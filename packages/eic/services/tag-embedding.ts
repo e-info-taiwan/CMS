@@ -9,6 +9,7 @@ export type SimilarTag = {
   id: number
   name: string
   brief: string | null
+  isFeatured: boolean
   distance: number
   similarity: number
 }
@@ -135,6 +136,7 @@ export class TagEmbeddingService {
       `SELECT id,
               name,
               brief,
+              "isFeatured",
               "textEmbedding3Small" <=> CAST($1 AS vector) AS distance
        FROM "Tag"
        WHERE "textEmbedding3Small" IS NOT NULL
@@ -148,6 +150,7 @@ export class TagEmbeddingService {
       id: number
       name: string
       brief: string | null
+      isFeatured: boolean
       distance: unknown
     }>
 
@@ -161,6 +164,7 @@ export class TagEmbeddingService {
           id: row.id,
           name: row.name,
           brief: row.brief,
+          isFeatured: Boolean(row.isFeatured),
           distance,
           similarity: 1 - distance,
         }
