@@ -11,7 +11,11 @@ export type SuggestPostTagsResult = {
   candidates: PostTagCandidate[]
   geminiSuggestions: string[]
   possibleTypos: { original: string; suggested: string }[]
+  targetCount: number
+  currentTagCount: number
 }
+
+const POST_TAG_TARGET_COUNT = 8
 
 export type PostTagCandidate = {
   key: string
@@ -76,7 +80,7 @@ function parseTagJsonArray(text: string): string[] {
     unique.push(n)
   }
 
-  return unique.slice(0, 5)
+  return unique.slice(0, 12)
 }
 
 type GeminiTagAndTypoResponse = {
@@ -151,7 +155,7 @@ async function callGeminiForTagSuggestions(
 
   const ai = new GoogleGenAI({})
   const prompt = `你是關心環境與公共議題的媒體編輯助理。請閱讀以下文章（已轉成純文字、段落以空行分隔），完成兩件事：
-1) 從文章歸納 3 到 5 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
+1) 從文章歸納 8 到 12 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
 2) 盡可能找出文內「可能的錯字」或明顯不自然用詞，列出原文與建議改寫（如果沒有就回傳空陣列）。
 
 請只輸出一個 JSON 物件，格式如下（不要輸出任何額外文字）：
@@ -309,7 +313,7 @@ export async function suggestAndApplyPostTags(
 
   const post = await context.prisma.Post.findUnique({
     where: { id: postId },
-    select: { content: true },
+    select: { content: true, tags: { select: { id: true } } },
   })
 
   const plain = extractDraftToPlainParagraphs(
@@ -319,6 +323,20 @@ export async function suggestAndApplyPostTags(
     throw new GraphQLError('文章內文為空，無法建議標籤', {
       extensions: { code: 'BAD_USER_INPUT' },
     })
+  }
+
+  const currentTagIds = new Set(
+    (post?.tags ?? []).map((tag: { id: number }) => tag.id)
+  )
+  const remainingSlots = Math.max(0, POST_TAG_TARGET_COUNT - currentTagIds.size)
+  if (remainingSlots === 0) {
+    return {
+      candidates: [],
+      geminiSuggestions: [],
+      possibleTypos: [],
+      targetCount: POST_TAG_TARGET_COUNT,
+      currentTagCount: currentTagIds.size,
+    }
   }
 
   let geminiSuggestions: string[]
@@ -357,15 +375,26 @@ export async function suggestAndApplyPostTags(
     })
   }
 
-  const candidates: PostTagCandidate[] = []
+  const allCandidates: PostTagCandidate[] = []
   const seenKeys = new Set<string>()
 
   for (const label of geminiSuggestions) {
     const candidate = await resolveTagCandidate(context, label)
     if (seenKeys.has(candidate.key)) continue
     seenKeys.add(candidate.key)
-    candidates.push(candidate)
+    if (
+      candidate.existingTag &&
+      currentTagIds.has(Number(candidate.existingTag.id))
+    ) {
+      continue
+    }
+    allCandidates.push(candidate)
   }
+
+  const priority = { 'featured-existing': 0, existing: 1, new: 2 }
+  const candidates = allCandidates
+    .sort((left, right) => priority[left.kind] - priority[right.kind])
+    .slice(0, remainingSlots)
 
   if (candidates.length === 0) {
     throw new GraphQLError('未能產生任何標籤', {
@@ -373,7 +402,13 @@ export async function suggestAndApplyPostTags(
     })
   }
 
-  return { candidates, geminiSuggestions, possibleTypos }
+  return {
+    candidates,
+    geminiSuggestions,
+    possibleTypos,
+    targetCount: POST_TAG_TARGET_COUNT,
+    currentTagCount: currentTagIds.size,
+  }
 }
 
 export async function applyPostTagCandidates(

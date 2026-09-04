@@ -10,11 +10,11 @@ export { CardValue, Cell, controller }
 const SUGGEST_POST_TAGS = gql`mutation SuggestPostTagsWithAi($postId: ID!) { suggestPostTagsWithAi(postId: $postId) }`
 const APPLY_POST_TAGS = gql`mutation ApplyPostTagCandidates($postId: ID!, $selections: JSON!) { applyPostTagCandidates(postId: $postId, selections: $selections) }`
 type Candidate = { key: string; suggestedName: string; kind: 'featured-existing' | 'existing' | 'new'; existingTag?: { id: string; name: string; isFeatured: boolean } }
-type SuggestPayload = { candidates?: Candidate[] }
+type SuggestPayload = { candidates?: Candidate[]; targetCount?: number; currentTagCount?: number }
 type ApplyPayload = { tags?: { id: string; name: string }[] }
 
-const colors = { 'featured-existing': '#ecfdf5', existing: '#eff6ff', new: '#fff7ed' }
-const labels = { 'featured-existing': '首頁既有標籤', existing: '既有標籤', new: '新建標籤' }
+const colors = { 'featured-existing': '#eff6ff', existing: '#eff6ff', new: '#fff7ed' }
+const labels = { 'featured-existing': '建立關聯（首頁既有標籤）', existing: '建立關聯（既有標籤）', new: '建立新標籤後關聯' }
 
 export function Field(props: FieldProps<typeof controller>) {
   const { value, onChange } = props
