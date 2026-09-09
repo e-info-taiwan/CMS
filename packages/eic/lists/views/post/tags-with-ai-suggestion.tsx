@@ -24,14 +24,24 @@ export function Field(props: FieldProps<typeof controller>) {
   const [apply, { loading: applying }] = useMutation(APPLY_POST_TAGS)
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [notice, setNotice] = useState('')
   const itemId = value.kind === 'many' ? value.id : null
 
   const findSuggestions = useCallback(async () => {
     if (!itemId) return
     try {
       const { data } = await suggest({ variables: { postId: itemId } })
-      setCandidates((data?.suggestPostTagsWithAi as SuggestPayload | undefined)?.candidates ?? [])
+      const payload = data?.suggestPostTagsWithAi as SuggestPayload | undefined
+      const nextCandidates = payload?.candidates ?? []
+      setCandidates(nextCandidates)
       setSelected(new Set())
+      setNotice(
+        nextCandidates.length > 0
+          ? ''
+          : (payload?.currentTagCount ?? 0) >= (payload?.targetCount ?? 8)
+          ? `這篇文章已有 ${payload?.currentTagCount} 個標籤，已達建議上限 ${payload?.targetCount} 個。`
+          : '沒有找到尚未連結的候選標籤。'
+      )
     } catch (error: unknown) {
       toasts.addToast({ title: '建議標籤失敗', message: error instanceof Error ? error.message : '請稍後再試', tone: 'negative' })
     }
@@ -57,6 +67,7 @@ export function Field(props: FieldProps<typeof controller>) {
   return <><RelationshipField {...props} />{itemId && value.kind === 'many' && <div style={{ marginTop: 8 }}>
     <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 8px' }}>AI 只產生候選；確認後才連結既有標籤或建立新標籤。</p>
     <Button onClick={findSuggestions} isDisabled={suggesting || applying} tone="active">{suggesting ? '分析中…' : 'AI 產生標籤候選'}</Button>
+    {notice && <p style={{ color: '#6b7280', marginBottom: 0 }}>{notice}</p>}
     {candidates.length > 0 && <div style={{ marginTop: 12 }}>{candidates.map((candidate) => <label key={candidate.key} style={{ background: colors[candidate.kind], borderRadius: 6, display: 'block', marginTop: 8, padding: '8px 10px' }}><input type="checkbox" checked={selected.has(candidate.key)} onChange={() => setSelected((current) => { const next = new Set(current); next.has(candidate.key) ? next.delete(candidate.key) : next.add(candidate.key); return next })} /> <strong>{candidate.existingTag?.name ?? candidate.suggestedName}</strong> <span style={{ color: '#6b7280' }}>({labels[candidate.kind]})</span>{candidate.existingTag && candidate.existingTag.name !== candidate.suggestedName ? `，取代 AI 建議「${candidate.suggestedName}」` : ''}</label>)}<div style={{ marginTop: 12 }}><Button onClick={applySelected} isDisabled={selected.size === 0 || applying} tone="positive">{applying ? '套用中…' : '套用選取的標籤'}</Button></div></div>}
   </div>}</>
 }

@@ -391,15 +391,20 @@ export async function suggestAndApplyPostTags(
     allCandidates.push(candidate)
   }
 
-  const priority = { 'featured-existing': 0, existing: 1, new: 2 }
+  // Keep Gemini's relevance order across concepts. Existing tags are already
+  // preferred inside resolveTagCandidate; globally sorting by type would let
+  // every existing candidate crowd out genuinely new concepts.
   const candidates = allCandidates
-    .sort((left, right) => priority[left.kind] - priority[right.kind])
     .slice(0, remainingSlots)
 
   if (candidates.length === 0) {
-    throw new GraphQLError('未能產生任何標籤', {
-      extensions: { code: 'BAD_USER_INPUT' },
-    })
+    return {
+      candidates: [],
+      geminiSuggestions,
+      possibleTypos,
+      targetCount: POST_TAG_TARGET_COUNT,
+      currentTagCount: currentTagIds.size,
+    }
   }
 
   return {
