@@ -39,7 +39,7 @@ export function Field(props: FieldProps<typeof controller>) {
         nextCandidates.length > 0
           ? ''
           : (payload?.currentTagCount ?? 0) >= (payload?.targetCount ?? 8)
-          ? `這篇文章已有 ${payload?.currentTagCount} 個標籤，已達建議上限 ${payload?.targetCount} 個。`
+          ? `這篇文章已有 ${payload?.currentTagCount} 個標籤，本次沒有找到可額外建議的標籤。`
           : '沒有找到尚未連結的候選標籤。'
       )
     } catch (error: unknown) {

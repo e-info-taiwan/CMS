@@ -16,6 +16,7 @@ export type SuggestPostTagsResult = {
 }
 
 const POST_TAG_TARGET_COUNT = 8
+const POST_TAG_OVER_TARGET_CANDIDATE_COUNT = 4
 
 export type PostTagCandidate = {
   key: string
@@ -328,16 +329,10 @@ export async function suggestAndApplyPostTags(
   const currentTagIds = new Set(
     (post?.tags ?? []).map((tag: { id: number }) => tag.id)
   )
-  const remainingSlots = Math.max(0, POST_TAG_TARGET_COUNT - currentTagIds.size)
-  if (remainingSlots === 0) {
-    return {
-      candidates: [],
-      geminiSuggestions: [],
-      possibleTypos: [],
-      targetCount: POST_TAG_TARGET_COUNT,
-      currentTagCount: currentTagIds.size,
-    }
-  }
+  const remainingSlots =
+    currentTagIds.size >= POST_TAG_TARGET_COUNT
+      ? POST_TAG_OVER_TARGET_CANDIDATE_COUNT
+      : POST_TAG_TARGET_COUNT - currentTagIds.size
 
   let geminiSuggestions: string[]
   let possibleTypos: { original: string; suggested: string }[]
