@@ -17,6 +17,10 @@ export type SuggestPostTagsResult = {
 
 const POST_TAG_TARGET_COUNT = 8
 const POST_TAG_OVER_TARGET_CANDIDATE_COUNT = 4
+// The general tag-similarity threshold is suitable for manual review. Automatic
+// reuse needs a stricter confidence level so loosely related tags are not
+// silently substituted for a new article concept.
+const AUTOMATIC_EXISTING_TAG_DISTANCE_THRESHOLD = 0.04
 
 export type PostTagCandidate = {
   key: string
@@ -148,16 +152,22 @@ function parseGeminiTagAndTypoJson(text: string): GeminiTagAndTypoResponse {
 }
 
 async function callGeminiForTagSuggestions(
-  plainText: string
+  plainText: string,
+  featuredTagNames: string[]
 ): Promise<GeminiTagAndTypoResponse> {
   if (!envVar.ai.gemini.apiKey) {
     throw new Error('GEMINI_API_KEY_NOT_CONFIGURED')
   }
 
   const ai = new GoogleGenAI({})
+  const featuredTagsContext = featuredTagNames.length
+    ? `目前首頁顯示的既有標籤為：${featuredTagNames.join('、')}。若其中任一標籤確實精準涵蓋文章主題，請優先直接使用該既有標籤名稱；不要為了湊數而牽強使用。`
+    : '目前沒有可優先使用的首頁既有標籤。'
   const prompt = `你是關心環境與公共議題的媒體編輯助理。請閱讀以下文章（已轉成純文字、段落以空行分隔），完成兩件事：
 1) 從文章歸納 8 到 12 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
 2) 盡可能找出文內「可能的錯字」或明顯不自然用詞，列出原文與建議改寫（如果沒有就回傳空陣列）。
+
+${featuredTagsContext}
 
 請只輸出一個 JSON 物件，格式如下（不要輸出任何額外文字）：
 {
@@ -260,9 +270,11 @@ async function resolveTagCandidate(
       prisma: context.prisma,
       embedding,
     })
-    const matching = similar.filter(
-      (tag) => tag.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
+    const reuseThreshold = Math.min(
+      envVar.tagEmbedding.similarityCheck.distanceThreshold,
+      AUTOMATIC_EXISTING_TAG_DISTANCE_THRESHOLD
     )
+    const matching = similar.filter((tag) => tag.distance <= reuseThreshold)
     const best = matching.find((tag) => tag.isFeatured) ?? matching[0]
     if (best) {
       return {
@@ -334,10 +346,19 @@ export async function suggestAndApplyPostTags(
       ? POST_TAG_OVER_TARGET_CANDIDATE_COUNT
       : POST_TAG_TARGET_COUNT - currentTagIds.size
 
+  const featuredTags = await context.prisma.Tag.findMany({
+    where: { isFeatured: true },
+    select: { name: true },
+    orderBy: { name: 'asc' },
+  })
+
   let geminiSuggestions: string[]
   let possibleTypos: { original: string; suggested: string }[]
   try {
-    const aiResult = await callGeminiForTagSuggestions(plain)
+    const aiResult = await callGeminiForTagSuggestions(
+      plain,
+      featuredTags.map((tag: { name: string }) => tag.name)
+    )
     geminiSuggestions = aiResult.tags
     possibleTypos = aiResult.possibleTypos
   } catch (error) {
