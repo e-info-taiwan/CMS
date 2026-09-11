@@ -1223,12 +1223,16 @@ export async function suggestPostIdea(
   const hasAnchorMatch = (item: ReturnType<typeof scorePost>) =>
     anchorSet.size > 0 &&
     item.matchedEntities.some((term) => anchorSet.has(term.toLowerCase()))
+  const isDirectListMatch = (item: ReturnType<typeof scorePost>) =>
+    anchorSet.size > 0
+      ? hasAnchorMatch(item)
+      : item.lexicalMatch && item.score >= config.minScore
   const passesRelevanceFloor = (item: ReturnType<typeof scorePost>) =>
     hasAnchorMatch(item) || item.score >= config.minScore
-  // 相關／不相關分流：字面命中、或向量距離 <= strongDistance 視為「較相關」；
-  // 但未命中主題錨點者仍需達到最低分數，避免為了湊數列出弱相關文章。
+  // 「相似內容」只列直接命中主題錨點的文章。向量上接近但沒有命中主題的文章
+  // 仍可作為完整分析的背景參考，但不要包裝成相似內容。
   const isStrong = (item: ReturnType<typeof scorePost>) =>
-    passesRelevanceFloor(item) &&
+    isDirectListMatch(item) &&
     (item.lexicalMatch ||
       (item.distance !== null && item.distance <= config.strongDistance))
   const strongPool = scored.filter(isStrong)
@@ -1242,7 +1246,10 @@ export async function suggestPostIdea(
   }
   takeUniqueScoredPosts(selectedStrong, strongPool, config.maxResults)
   const selectedWeak = scored
-    .filter((item) => !isStrong(item) && passesRelevanceFloor(item))
+    .filter(
+      (item) =>
+        !isStrong(item) && isDirectListMatch(item) && passesRelevanceFloor(item)
+    )
     .slice(0, config.weakResultLimit)
   const weakMatch = selectedStrong.length === 0
 
