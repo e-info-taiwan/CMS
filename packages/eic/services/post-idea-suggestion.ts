@@ -531,7 +531,9 @@ const collectLexicalSearchTerms = (
 ) => {
   const normalizedInput = normalizeText(originalInput)
   const inputAnchors = collectInputAnchorTerms(normalizedInput, selectedKeywords)
-  const locationTerms = structured.locations
+  const locationTerms = structured.locations.filter((term) =>
+    normalizedInput.includes(term)
+  )
   const entityTerms = structured.entities.filter((term) =>
     normalizedInput.includes(term)
   )
