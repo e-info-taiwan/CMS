@@ -535,9 +535,13 @@ const collectLexicalSearchTerms = (
   const entityTerms = structured.entities.filter((term) =>
     normalizedInput.includes(term)
   )
+  const selectedInputTerms = selectedKeywords.filter((term) =>
+    normalizedInput.includes(term)
+  )
   const structuredAnchorTerms = uniqueSearchTerms([
     ...locationTerms,
     ...entityTerms,
+    ...selectedInputTerms,
   ])
   const inputAnchorsWithStructuredAnchor =
     structuredAnchorTerms.length > 0
@@ -559,7 +563,11 @@ const collectLexicalSearchTerms = (
   ]).filter(
     (term) =>
       !selectedKeywords.some(
-        (keyword) => keyword.toLowerCase() === term.toLowerCase()
+        (keyword) =>
+          keyword.toLowerCase() === term.toLowerCase() &&
+          !selectedInputTerms.some(
+            (inputTerm) => inputTerm.toLowerCase() === term.toLowerCase()
+          )
       ) &&
       !isGenericStandaloneTerm(term) &&
       !isSelectedKeywordFragment(term)
