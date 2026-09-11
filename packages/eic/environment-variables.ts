@@ -37,6 +37,7 @@ const {
   POST_IDEA_SUGGESTION_CANDIDATE_LIMIT,
   POST_IDEA_SUGGESTION_RESULT_LIMIT,
   POST_IDEA_SUGGESTION_STRONG_DISTANCE,
+  POST_IDEA_SUGGESTION_MIN_SCORE,
   POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT,
   POST_IDEA_SUGGESTION_MAX_RESULTS,
   POST_IDEA_SUGGESTION_LEXICAL_LIMIT,
@@ -154,9 +155,11 @@ export default {
     candidateLimit: numberFromEnv(POST_IDEA_SUGGESTION_CANDIDATE_LIMIT, 50),
     resultLimit: numberFromEnv(POST_IDEA_SUGGESTION_RESULT_LIMIT, 10),
     // 相關／不相關分流：distance <= strongDistance 視為「較相關」（時間軸與完整清單主區，
-    // 上限 maxResults）；strongDistance < distance <= maxDistance 視為「較不相關」，
+    // 上限 maxResults）；但未命中主題錨點者仍需達 minScore，避免為了湊數列出弱相關文章。
+    // strongDistance < distance <= maxDistance 且達 minScore 視為「較不相關」，
     // 另以收折區呈現（上限 weakResultLimit）。
     strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.45),
+    minScore: numberFromEnv(POST_IDEA_SUGGESTION_MIN_SCORE, 0.5),
     weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 5),
     maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 30),
     // 混合檢索：用 entities/locations 對標題做字面比對，命中者一律視為「較相關」，
