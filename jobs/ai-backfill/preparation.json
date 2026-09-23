@@ -2,7 +2,7 @@
   "preparedAt": "2026-09-23",
   "project": "mimetic-sweep-456508-k4",
   "region": "asia-east1",
-  "status": "clip_import_and_phash_running_photo_labels_paused",
+  "status": "backfills_completed_with_source_exceptions_photo_labels_paused",
   "jobsCreated": true,
   "productionBackfillExecuted": true,
   "defaultMode": "check",
@@ -44,7 +44,10 @@
     "6 Node unit and isolated PostgreSQL integration tests passed",
     "Go processor suite passed including photo Job unit and isolated PostgreSQL integration tests",
     "Both dedicated Cloud Build image builds succeeded",
-    "Production Tag check and 50-item Vertex apply succeeded; 5 production schema migrations applied successfully"
+    "Production Tag check and 50-item Vertex apply succeeded; 5 production schema migrations applied successfully",
+    "Keystone real Admin metadata checked with photo AI enabled and disabled",
+    "Authenticated prod browser verified photo editor/list/search/filter/sort hiding, normal search and report-route redirect",
+    "Final prod CMS, GQL and preview revisions ready at 100 percent traffic with HTTP 200 GraphQL"
   ],
   "secretVersion": 2,
   "migration": {
@@ -58,14 +61,29 @@
     "job": "eic-photo-phash-backfill-prod",
     "plannedScope": "all photos missing pHash",
     "tasks": 8,
-    "status": "running",
+    "status": "completed_with_source_exceptions",
     "pilotExecution": "eic-photo-phash-backfill-prod-xktql",
     "pilotSucceeded": 80,
-    "execution": "eic-photo-phash-backfill-prod-vnstv",
+    "execution": "eic-photo-phash-backfill-prod-d4g79",
     "cancelledTasks": 8,
     "cancelledAt": "2026-09-23T12:27:15Z",
     "previousCancelledExecution": "eic-photo-phash-backfill-prod-pg7nx",
-    "preservedCountAtResume": 24334
+    "preservedCountAtResume": 24334,
+    "completionTime": "2026-09-23T13:23:37Z",
+    "taskFailures": 8,
+    "totalProcessable": 115650,
+    "totalFilled": 115615,
+    "remaining": 35,
+    "exceptionsReport": "reports/2026-09-23-phash.json",
+    "initialExecution": "eic-photo-phash-backfill-prod-vnstv",
+    "largePixelExecution": "eic-photo-phash-backfill-prod-r75w8",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:666f064e5600821d5e43f2aea93d3a5ccc8bd4dbcbcdd2d488854446fc0f0297",
+    "buildId": "3b883f93-891f-475d-8ef5-3d763cd7736c",
+    "largeSourceRecovered": 20,
+    "remainingCategories": {
+      "missingObject": 18,
+      "decodeError": 17
+    }
   },
   "vectorImport": {
     "job": "eic-photo-vector-import-prod",
@@ -73,14 +91,22 @@
     "sourceSucceeded": 115884,
     "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-vector-import@sha256:ce5d338a167dcfbf9a9d3e6799740d50cc06ec5d22f8aec54ebede0fa35c2f9b",
     "buildId": "3eaa77fa-5f1d-45ef-afec-62d197423559",
-    "status": "running",
+    "status": "succeeded",
     "execution": "eic-photo-vector-import-prod-dpkf9",
     "pilotExecution": "eic-photo-vector-import-prod-524ln",
-    "pilotImported": 49
+    "pilotImported": 49,
+    "completionTime": "2026-09-23T12:45:33Z",
+    "scanned": 115884,
+    "matched": 114536,
+    "alreadyPresent": 62,
+    "imported": 114388,
+    "noMatchingPhoto": 1348,
+    "staleSource": 86,
+    "failed": 0
   },
   "userRequestedState": {
-    "clip": "continue importing existing vectors",
-    "phash": "resumed with eight tasks; existing hashes retained",
+    "clip": "existing vector import complete; all 2026 processable photos have CLIP vectors",
+    "phash": "eight tasks resumed and all processable rows scanned; 35 missing or corrupt sources remain",
     "photoLabels": "paused; annual apply not started",
     "cmsPhotoAiFields": "hidden in production",
     "cmsPostIdeaSuggestions": "hidden in production"
@@ -93,6 +119,62 @@
     "goRevision": "image-processor-go-prod-00002-p72",
     "pubsubSubscription": "image-processor-prod",
     "pubsubEndpoint": "https://image-processor-go-prod-6rojjsxpoa-de.a.run.app/image_processor",
-    "pubsubSmokeVerified": true
+    "pubsubSmokeVerified": true,
+    "uiHiding": {
+      "pr": "https://github.com/e-info-taiwan/CMS/pull/48",
+      "build": "a3bb8604-2bca-4cf9-9258-db6d582739c9",
+      "status": "deployed_and_browser_verified",
+      "image": "gcr.io/mimetic-sweep-456508-k4/e-info:prod_08ea17e",
+      "photoEditorFieldsHidden": true,
+      "postIdeasNavigationHidden": true,
+      "postIdeasDirectRouteRedirects": true,
+      "imageDigest": "sha256:54fb095bd00f0347405050030b98af8bb4942fb9224878653274fc6b6f47c987",
+      "followupPr": "https://github.com/e-info-taiwan/CMS/pull/50",
+      "photoAiSearchFilterSortHidden": true,
+      "normalPhotoSearchVerified": true,
+      "postTagAiButtonRetained": true,
+      "allThreeProdApisHttp": 200,
+      "revisions": {
+        "cms": "eic-info-cms-prod-00042-s56",
+        "gql": "eic-info-cms-gql-prod-00045-wss",
+        "preview": "eic-info-cms-preview-prod-00038-zh5"
+      },
+      "trafficPercent": 100
+    }
+  },
+  "clip": {
+    "job": "eic-photo-clip-backfill-prod",
+    "buildId": "3b883f93-891f-475d-8ef5-3d763cd7736c",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:666f064e5600821d5e43f2aea93d3a5ccc8bd4dbcbcdd2d488854446fc0f0297",
+    "mode": "vector",
+    "tasks": 1,
+    "cpu": 2,
+    "memory": "4Gi",
+    "defaultMode": "check",
+    "imageLabelsEnabled": false,
+    "createdFrom": "2025-12-31T16:00:00Z",
+    "createdBefore": "2026-12-31T16:00:00Z",
+    "checkExecution": "eic-photo-clip-backfill-prod-rxm7n",
+    "pilotExecution": "eic-photo-clip-backfill-prod-wz576",
+    "execution": "eic-photo-clip-backfill-prod-7t7s5",
+    "status": "succeeded",
+    "initialMissing": 744,
+    "filled": 744,
+    "remaining": 0,
+    "exceptionsReport": "reports/2026-09-23-clip.json",
+    "initialBatchExecution": "eic-photo-clip-backfill-prod-7cvqh",
+    "largePixelExecution": "eic-photo-clip-backfill-prod-f622d",
+    "completionTime": "2026-09-23T13:24:01Z"
+  },
+  "coverage": {
+    "observedAt": "2026-09-23T13:25:00Z",
+    "photos": 115754,
+    "clip": 115232,
+    "phash": 115615,
+    "photoLabels": 51,
+    "year2026Photos": 13146,
+    "year2026Processable": 13134,
+    "year2026Clip": 13134,
+    "year2026PhotoLabels": 8
   }
 }

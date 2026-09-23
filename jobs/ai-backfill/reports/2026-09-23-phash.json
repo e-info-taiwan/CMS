@@ -1,0 +1,907 @@
+{
+  "status": "completed_with_source_exceptions",
+  "scope": "all processable photos missing pHash",
+  "executions": [
+    {
+      "execution": "eic-photo-phash-backfill-prod-vnstv",
+      "completionTime": "2026-09-23T13:00:55.681905Z",
+      "succeeded": 91261,
+      "failed": 55,
+      "shardSummaries": [
+        {
+          "fields": "phash",
+          "shard": "0/8",
+          "processed": 11259,
+          "succeeded": 11250,
+          "failed": 9,
+          "next_cursor": 141800,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "1/8",
+          "processed": 11481,
+          "succeeded": 11472,
+          "failed": 9,
+          "next_cursor": 141793,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "2/8",
+          "processed": 11405,
+          "succeeded": 11399,
+          "failed": 6,
+          "next_cursor": 141794,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "3/8",
+          "processed": 11459,
+          "succeeded": 11452,
+          "failed": 7,
+          "next_cursor": 141795,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "4/8",
+          "processed": 11513,
+          "succeeded": 11508,
+          "failed": 5,
+          "next_cursor": 141796,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "5/8",
+          "processed": 11456,
+          "succeeded": 11448,
+          "failed": 8,
+          "next_cursor": 141789,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "6/8",
+          "processed": 11364,
+          "succeeded": 11357,
+          "failed": 7,
+          "next_cursor": 141798,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "7/8",
+          "processed": 11379,
+          "succeeded": 11375,
+          "failed": 4,
+          "next_cursor": 141799,
+          "end_id": 141800
+        }
+      ],
+      "failures": [
+        {
+          "photoId": 549,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 820,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6209,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6552,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6663,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6976,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 11661,
+          "error": "read/prepare source: source image is too large: 7040x9945=70012800 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 12964,
+          "error": "read/prepare source: source image is too large: 7064x9982=70512848 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 14570,
+          "error": "read/prepare source: source image is too large: 7040x9957=70097280 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 15398,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15497,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15521,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15686,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 19383,
+          "error": "read/prepare source: source image is too large: 7064x9981=70505784 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 19763,
+          "error": "read/prepare source: source image is too large: 7064x9981=70505784 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 21176,
+          "error": "read/prepare source: source image is too large: 10667x6001=64012667 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 21244,
+          "error": "read/prepare source: source image is too large: 7016x9933=69689928 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 21658,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 21787,
+          "error": "read/prepare source: source image is too large: 10005x7088=70915440 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 22451,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        },
+        {
+          "photoId": 22501,
+          "error": "read/prepare source: source image is too large: 10667x6000=64002000 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 22505,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23336,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23817,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23953,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 24400,
+          "error": "read/prepare source: source image is too large: 11890x8410=99994900 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 24952,
+          "error": "read/prepare source: source image is too large: 16666x5882=98029412 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 25150,
+          "error": "read/prepare source: source image is too large: 10667x6001=64012667 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 25593,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25826,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25838,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 29147,
+          "error": "read/prepare source: source image is too large: 9921x14034=139231314 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 106513,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 113240,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 118995,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 119017,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 119156,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 120438,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126630,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126714,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126748,
+          "error": "read/prepare source: gif: reading image data: lzw: invalid code"
+        },
+        {
+          "photoId": 126759,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126782,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126797,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126802,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126914,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 127187,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 127389,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 130744,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 137565,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        },
+        {
+          "photoId": 137605,
+          "error": "read/prepare source: source image is too large: 9792x6528=63922176 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 138983,
+          "error": "read/prepare source: source image is too large: 9355x12598=117854290 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 139728,
+          "error": "read/prepare source: source image is too large: 16493x10322=170240746 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 139731,
+          "error": "read/prepare source: source image is too large: 17067x8501=145086567 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 139845,
+          "error": "read/prepare source: source image is too large: 10000x7500=75000000 pixels exceeds max 60000000"
+        }
+      ]
+    },
+    {
+      "execution": "eic-photo-phash-backfill-prod-r75w8",
+      "completionTime": "2026-09-23T13:13:11.769946Z",
+      "succeeded": 18,
+      "failed": 37,
+      "shardSummaries": [
+        {
+          "fields": "phash",
+          "shard": "0/8",
+          "processed": 9,
+          "succeeded": 4,
+          "failed": 5,
+          "next_cursor": 139728,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "1/8",
+          "processed": 9,
+          "succeeded": 0,
+          "failed": 9,
+          "next_cursor": 119017,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "2/8",
+          "processed": 6,
+          "succeeded": 1,
+          "failed": 5,
+          "next_cursor": 126914,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "3/8",
+          "processed": 7,
+          "succeeded": 4,
+          "failed": 3,
+          "next_cursor": 139731,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "4/8",
+          "processed": 5,
+          "succeeded": 2,
+          "failed": 3,
+          "next_cursor": 126748,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "5/8",
+          "processed": 8,
+          "succeeded": 4,
+          "failed": 4,
+          "next_cursor": 139845,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "6/8",
+          "processed": 7,
+          "succeeded": 1,
+          "failed": 6,
+          "next_cursor": 126782,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "7/8",
+          "processed": 4,
+          "succeeded": 2,
+          "failed": 2,
+          "next_cursor": 138983,
+          "end_id": 141800
+        }
+      ],
+      "failures": [
+        {
+          "photoId": 549,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 820,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6209,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6552,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6663,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6976,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15398,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15497,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15521,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15686,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 21658,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 22451,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        },
+        {
+          "photoId": 22505,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23336,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23817,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23953,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25593,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25826,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25838,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 106513,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 113240,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 118995,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 119017,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 119156,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 120438,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126630,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126714,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126748,
+          "error": "read/prepare source: gif: reading image data: lzw: invalid code"
+        },
+        {
+          "photoId": 126759,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126782,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126797,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126802,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126914,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 127187,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 127389,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 130744,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 137565,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        }
+      ]
+    },
+    {
+      "execution": "eic-photo-phash-backfill-prod-d4g79",
+      "completionTime": "2026-09-23T13:23:37.646200Z",
+      "succeeded": 2,
+      "failed": 35,
+      "shardSummaries": [
+        {
+          "fields": "phash",
+          "shard": "0/8",
+          "processed": 5,
+          "succeeded": 0,
+          "failed": 5,
+          "next_cursor": 130744,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "1/8",
+          "processed": 9,
+          "succeeded": 0,
+          "failed": 9,
+          "next_cursor": 119017,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "2/8",
+          "processed": 5,
+          "succeeded": 0,
+          "failed": 5,
+          "next_cursor": 126914,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "3/8",
+          "processed": 3,
+          "succeeded": 1,
+          "failed": 2,
+          "next_cursor": 127187,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "4/8",
+          "processed": 3,
+          "succeeded": 0,
+          "failed": 3,
+          "next_cursor": 126748,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "5/8",
+          "processed": 4,
+          "succeeded": 1,
+          "failed": 3,
+          "next_cursor": 137565,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "6/8",
+          "processed": 6,
+          "succeeded": 0,
+          "failed": 6,
+          "next_cursor": 126782,
+          "end_id": 141800
+        },
+        {
+          "fields": "phash",
+          "shard": "7/8",
+          "processed": 2,
+          "succeeded": 0,
+          "failed": 2,
+          "next_cursor": 126759,
+          "end_id": 141800
+        }
+      ],
+      "failures": [
+        {
+          "photoId": 549,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 820,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6209,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6552,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6663,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 6976,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15398,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15497,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15521,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 15686,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 21658,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 22505,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23336,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23817,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 23953,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25593,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25826,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 25838,
+          "error": "read/prepare source: storage: object doesn't exist"
+        },
+        {
+          "photoId": 106513,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 113240,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 118995,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 119017,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 119156,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 120438,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126630,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126714,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126748,
+          "error": "read/prepare source: gif: reading image data: lzw: invalid code"
+        },
+        {
+          "photoId": 126759,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126782,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 126797,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126802,
+          "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+        },
+        {
+          "photoId": 126914,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 127187,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 127389,
+          "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+        },
+        {
+          "photoId": 130744,
+          "error": "read/prepare source: storage: object doesn't exist"
+        }
+      ]
+    }
+  ],
+  "remaining": 35,
+  "remainingCategories": {
+    "missing_object": 18,
+    "decode_error": 17
+  },
+  "remainingFailures": [
+    {
+      "photoId": 549,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 820,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 6209,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 6552,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 6663,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 6976,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 15398,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 15497,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 15521,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 15686,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 21658,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 22505,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 23336,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 23817,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 23953,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 25593,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 25826,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 25838,
+      "error": "read/prepare source: storage: object doesn't exist"
+    },
+    {
+      "photoId": 106513,
+      "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+    },
+    {
+      "photoId": 113240,
+      "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+    },
+    {
+      "photoId": 118995,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 119017,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 119156,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 120438,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 126630,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 126714,
+      "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+    },
+    {
+      "photoId": 126748,
+      "error": "read/prepare source: gif: reading image data: lzw: invalid code"
+    },
+    {
+      "photoId": 126759,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 126782,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 126797,
+      "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+    },
+    {
+      "photoId": 126802,
+      "error": "read/prepare source: invalid JPEG format: bad Huffman code"
+    },
+    {
+      "photoId": 126914,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 127187,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 127389,
+      "error": "read/prepare source: invalid JPEG format: missing 0xff00 sequence"
+    },
+    {
+      "photoId": 130744,
+      "error": "read/prepare source: storage: object doesn't exist"
+    }
+  ]
+}
