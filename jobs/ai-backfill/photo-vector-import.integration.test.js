@@ -25,9 +25,10 @@ test('real pgvector import: source read-only, generation guard, source replaceme
         "imageVectorUpdatedAt" timestamp, phash text, "imageLabelStatus" text)`)
       const vector = JSON.stringify(Array(512).fill(0.1))
       for (let i = 1; i <= 4; i++) {
+        const id = i === 4 ? 10 : i
         await source.query(`INSERT INTO vector_lab_images VALUES ($1,$2,$3,'jpg',0,$4::vector,'clip-ViT-B-32','succeeded','2026-08-01')`,
-          [i, `file${i}`, `images/file${i}-w480.jpg`, vector])
-        await target.query(`INSERT INTO "Photo" VALUES ($1,$2,'jpg',NULL,'',NULL,NULL,'existing-hash','keep-labels')`, [i, `file${i}`])
+          [id, `file${i}`, `images/file${i}-w480.jpg`, vector])
+        await target.query(`INSERT INTO "Photo" VALUES ($1,$2,'jpg',NULL,'',NULL,NULL,'existing-hash','keep-labels')`, [id, `file${i}`])
       }
       const cfg = { mode: 'apply', expectedDatabase: 'eic_backfill_test', maxItems: 1, maxSeconds: 60, batchSize: 2 }
       const metadata = async name => ({ bucket: 'statics-e-info-prod', name, generation: '12', timeCreated: '2026-07-01' })
@@ -39,7 +40,7 @@ test('real pgvector import: source read-only, generation guard, source replaceme
       const raced = async name => {
         if (name.includes('file2')) return { ...(await metadata(name)), timeCreated: '2026-09-01' }
         if (name.includes('file3')) await other.query(`UPDATE "Photo" SET "imageFile_id"='replacement' WHERE id=3`)
-        if (name.includes('file4')) await other.query(`UPDATE "Photo" SET "imageVector"=$1::vector WHERE id=4`, [JSON.stringify(Array(512).fill(0.2))])
+        if (name.includes('file4')) await other.query(`UPDATE "Photo" SET "imageVector"=$1::vector WHERE id=10`, [JSON.stringify(Array(512).fill(0.2))])
         return metadata(name)
       }
       const result = await run(source, target, raced, { ...cfg, maxItems: 10 })

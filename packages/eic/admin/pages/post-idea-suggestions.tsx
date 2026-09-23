@@ -1,6 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/router'
+import { POST_IDEA_FEATURE } from '../feature-flags'
 import { PageContainer } from '@keystone-6/core/admin-ui/components'
-import { gql, useMutation } from '@keystone-6/core/admin-ui/apollo'
+import { gql, useMutation, useQuery } from '@keystone-6/core/admin-ui/apollo'
 import { Button } from '@keystone-ui/button'
 import { FieldContainer, FieldLabel, TextArea } from '@keystone-ui/fields'
 import { useToasts } from '@keystone-ui/toast'
@@ -345,6 +347,16 @@ function CoverageAnalysisSection({
 }
 
 export default function PostIdeaSuggestionsPage() {
+  const router = useRouter()
+  const { data, loading } = useQuery(POST_IDEA_FEATURE)
+  const enabled = data?.postIdeaSuggestionsEnabled === true
+  useEffect(() => {
+    if (!loading && !enabled) void router.replace('/')
+  }, [enabled, loading, router])
+  return enabled ? <EnabledPostIdeaSuggestionsPage /> : null
+}
+
+function EnabledPostIdeaSuggestionsPage() {
   const toasts = useToasts()
   const [input, setInput] = useState('')
   const [payload, setPayload] = useState<SuggestionPayload | null>(null)

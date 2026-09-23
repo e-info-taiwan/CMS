@@ -85,7 +85,7 @@ async function run(source, target, metadataFor, cfg, signal = new AbortControlle
         generation::text,created_at${columns} FROM vector_lab_images
         WHERE id > $1 AND id <= $2 AND vector_status='succeeded'
           AND model_version=$3 AND embedding IS NOT NULL AND vector_dims(embedding)=512
-        ORDER BY id LIMIT $4`, [counts.nextCursor, end, MODEL, size])).rows
+        ORDER BY vector_lab_images.id LIMIT $4`, [counts.nextCursor, end, MODEL, size])).rows
       if (!rows.length) { counts.exhausted = true; break }
       const photos = (await target.query(`SELECT id,"imageFile_id" AS file_id,
         "imageFile_extension" AS extension,"imageVector" IS NOT NULL AS present

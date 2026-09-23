@@ -2,7 +2,7 @@
   "preparedAt": "2026-09-23",
   "project": "mimetic-sweep-456508-k4",
   "region": "asia-east1",
-  "status": "production_schema_ready_tag_complete_photo_jobs_preparing",
+  "status": "clip_import_running_phash_cancelled_photo_labels_not_started",
   "jobsCreated": true,
   "productionBackfillExecuted": true,
   "defaultMode": "check",
@@ -21,11 +21,14 @@
   },
   "photo": {
     "job": "eic-photo-ai-backfill-prod",
-    "buildId": "52ac7f87-57b5-40be-9381-6016e58a27f6",
-    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:0316acbf0889bc3ce355a35f3cbd25277af68e8b62f87d4bfc47e82933dec209",
+    "buildId": "2ec08fc2-b0bb-417f-8d92-6a46b1d71ed7",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:de80a4f55ff2d5cc21ed59d972eb4ae4c8d40874b888d67c6381793c37e8bff9",
     "pilotExecution": "eic-photo-ai-backfill-prod-zvcfs",
     "pilotSucceeded": 50,
-    "plannedScope": "2026 Taipei upload dates: missing vectors and image labels"
+    "plannedScope": "2026 Taipei upload dates: missing vectors and image labels",
+    "status": "paused_check_default",
+    "annualCheckExecution": "eic-photo-ai-backfill-prod-lk2m4",
+    "annualApplyExecuted": false
   },
   "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
   "projectRoles": [
@@ -55,14 +58,39 @@
     "job": "eic-photo-phash-backfill-prod",
     "plannedScope": "all photos missing pHash",
     "tasks": 8,
-    "status": "image_building"
+    "status": "cancelled_by_user",
+    "pilotExecution": "eic-photo-phash-backfill-prod-xktql",
+    "pilotSucceeded": 80,
+    "execution": "eic-photo-phash-backfill-prod-pg7nx",
+    "cancelledTasks": 8,
+    "cancelledAt": "2026-09-23T12:27:15Z"
   },
   "vectorImport": {
     "job": "eic-photo-vector-import-prod",
     "source": "image_vector_lab.vector_lab_images",
     "sourceSucceeded": 115884,
-    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-vector-import@sha256:9ad75a082b4c1c13d1612e3e051e90d72ee3e2069f10f67bafdfb0b23346e3f3",
-    "buildId": "15abe511-95f0-409e-a890-6acbe11f5375",
-    "status": "created_check_default"
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-vector-import@sha256:ce5d338a167dcfbf9a9d3e6799740d50cc06ec5d22f8aec54ebede0fa35c2f9b",
+    "buildId": "3eaa77fa-5f1d-45ef-afec-62d197423559",
+    "status": "running",
+    "execution": "eic-photo-vector-import-prod-dpkf9",
+    "pilotExecution": "eic-photo-vector-import-prod-524ln",
+    "pilotImported": 49
+  },
+  "userRequestedState": {
+    "clip": "continue importing existing vectors",
+    "phash": "paused; running execution cancelled",
+    "photoLabels": "paused; annual apply not started",
+    "cmsPhotoAiFields": "hidden in production",
+    "cmsPostIdeaSuggestions": "hidden in production"
+  },
+  "release": {
+    "pr": "https://github.com/e-info-taiwan/CMS/pull/47",
+    "mergeCommit": "e06e79572add13845ff606c4c13727c94f150237",
+    "cmsBuild": "48f8ced7-e5c9-4f18-ad3d-71bc9f12e262",
+    "cmsImage": "gcr.io/mimetic-sweep-456508-k4/e-info:prod_e06e795",
+    "goRevision": "image-processor-go-prod-00002-p72",
+    "pubsubSubscription": "image-processor-prod",
+    "pubsubEndpoint": "https://image-processor-go-prod-6rojjsxpoa-de.a.run.app/image_processor",
+    "pubsubSmokeVerified": true
   }
 }
