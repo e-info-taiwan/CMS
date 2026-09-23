@@ -3,3 +3,5 @@
 !package-lock.json
 !tag-job.js
 !Dockerfile
+!photo-vector-import.js
+!Dockerfile.import

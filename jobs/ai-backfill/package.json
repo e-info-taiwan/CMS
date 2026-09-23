@@ -2,6 +2,6 @@
   "name": "eic-ai-backfill-jobs",
   "version": "1.0.0",
   "private": true,
-  "scripts": { "test": "node --test tag-job.test.js" },
+  "scripts": { "test": "node --test tag-job.test.js photo-vector-import.test.js" },
   "dependencies": { "@google/genai": "1.15.0", "pg": "8.16.3" }
 }

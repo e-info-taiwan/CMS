@@ -99,19 +99,26 @@ def main():
             'TAG_VERTEX_EMBEDDING_MODEL':'gemini-embedding-001',
             'BACKFILL_REQUEST_TIMEOUT_MS':'45000'}),
         ('eic-photo-ai-backfill-prod', args.photo_image, '2', '4Gi', {
-            'AI_BACKFILL_JOB':'photos', 'IMAGE_BUCKET':BUCKET,
+            'AI_BACKFILL_JOB':'photos', 'IMAGE_BUCKET':BUCKET, 'BACKFILL_FIELDS':'ai',
+            'BACKFILL_CREATED_FROM':'2025-12-31T16:00:00Z',
+            'BACKFILL_CREATED_BEFORE':'2026-12-31T16:00:00Z',
             'ENABLE_IMAGE_VECTOR':'true', 'ENABLE_IMAGE_LABEL':'true',
             'TORCH_NUM_THREADS':'1', 'VECTOR_IMAGE_MAX_SIZE':'384',
             'ENABLE_WATERMARK':'false', 'IMAGE_LABEL_MIN_SCORE':'0.75',
             'IMAGE_LABEL_MAX_RESULTS':'10', 'MAX_SOURCE_PIXELS':'60000000'}),
+        ('eic-photo-phash-backfill-prod', args.photo_image, '2', '2Gi', {
+            'AI_BACKFILL_JOB':'photos', 'IMAGE_BUCKET':BUCKET, 'BACKFILL_FIELDS':'phash',
+            'ENABLE_IMAGE_VECTOR':'false', 'ENABLE_IMAGE_LABEL':'false',
+            'ENABLE_WATERMARK':'false', 'MAX_SOURCE_PIXELS':'60000000'}),
     ]
     for name, image, cpu, memory, extra in definitions:
         exists = gcloud('run','jobs','describe',name,'--region='+REGION,'--format=json',optional=True)
         action = 'create' if exists is None else 'update'
         env = common_env | extra
+        tasks = '8' if extra.get('BACKFILL_FIELDS') == 'phash' else '1'
         gcloud('run', 'jobs', action, name, '--region='+REGION,
                '--image='+image, '--service-account='+SA,
-               '--tasks=1', '--parallelism=1', '--task-timeout=3600s', '--max-retries=0',
+               '--tasks='+tasks, '--parallelism='+tasks, '--task-timeout=3600s', '--max-retries=0',
                '--cpu='+cpu, '--memory='+memory,
                '--network=default', '--subnet=default', '--vpc-egress=private-ranges-only',
                '--set-env-vars='+','.join(k+'='+v for k,v in env.items()),
