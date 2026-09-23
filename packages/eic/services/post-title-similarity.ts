@@ -1,6 +1,5 @@
 import type { KeystoneContext } from '@keystone-6/core/types'
 import { GraphQLError } from 'graphql'
-import { toVectorLiteral } from './tag-embedding'
 import envVar from '../environment-variables'
 
 const normalizeTitle = (title: string) => title.replace(/\s+/g, ' ').trim()
@@ -42,27 +41,16 @@ export async function findSimilarRssArticlesByPostTitle(
 
   await getPostTitleOrThrow(context, postId)
 
-  const sourceRow = (await context.prisma.$queryRawUnsafe(
-    `SELECT "titleEmbedding"
-     FROM "Post"
-     WHERE id = $1
-     LIMIT 1`,
-    postId
-  )) as Array<{ titleEmbedding: number[] | null }>
-  const sourceEmbedding = sourceRow[0]?.titleEmbedding
-  if (!Array.isArray(sourceEmbedding) || sourceEmbedding.length === 0) {
-    return []
-  }
-
   const rows = (await context.prisma.$queryRawUnsafe(
-    `SELECT id,
-            ("titleEmbedding" <=> CAST($1 AS vector)) AS distance
-     FROM "RssArticle"
-     WHERE "titleEmbedding" IS NOT NULL
-       AND ("titleEmbedding" <=> CAST($1 AS vector)) <= $2
-     ORDER BY distance ASC
+    `SELECT rss.id
+     FROM "RssArticle" rss
+     JOIN "Post" post ON post.id = $1
+     WHERE post."titleEmbedding" IS NOT NULL
+       AND rss."titleEmbedding" IS NOT NULL
+       AND (rss."titleEmbedding" <=> post."titleEmbedding") <= $2
+     ORDER BY rss."titleEmbedding" <=> post."titleEmbedding" ASC
      LIMIT $3`,
-    toVectorLiteral(sourceEmbedding),
+    postId,
     envVar.postTitleSimilarity.maxDistance,
     envVar.postTitleSimilarity.resultLimit
   )) as Array<{ id: number }>

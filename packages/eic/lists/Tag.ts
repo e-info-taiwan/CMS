@@ -6,23 +6,13 @@ import { relationship, checkbox, integer, text } from '@keystone-6/core/fields'
 import {
   tagEmbeddingService,
   toVectorLiteral,
-  SimilarTag,
 } from '../services/tag-embedding'
 import envVar from '../environment-variables'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
-const formatSimilarTagMessage = (tags: SimilarTag[]) => {
-  const tagNames = tags
-    .slice(0, 3)
-    .map(
-      (tag) =>
-        `「${tag.name}」（相似度 ${Math.round(tag.similarity * 1000) / 10}%）`
-    )
-    .join('、')
-
-  return `已有相似標籤：${tagNames}。請優先使用既有標籤，或調整標籤名稱後再新增。`
-}
+const formatDuplicateTagMessage = (tag: { id: number; name: string }) =>
+  `已有相同名稱的標籤「${tag.name}」（ID: ${tag.id}），請改用既有標籤或更換名稱。`
 
 const listConfigurations = list({
   fields: {
@@ -30,17 +20,16 @@ const listConfigurations = list({
       isIndexed: 'unique',
       label: '標籤名稱',
       validation: { isRequired: true },
+      ui: {
+        views: './lists/views/tag-name-similarity-check',
+      },
     }),
     checkSimilarity: checkbox({
       label: '檢查相似標籤',
       defaultValue: true,
       ui: {
-        createView: {
-          fieldMode: envVar.featureToggle.tagVector ? 'edit' : 'hidden',
-        },
-        itemView: {
-          fieldMode: envVar.featureToggle.tagVector ? 'edit' : 'hidden',
-        },
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -61,6 +50,15 @@ const listConfigurations = list({
       ref: 'Post.tags',
       many: true,
       label: '相關文章',
+      ui: {
+        listView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+      },
+    }),
+    photos: relationship({
+      ref: 'Photo.tags',
+      many: true,
+      label: '相關圖片',
       ui: {
         listView: { fieldMode: 'hidden' },
         itemView: { fieldMode: 'hidden' },
@@ -93,6 +91,10 @@ type TagHookContext = {
     $executeRawUnsafe(query: string, ...values: unknown[]): Promise<unknown>
   }
 }
+type DuplicateTag = {
+  id: number
+  name: string
+}
 type ValidateInputArgs = {
   operation: string
   item?: Record<string, unknown>
@@ -119,15 +121,7 @@ extendedListConfigurations.hooks = {
       context,
     } as Parameters<NonNullable<typeof originalValidateInput>>[0])
 
-    if (
-      !envVar.featureToggle.tagVector ||
-      !envVar.tagEmbedding.similarityCheck.enabled ||
-      (operation !== 'create' && operation !== 'update')
-    ) {
-      return
-    }
-
-    if (resolvedData.checkSimilarity === false) {
+    if (operation !== 'create' && operation !== 'update') {
       return
     }
 
@@ -149,29 +143,29 @@ extendedListConfigurations.hooks = {
     }
 
     try {
-      const embedding = await tagEmbeddingService.generateVertexEmbedding(
-        currentName
-      )
       const tagId = Number(item?.id)
-      const similarTags = await tagEmbeddingService.findSimilarTags({
-        prisma: context.prisma,
-        embedding,
-        excludeId: Number.isFinite(tagId) ? tagId : undefined,
-      })
-      const tooSimilarTags = similarTags.filter(
-        (tag) =>
-          tag.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
+      const duplicateTags = await context.prisma.$queryRawUnsafe<
+        DuplicateTag[]
+      >(
+        `SELECT id, name
+         FROM "Tag"
+         WHERE name = $1
+           AND ($2::integer IS NULL OR id != $2::integer)
+         LIMIT 1`,
+        currentName,
+        Number.isFinite(tagId) ? tagId : null
       )
 
-      if (tooSimilarTags.length > 0) {
-        addValidationError(formatSimilarTagMessage(tooSimilarTags))
+      if (duplicateTags.length > 0) {
+        addValidationError(formatDuplicateTagMessage(duplicateTags[0]))
+        return
       }
     } catch (error) {
-      console.error('[Tag embedding] failed to validate similar tags', error)
-      addValidationError(
-        '無法檢查相似標籤，請稍後再試；若持續發生，請聯繫管理員確認 Vertex AI 設定。'
-      )
+      console.error('[Tag] failed to validate duplicate tag name', error)
+      addValidationError('無法檢查標籤名稱是否重複，請稍後再試。')
+      return
     }
+
   },
   afterOperation: async (args: AfterOperationArgs) => {
     const { operation, item, originalItem, context } = args
@@ -195,17 +189,9 @@ extendedListConfigurations.hooks = {
     const previousName = String(originalItem?.name ?? '').trim()
     const shouldRefreshEmbedding =
       operation === 'create' || currentName !== previousName
-    const shouldResetSimilarityCheck = item?.checkSimilarity === false
 
     if (!Number.isFinite(tagId)) {
       return
-    }
-
-    if (shouldResetSimilarityCheck) {
-      await context.prisma.$executeRawUnsafe(
-        'UPDATE "Tag" SET "checkSimilarity" = true WHERE id = $1',
-        tagId
-      )
     }
 
     if (!shouldRefreshEmbedding) {

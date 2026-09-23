@@ -1,0 +1,68 @@
+{
+  "preparedAt": "2026-09-23",
+  "project": "mimetic-sweep-456508-k4",
+  "region": "asia-east1",
+  "status": "production_schema_ready_tag_complete_photo_jobs_preparing",
+  "jobsCreated": true,
+  "productionBackfillExecuted": true,
+  "defaultMode": "check",
+  "tag": {
+    "job": "eic-tag-embedding-backfill-prod",
+    "buildId": "d41b5105-1b73-453d-9396-d2befcffe1c1",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-tag-embedding-backfill@sha256:cf75ed96da8c670e7b84ba3b0274791307a8a047ed778a26040fd034997b7d60",
+    "checkExecution": "eic-tag-embedding-backfill-prod-smx2k",
+    "pilotExecution": "eic-tag-embedding-backfill-prod-n7nbx",
+    "pilotUpdated": 50,
+    "backfillExecution": "eic-tag-embedding-backfill-prod-gjb8b",
+    "status": "succeeded",
+    "filled": 4353,
+    "blankNameSkipped": 1,
+    "eligibleRemaining": 0
+  },
+  "photo": {
+    "job": "eic-photo-ai-backfill-prod",
+    "buildId": "52ac7f87-57b5-40be-9381-6016e58a27f6",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:0316acbf0889bc3ce355a35f3cbd25277af68e8b62f87d4bfc47e82933dec209",
+    "pilotExecution": "eic-photo-ai-backfill-prod-zvcfs",
+    "pilotSucceeded": 50,
+    "plannedScope": "2026 Taipei upload dates: missing vectors and image labels"
+  },
+  "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+  "projectRoles": [
+    "roles/aiplatform.user",
+    "roles/serviceusage.serviceUsageConsumer",
+    "roles/cloudsql.client"
+  ],
+  "bucket": "statics-e-info-prod",
+  "bucketRole": "roles/storage.objectViewer",
+  "secret": "eic-ai-backfill-prod-database-url",
+  "secretRole": "roles/secretmanager.secretAccessor",
+  "validation": [
+    "6 Node unit and isolated PostgreSQL integration tests passed",
+    "Go processor suite passed including photo Job unit and isolated PostgreSQL integration tests",
+    "Both dedicated Cloud Build image builds succeeded",
+    "Production Tag check and 50-item Vertex apply succeeded; 5 production schema migrations applied successfully"
+  ],
+  "secretVersion": 2,
+  "migration": {
+    "job": "eic-cms-migrate-prod",
+    "execution": "eic-cms-migrate-prod-r8mwk",
+    "status": "succeeded",
+    "appliedMigrations": 5,
+    "backupId": "1790162567742"
+  },
+  "phash": {
+    "job": "eic-photo-phash-backfill-prod",
+    "plannedScope": "all photos missing pHash",
+    "tasks": 8,
+    "status": "image_building"
+  },
+  "vectorImport": {
+    "job": "eic-photo-vector-import-prod",
+    "source": "image_vector_lab.vector_lab_images",
+    "sourceSucceeded": 115884,
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-vector-import@sha256:9ad75a082b4c1c13d1612e3e051e90d72ee3e2069f10f67bafdfb0b23346e3f3",
+    "buildId": "15abe511-95f0-409e-a890-6acbe11f5375",
+    "status": "created_check_default"
+  }
+}

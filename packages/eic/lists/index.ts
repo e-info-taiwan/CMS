@@ -20,6 +20,7 @@ import Photo from './Photo'
 import Poll from './Poll'
 import PollResult from './PollResult'
 import Post from './Post'
+import PostVector from './PostVector'
 import ReadingHistory from './ReadingHistory'
 import RssArticle from './RssArticle'
 import Section from './Section'
@@ -52,6 +53,7 @@ export const listDefinition = {
   Poll,
   PollResult,
   Post,
+  PostVector,
   ReadingHistory,
   RssArticle,
   Section,

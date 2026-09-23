@@ -3,9 +3,23 @@ import { listDefinition as lists } from './lists'
 import appConfig from './config'
 import { createPreviewMiniApp } from './express-mini-apps/preview/app'
 import envVar from './environment-variables'
-import { suggestAndApplyPostTags } from './services/ai-post-tags-suggestion'
+import {
+  applyPostTagCandidates,
+  suggestAndApplyPostTags,
+} from './services/ai-post-tags-suggestion'
+import {
+  applyPhotoImageLabelTags,
+  suggestPhotoTagsFromImageLabels,
+} from './services/photo-image-tag-suggestion'
+import { suggestPostIdea } from './services/post-idea-suggestion'
+import {
+  findExactPHashDuplicatePhotos,
+  findNearPHashDuplicatePhotos,
+} from './services/photo-phash-duplicates'
+import { findSimilarPhotos } from './services/photo-similarity'
 import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
 import { getMemberFavoriteStats } from './services/member-favorite-stats'
+import { checkTagNameSimilarity } from './services/tag-similarity-check'
 import type {
   MemberFavoriteSectionStats,
   MemberFavoriteStats,
@@ -29,7 +43,7 @@ const { withAuth } = createAuth({
 
 const session = statelessSessions(appConfig.session)
 
-const extendPrismaSchemaWithTagVectors = (schema: string) => {
+const extendPrismaSchemaWithVectors = (schema: string) => {
   let nextSchema = schema
 
   if (
@@ -65,6 +79,17 @@ const extendPrismaSchemaWithTagVectors = (schema: string) => {
     )
   }
 
+  if (
+    nextSchema.includes('model PostVector {') &&
+    !nextSchema.includes('embedding Unsupported("vector(1536)")?')
+  ) {
+    nextSchema = nextSchema.replace(
+      /(model PostVector \{[\s\S]*?sourcePreview\s+String\s+@default\(""\))/,
+      `$1
+  embedding Unsupported("vector(1536)")?`
+    )
+  }
+
   return nextSchema
 }
 
@@ -76,7 +101,7 @@ export default withAuth(
       idField: {
         kind: 'autoincrement',
       },
-      extendPrismaSchema: extendPrismaSchemaWithTagVectors,
+      extendPrismaSchema: extendPrismaSchemaWithVectors,
     },
     ui: {
       // If `isDisabled` is set to `true` then the Admin UI will be completely disabled.
@@ -116,6 +141,15 @@ export default withAuth(
       return {
         // For RSS feed generation for querying posts by rssTarget with where clause
         query: {
+          checkTagNameSimilarity: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              name: graphql.arg({ type: graphql.nonNull(graphql.String) }),
+            },
+            resolve: async (_source, { name }, context) => {
+              return checkTagNameSimilarity(context, name)
+            },
+          }),
           postsForRssTarget: graphql.field({
             type: graphql.nonNull(graphql.list(base.object('Post'))),
             args: {
@@ -153,6 +187,39 @@ export default withAuth(
             },
             resolve: async (_source, { id }, context) => {
               return findSimilarPhotos(context, id as string)
+            },
+          }),
+          exactPHashDuplicatePhotos: graphql.field({
+            type: graphql.nonNull(graphql.list(base.object('Photo'))),
+            args: {
+              id: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { id }, context) => {
+              return findExactPHashDuplicatePhotos(context, id as string)
+            },
+          }),
+          nearPHashDuplicatePhotos: graphql.field({
+            type: graphql.nonNull(graphql.list(base.object('Photo'))),
+            args: {
+              id: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { id }, context) => {
+              return findNearPHashDuplicatePhotos(context, id as string)
+            },
+          }),
+          suggestPhotoTagsFromImageLabels: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              photoId: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { photoId }, context) => {
+              return suggestPhotoTagsFromImageLabels(context, photoId as string)
             },
           }),
           similarRssArticlesByPostTitle: graphql.field({
@@ -197,6 +264,60 @@ export default withAuth(
                 throw new Error('AI 標籤建議功能目前已停用')
               }
               return suggestAndApplyPostTags(context, postId as string)
+            },
+          }),
+          applyPostTagCandidates: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              postId: graphql.arg({ type: graphql.nonNull(graphql.ID) }),
+              selections: graphql.arg({ type: graphql.nonNull(graphql.JSON) }),
+            },
+            resolve: async (_source, { postId, selections }, context) => {
+              return applyPostTagCandidates(
+                context,
+                postId as string,
+                selections
+              )
+            },
+          }),
+          applyPhotoImageLabelTags: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              photoId: graphql.arg({
+                type: graphql.nonNull(graphql.ID),
+              }),
+            },
+            resolve: async (_source, { photoId }, context) => {
+              return applyPhotoImageLabelTags(context, photoId as string)
+            },
+          }),
+          suggestPostIdea: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: {
+              input: graphql.arg({
+                type: graphql.nonNull(graphql.String),
+              }),
+              selectedKeywords: graphql.arg({
+                type: graphql.list(graphql.nonNull(graphql.String)),
+              }),
+              structuredInput: graphql.arg({
+                type: graphql.JSON,
+              }),
+            },
+            resolve: async (
+              _source,
+              { input, selectedKeywords, structuredInput },
+              context
+            ) => {
+              if (!envVar.featureToggle.postVector) {
+                throw new Error('報題建議功能目前已停用')
+              }
+              return suggestPostIdea(
+                context,
+                input as string,
+                selectedKeywords as string[] | null | undefined,
+                structuredInput
+              )
             },
           }),
         },

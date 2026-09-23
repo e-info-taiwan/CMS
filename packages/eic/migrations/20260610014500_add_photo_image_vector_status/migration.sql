@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "Photo"
+  ADD COLUMN IF NOT EXISTS "imageVectorStatus" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "imageVectorRetryCount" INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "imageVectorFailReason" TEXT,
+  ADD COLUMN IF NOT EXISTS "imageVectorFailedAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "imageVectorUpdatedAt" TIMESTAMP(3);
+

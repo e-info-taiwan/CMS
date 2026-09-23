@@ -11,6 +11,7 @@ steps:
     args:
       - '-c'
       - |
+        set -euo pipefail
         # Copy patches and yarn.lock to target package
         cp -r patches yarn.lock packages/$_TARGET_PACKAGE
         
@@ -41,6 +42,7 @@ steps:
     args:
       - '-c'
       - |
+        set -euo pipefail
         # read cloud run service names from substitution variable
         IFS=',' read -r -a cloud_runs <<< "$_CLOUD_RUN_SERVICE_NAMES"
         for cr in "${cloud_runs[@]}"

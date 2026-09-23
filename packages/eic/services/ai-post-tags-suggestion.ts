@@ -8,9 +8,22 @@ import { tagEmbeddingService } from './tag-embedding'
 const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 
 export type SuggestPostTagsResult = {
-  tags: { id: string; name: string }[]
+  candidates: PostTagCandidate[]
   geminiSuggestions: string[]
   possibleTypos: { original: string; suggested: string }[]
+  targetCount: number
+  currentTagCount: number
+}
+
+const POST_TAG_TARGET_COUNT = 8
+const POST_TAG_EXISTING_CANDIDATE_MAX = 6
+const POST_TAG_NEW_CANDIDATE_MAX = 3
+
+export type PostTagCandidate = {
+  key: string
+  suggestedName: string
+  kind: 'featured-existing' | 'existing' | 'new'
+  existingTag?: { id: string; name: string; isFeatured: boolean }
 }
 
 export function extractDraftToPlainParagraphs(
@@ -69,12 +82,23 @@ function parseTagJsonArray(text: string): string[] {
     unique.push(n)
   }
 
-  return unique.slice(0, 5)
+  return unique.slice(0, 12)
 }
 
 type GeminiTagAndTypoResponse = {
   tags: string[]
   possibleTypos: { original: string; suggested: string }[]
+}
+
+type GeminiCandidateSelection = {
+  existingTagIds: string[]
+  newTags: string[]
+}
+
+type ExistingTagOption = {
+  id: number
+  name: string
+  isFeatured: boolean
 }
 
 function parseGeminiTagAndTypoJson(text: string): GeminiTagAndTypoResponse {
@@ -135,17 +159,6 @@ function parseGeminiTagAndTypoJson(text: string): GeminiTagAndTypoResponse {
   }
 }
 
-function formatTypoCandidatesForStorage(
-  possibleTypos: { original: string; suggested: string }[]
-): string {
-  if (possibleTypos.length === 0) {
-    return ''
-  }
-  return possibleTypos
-    .map((item, idx) => `${idx + 1}. ${item.original} -> ${item.suggested}`)
-    .join('\n')
-}
-
 async function callGeminiForTagSuggestions(
   plainText: string
 ): Promise<GeminiTagAndTypoResponse> {
@@ -155,7 +168,7 @@ async function callGeminiForTagSuggestions(
 
   const ai = new GoogleGenAI({})
   const prompt = `你是關心環境與公共議題的媒體編輯助理。請閱讀以下文章（已轉成純文字、段落以空行分隔），完成兩件事：
-1) 從文章歸納 3 到 5 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
+1) 從文章歸納 8 到 12 個簡短中文「標籤」名詞或短語（每個標籤不超過 20 字，不要編號、不要說明）。
 2) 盡可能找出文內「可能的錯字」或明顯不自然用詞，列出原文與建議改寫（如果沒有就回傳空陣列）。
 
 請只輸出一個 JSON 物件，格式如下（不要輸出任何額外文字）：
@@ -180,6 +193,86 @@ ${plainText}`
   }
 
   return parseGeminiTagAndTypoJson(text)
+}
+
+function parseGeminiCandidateSelection(text: string): GeminiCandidateSelection {
+  const trimmed = text.trim()
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```$/i)
+  const jsonSource = fenceMatch ? fenceMatch[1].trim() : trimmed
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(jsonSource)
+  } catch {
+    throw new Error('GEMINI_CANDIDATE_JSON_PARSE_ERROR')
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('GEMINI_CANDIDATE_JSON_NOT_OBJECT')
+  }
+
+  const payload = parsed as { existingTagIds?: unknown; newTags?: unknown }
+  const existingTagIds = Array.isArray(payload.existingTagIds)
+    ? payload.existingTagIds.map((id) => String(id).trim()).filter(Boolean)
+    : []
+  const newTags = parseTagJsonArray(JSON.stringify(payload.newTags ?? []))
+
+  return {
+    existingTagIds: [...new Set(existingTagIds)].slice(
+      0,
+      POST_TAG_EXISTING_CANDIDATE_MAX
+    ),
+    newTags: newTags.slice(0, POST_TAG_NEW_CANDIDATE_MAX),
+  }
+}
+
+async function callGeminiForCandidateSelection({
+  articleText,
+  articleConcepts,
+  existingTagPool,
+}: {
+  articleText: string
+  articleConcepts: string[]
+  existingTagPool: ExistingTagOption[]
+}): Promise<GeminiCandidateSelection> {
+  if (!envVar.ai.gemini.apiKey) {
+    throw new Error('GEMINI_API_KEY_NOT_CONFIGURED')
+  }
+
+  const ai = new GoogleGenAI({})
+  const existingTagsContext = existingTagPool.length
+    ? existingTagPool
+        .map(
+          (tag) =>
+            `- id: ${tag.id}; 名稱: ${tag.name}; 首頁顯示: ${
+              tag.isFeatured ? '是' : '否'
+            }`
+        )
+        .join('\n')
+    : '（沒有可用的既有標籤）'
+  const prompt = `你是關心環境與公共議題的媒體編輯助理。以下是文章內容、主題概念，以及由向量檢索召回的既有標籤。
+
+文章內容：
+${articleText.slice(0, 12000)}
+
+主題概念：${articleConcepts.join('、')}
+
+既有標籤候選池：
+${existingTagsContext}
+
+請產生「這一次」可讓編輯勾選的標籤候選。既有標籤優先：只有確實符合文章主題時，從候選池選 5 到 6 個 existingTagIds；首頁顯示標籤只有在同樣相關時優先，不可牽強配對。再提出 2 到 3 個確實是新概念、且不與選定既有標籤同義或重複的 newTags。若相關既有標籤不足，寧可少選，絕對不要選不相關的標籤；新標籤最多 3 個。
+
+請只輸出 JSON，且 existingTagIds 必須完全使用上方列出的 id：
+{
+  "existingTagIds": ["123", "456"],
+  "newTags": ["新標籤一", "新標籤二"]
+}`
+  const result = await ai.models.generateContent({
+    model: envVar.ai.gemini.model,
+    contents: prompt,
+  })
+  const text = result.text?.trim()
+  if (!text) throw new Error('SERVER_ERROR')
+  return parseGeminiCandidateSelection(text)
 }
 
 async function assertUserCanSuggestTagsForPost(
@@ -227,58 +320,70 @@ async function assertUserCanSuggestTagsForPost(
   }
 }
 
-async function resolveOrCreateTag(
+async function buildExistingTagPool(
   context: KeystoneContext,
-  suggestedName: string
-): Promise<{ id: string; name: string }> {
-  const name = suggestedName.trim()
-  if (!name) {
-    throw new Error('EMPTY_TAG_NAME')
+  concepts: string[],
+  currentTagIds: Set<number>
+): Promise<ExistingTagOption[]> {
+  const pool = new Map<number, ExistingTagOption>()
+  const add = (tag: ExistingTagOption) => {
+    if (!currentTagIds.has(tag.id)) pool.set(tag.id, tag)
   }
 
-  const existingByName = await context.prisma.Tag.findUnique({
-    where: { name },
+  // Include featured tags as candidates, but let the second Gemini pass decide
+  // whether they are actually relevant instead of forcing a homepage tag.
+  const featuredTags = await context.prisma.Tag.findMany({
+    where: { isFeatured: true },
+    select: { id: true, name: true, isFeatured: true },
+    orderBy: { name: 'asc' },
   })
-  if (existingByName) {
-    return { id: String(existingByName.id), name: existingByName.name }
-  }
+  featuredTags.forEach((tag: ExistingTagOption) => add(tag))
 
   try {
-    const embedding = await tagEmbeddingService.generateVertexEmbedding(name)
-    const similar = await tagEmbeddingService.findSimilarTags({
-      prisma: context.prisma,
-      embedding,
-    })
-    const best = similar[0]
-    if (
-      best &&
-      best.distance <= envVar.tagEmbedding.similarityCheck.distanceThreshold
-    ) {
-      return { id: String(best.id), name: best.name }
+    for (const concept of concepts) {
+      const exact = await context.prisma.Tag.findUnique({
+        where: { name: concept },
+        select: { id: true, name: true, isFeatured: true },
+      })
+      if (exact) add(exact)
+
+      const embedding = await tagEmbeddingService.generateVertexEmbedding(
+        concept
+      )
+      const similar = await tagEmbeddingService.findSimilarTags({
+        prisma: context.prisma,
+        embedding,
+      })
+      similar.forEach((tag) =>
+        add({ id: tag.id, name: tag.name, isFeatured: tag.isFeatured })
+      )
     }
   } catch (err) {
-    console.error(
-      '[ai-post-tags-suggestion] embedding / similarity failed',
-      err
-    )
+    console.error('[ai-post-tags-suggestion] embedding retrieval failed', err)
     throw new GraphQLError(
       '無法比對既有標籤向量，請確認 Vertex AI 標籤嵌入設定是否正確。',
       { extensions: { code: 'EMBEDDING_ERROR' } }
     )
   }
 
-  const created = await context.db.Tag.createOne({
-    data: {
-      name,
-      checkSimilarity: false,
-    },
-  })
+  return [...pool.values()].slice(0, 60)
+}
 
-  return { id: String(created.id), name: String(created.name ?? name) }
+function toExistingCandidate(tag: ExistingTagOption): PostTagCandidate {
+  return {
+    key: `existing-${tag.id}`,
+    suggestedName: tag.name,
+    kind: tag.isFeatured ? 'featured-existing' : 'existing',
+    existingTag: {
+      id: String(tag.id),
+      name: tag.name,
+      isFeatured: tag.isFeatured,
+    },
+  }
 }
 
 /**
- * 讀取文章 draft 內容、呼叫 Gemini 建議標籤、依向量比對或新建標籤，並 connect 到文章。
+ * 讀取文章 draft 內容、呼叫 Gemini 建議標籤並比對既有標籤；不建立或連結任何標籤。
  */
 export async function suggestAndApplyPostTags(
   context: KeystoneContext,
@@ -301,7 +406,7 @@ export async function suggestAndApplyPostTags(
 
   const post = await context.prisma.Post.findUnique({
     where: { id: postId },
-    select: { content: true },
+    select: { content: true, tags: { select: { id: true } } },
   })
 
   const plain = extractDraftToPlainParagraphs(
@@ -313,6 +418,9 @@ export async function suggestAndApplyPostTags(
     })
   }
 
+  const currentTagIds = new Set(
+    (post?.tags ?? []).map((tag: { id: number }) => tag.id)
+  )
   let geminiSuggestions: string[]
   let possibleTypos: { original: string; suggested: string }[]
   try {
@@ -349,31 +457,141 @@ export async function suggestAndApplyPostTags(
     })
   }
 
-  const resolved: { id: string; name: string }[] = []
-  const seenIds = new Set<string>()
-
-  for (const label of geminiSuggestions) {
-    const tag = await resolveOrCreateTag(context, label)
-    if (seenIds.has(tag.id)) continue
-    seenIds.add(tag.id)
-    resolved.push(tag)
-  }
-
-  if (resolved.length === 0) {
-    throw new GraphQLError('未能產生任何標籤', {
-      extensions: { code: 'BAD_USER_INPUT' },
+  let selection: GeminiCandidateSelection
+  let existingTagPool: ExistingTagOption[]
+  try {
+    existingTagPool = await buildExistingTagPool(
+      context,
+      geminiSuggestions,
+      currentTagIds
+    )
+    selection = await callGeminiForCandidateSelection({
+      articleText: plain,
+      articleConcepts: geminiSuggestions,
+      existingTagPool,
+    })
+  } catch (error) {
+    console.error('[ai-post-tags-suggestion] candidate selection error', error)
+    if (error instanceof GraphQLError) throw error
+    if (
+      error instanceof Error &&
+      (error.message === 'GEMINI_CANDIDATE_JSON_PARSE_ERROR' ||
+        error.message === 'GEMINI_CANDIDATE_JSON_NOT_OBJECT')
+    ) {
+      throw new GraphQLError('AI 回傳的候選標籤格式異常，請再試一次', {
+        extensions: { code: 'GEMINI_PARSE_ERROR' },
+      })
+    }
+    throw new GraphQLError('AI 服務暫時無法使用，請稍後再試', {
+      extensions: { code: 'AI_ERROR' },
     })
   }
 
+  const tagsById = new Map(existingTagPool.map((tag) => [String(tag.id), tag]))
+  const candidates: PostTagCandidate[] = []
+  const usedCandidateKeys = new Set<string>()
+  for (const id of selection.existingTagIds) {
+    const tag = tagsById.get(id)
+    if (!tag || usedCandidateKeys.has(`existing-${tag.id}`)) continue
+    candidates.push(toExistingCandidate(tag))
+    usedCandidateKeys.add(`existing-${tag.id}`)
+  }
+
+  for (const name of selection.newTags) {
+    if (
+      candidates.filter((tag) => tag.kind === 'new').length >=
+      POST_TAG_NEW_CANDIDATE_MAX
+    )
+      break
+    const existing = await context.prisma.Tag.findUnique({
+      where: { name },
+      select: { id: true, name: true, isFeatured: true },
+    })
+    if (existing && !currentTagIds.has(existing.id)) {
+      const candidate = toExistingCandidate(existing)
+      if (
+        !usedCandidateKeys.has(candidate.key) &&
+        candidates.filter((tag) => tag.kind !== 'new').length <
+          POST_TAG_EXISTING_CANDIDATE_MAX
+      ) {
+        candidates.push(candidate)
+        usedCandidateKeys.add(candidate.key)
+      }
+      continue
+    }
+    const key = `new-${name.toLowerCase()}`
+    if (!existing && !usedCandidateKeys.has(key)) {
+      candidates.push({ key, suggestedName: name, kind: 'new' })
+      usedCandidateKeys.add(key)
+    }
+  }
+
+  if (candidates.length === 0) {
+    return {
+      candidates: [],
+      geminiSuggestions,
+      possibleTypos,
+      targetCount: POST_TAG_TARGET_COUNT,
+      currentTagCount: currentTagIds.size,
+    }
+  }
+
+  return {
+    candidates,
+    geminiSuggestions,
+    possibleTypos,
+    targetCount: POST_TAG_TARGET_COUNT,
+    currentTagCount: currentTagIds.size,
+  }
+}
+
+export async function applyPostTagCandidates(
+  context: KeystoneContext,
+  postIdInput: string | number,
+  selections: unknown
+): Promise<{ tags: { id: string; name: string }[] }> {
+  const postId = Number(postIdInput)
+  if (!Number.isFinite(postId) || !Array.isArray(selections)) {
+    throw new GraphQLError('套用的標籤資料無效', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+  await assertUserCanSuggestTagsForPost(context, postId)
+
+  const tags: { id: string; name: string }[] = []
+  const seenIds = new Set<string>()
+  for (const selection of selections) {
+    if (!selection || typeof selection !== 'object') continue
+    const item = selection as { existingTagId?: unknown; name?: unknown }
+    let tag: { id: string; name: string } | null = null
+    const existingId = Number(item.existingTagId)
+    if (Number.isFinite(existingId)) {
+      const existing = await context.prisma.Tag.findUnique({
+        where: { id: existingId },
+        select: { id: true, name: true },
+      })
+      if (existing) tag = { id: String(existing.id), name: existing.name }
+    } else {
+      const name = String(item.name ?? '').trim()
+      if (!name) continue
+      const existing = await context.prisma.Tag.findUnique({ where: { name } })
+      const created =
+        existing ?? (await context.db.Tag.createOne({ data: { name } }))
+      tag = { id: String(created.id), name: String(created.name ?? name) }
+    }
+    if (tag && !seenIds.has(tag.id)) {
+      seenIds.add(tag.id)
+      tags.push(tag)
+    }
+  }
+  if (tags.length === 0) {
+    throw new GraphQLError('請至少選擇一個標籤', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
   await context.prisma.Post.update({
     where: { id: postId },
-    data: {
-      aiPossibleTypos: formatTypoCandidatesForStorage(possibleTypos),
-      tags: {
-        connect: resolved.map((t) => ({ id: Number(t.id) })),
-      },
-    },
+    data: { tags: { connect: tags.map((tag) => ({ id: Number(tag.id) })) } },
   })
-
-  return { tags: resolved, geminiSuggestions, possibleTypos }
+  return { tags }
 }

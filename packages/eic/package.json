@@ -13,6 +13,7 @@
     "db-migrate": "keystone prisma migrate deploy",
     "backfill-tag-embeddings": "node scripts/backfill-tag-embeddings.js",
     "backfill-post-title-embeddings": "node scripts/backfill-post-title-embeddings.js",
+    "backfill-post-vectors": "node scripts/backfill-post-vectors.js",
     "backfill-rss-article-title-embeddings": "node scripts/backfill-rss-article-title-embeddings.js",
     "build": "keystone build",
     "postinstall": "test -n \"$WINDOWS_ONLY\" || patch-package && keystone postinstall --fix"

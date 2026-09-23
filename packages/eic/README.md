@@ -81,6 +81,71 @@ yarn workspace @mirrormedia/lilith-eic run backfill-tag-embeddings --force
 
 目前 tags 數量約數千筆，適合直接用 `gemini-embedding-001` 線上逐筆 backfill。若未來資料量成長到數十萬筆以上，需重新評估是否改用支援 batch prediction 的 embedding model 或另外設計分片式 backfill worker。
 
+### Post document vector
+
+`PostVector` 會保存文章層級的語意向量，供後續報題建議、相似文章搜尋使用。Post 建立或更新後，CMS 會從標題、副標、前言、內文、section、categories、tags 組合出索引文字，產生 `document` 類型的向量並寫入 `PostVector.embedding`。
+
+目前採用的模型與欄位：
+
+- Model：沿用 `TAG_VERTEX_EMBEDDING_MODEL`，預設 `gemini-embedding-001`
+- Dimension：沿用 `TAG_VERTEX_EMBEDDING_DIMENSION`，預設 `1536`
+- DB 欄位：`PostVector.embedding`，型別為 `vector(1536)`
+- 距離計算：PostgreSQL pgvector cosine distance `<=>`
+
+Post hook 受 `FEATURE_TOGGLE_POST_VECTOR=true` 控制。第一次部署或需要補齊既有文章時，先執行：
+
+```
+yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors --dry-run
+yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors
+```
+
+預設會用 `sourceHash` 跳過內容未變的文章。若需要全部重算：
+
+```
+yarn workspace @mirrormedia/lilith-eic run backfill-post-vectors --force
+```
+
+Admin UI 另有 `/post-idea-suggestions` 報題建議頁。使用者輸入發想後，CMS 會先呼叫 Gemini 將文字整理成結構化提案，再用 Vertex embedding 查 `PostVector` 找相似文章。
+
+相關環境變數：
+
+```
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+POST_IDEA_SUGGESTION_MAX_DISTANCE=0.62
+POST_IDEA_SUGGESTION_CANDIDATE_LIMIT=50
+POST_IDEA_SUGGESTION_RESULT_LIMIT=10
+```
+
+### Photo vector similarity
+
+`Photo.imageVector` 使用 pgvector cosine distance (`<=>`) 尋找場景或語意相似圖片。CMS 只會回傳距離小於等於門檻的照片，避免在沒有真正相近圖片時仍硬取最近的 N 張。
+
+相關環境變數：
+
+```
+PHOTO_SIMILARITY_MAX_DISTANCE=0.12
+PHOTO_SIMILARITY_RESULT_LIMIT=10
+```
+
+CMS 的 pHash 區塊會即時用 `Photo.phash` 查詢並分成兩組：
+
+- 完全相同：64-bit Hamming distance `<= 2`
+- 近似重複：64-bit Hamming distance `3..8`
+
+`possibleDuplicates` 是 image-processor 寫入的 legacy JSON，不會影響 CMS 目前的 pHash 顯示分流。
+
+### Photo image label tags
+
+`Photo.imageLabelSuggestions` 由 image-processor 寫入 Google Vision `LABEL_DETECTION` 結果，CMS 不會把這些英文 label 直接當正式 `Tag`。
+
+Photo 編輯頁的「圖片建議標籤」會提供兩個人工操作：
+
+- 比對既有 Tags：呼叫 Gemini 將 Vision label 翻成台灣繁體中文，再用 `Tag.name` exact match；若沒有 exact match 且 `FEATURE_TOGGLE_TAG_VECTOR=true`，會用既有 `Tag` embedding 找距離小於等於 `TAG_SIMILARITY_DISTANCE_THRESHOLD` 的 Tag。
+- 套用匹配 Tags：只會把匹配到的既有 `Tag` connect 到 `Photo.tags`，不會自動建立新 Tag。
+
+Google Vision 偵測到 `Person`、`People`、`Human` 等人物相關標籤時，CMS 會統一顯示並比對為「人物」；資料庫中需先有同名的 `Tag`，才能透過「套用匹配 Tags」連結至圖片。
+
 ## Getting started on local environment
 ### Start postgres instance
 在起 lilith-readr 服務前，需要在 local 端先起 postgres database。

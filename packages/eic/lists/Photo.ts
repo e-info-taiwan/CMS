@@ -6,11 +6,13 @@ import { Storage } from '@google-cloud/storage'
 import { list, graphql } from '@keystone-6/core'
 import {
   file,
+  integer,
   image,
   text,
   relationship,
   virtual,
   json,
+  timestamp,
 } from '@keystone-6/core/fields'
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
@@ -189,6 +191,11 @@ const listConfigurations = list({
         createView: { fieldMode: 'hidden' },
       },
     }),
+    tags: relationship({
+      ref: 'Tag.photos',
+      many: true,
+      label: '標籤',
+    }),
     possibleDuplicates: json({
       label: '可能重複的圖片 ID',
       ui: {
@@ -200,10 +207,143 @@ const listConfigurations = list({
         listView: { fieldMode: 'hidden' },
       },
     }),
+    imageVectorStatus: text({
+      label: '圖片向量狀態',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorRetryCount: integer({
+      label: '圖片向量重試次數',
+      defaultValue: 0,
+      validation: { isRequired: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorFailReason: text({
+      label: '圖片向量失敗原因',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorFailedAt: timestamp({
+      label: '圖片向量失敗時間',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageVectorUpdatedAt: timestamp({
+      label: '圖片向量更新時間',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelSuggestions: json({
+      label: '圖片建議標籤',
+      ui: {
+        views: './lists/views/image-label-suggestions',
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelRawResult: json({
+      label: 'Google Vision 原始標籤',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelStatus: text({
+      label: '圖片標籤狀態',
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelFailReason: text({
+      label: '圖片標籤失敗原因',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    imageLabelUpdatedAt: timestamp({
+      label: '圖片標籤更新時間',
+      db: { isNullable: true },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'read' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
+    autoGenerateImageTags: virtual({
+      label: '自動生成標籤',
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve(item: Record<string, unknown>) {
+          return { photoId: String(item?.id ?? '') }
+        },
+      }),
+      ui: {
+        views: './lists/views/photo-auto-generate-tags',
+        query: '',
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'read' },
+      },
+    }),
+    hasImageVector: virtual({
+      field: graphql.field({
+        type: graphql.Boolean,
+        async resolve(item: Record<string, unknown>, _args, context) {
+          if (!envVar.featureToggle.photoVector) {
+            return false
+          }
+
+          const photoId = Number(item?.id)
+          if (!Number.isFinite(photoId)) {
+            return false
+          }
+
+          const rows = (await context.prisma.$queryRaw`
+            SELECT ("imageVector" IS NOT NULL) AS "hasImageVector"
+            FROM "Photo"
+            WHERE id = ${photoId}
+            LIMIT 1
+          `) as Array<{ hasImageVector: boolean | null }>
+
+          return rows[0]?.hasImageVector === true
+        },
+      }),
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+    }),
   },
   ui: {
     listView: {
-      initialColumns: ['name', 'imageFile'],
+      initialColumns: ['name', 'imageFile', 'tags', 'autoGenerateImageTags'],
       initialSort: {
         // @ts-ignore: `updatedAt` field does exist
         field: 'updatedAt',

@@ -33,6 +33,16 @@ const {
   TAG_SIMILARITY_CHECK_LIMIT,
   POST_TITLE_SIMILARITY_MAX_DISTANCE,
   POST_TITLE_SIMILARITY_RESULT_LIMIT,
+  POST_IDEA_SUGGESTION_MAX_DISTANCE,
+  POST_IDEA_SUGGESTION_CANDIDATE_LIMIT,
+  POST_IDEA_SUGGESTION_RESULT_LIMIT,
+  POST_IDEA_SUGGESTION_STRONG_DISTANCE,
+  POST_IDEA_SUGGESTION_MIN_SCORE,
+  POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT,
+  POST_IDEA_SUGGESTION_MAX_RESULTS,
+  POST_IDEA_SUGGESTION_LEXICAL_LIMIT,
+  PHOTO_SIMILARITY_MAX_DISTANCE,
+  PHOTO_SIMILARITY_RESULT_LIMIT,
   FEATURE_TOGGLE_PHOTO_VECTOR,
   FEATURE_TOGGLE_TAG_VECTOR,
   FEATURE_TOGGLE_POST_VECTOR,
@@ -139,6 +149,26 @@ export default {
   postTitleSimilarity: {
     maxDistance: numberFromEnv(POST_TITLE_SIMILARITY_MAX_DISTANCE, 0.28),
     resultLimit: numberFromEnv(POST_TITLE_SIMILARITY_RESULT_LIMIT, 8),
+  },
+  postIdeaSuggestion: {
+    maxDistance: numberFromEnv(POST_IDEA_SUGGESTION_MAX_DISTANCE, 0.62),
+    candidateLimit: numberFromEnv(POST_IDEA_SUGGESTION_CANDIDATE_LIMIT, 50),
+    resultLimit: numberFromEnv(POST_IDEA_SUGGESTION_RESULT_LIMIT, 10),
+    // 相關／不相關分流：distance <= strongDistance 視為「較相關」（時間軸與完整清單主區，
+    // 上限 maxResults）；但未命中主題錨點者仍需達 minScore，避免為了湊數列出弱相關文章。
+    // strongDistance < distance <= maxDistance 且達 minScore 視為「較不相關」，
+    // 另以收折區呈現（上限 weakResultLimit）。
+    strongDistance: numberFromEnv(POST_IDEA_SUGGESTION_STRONG_DISTANCE, 0.45),
+    minScore: numberFromEnv(POST_IDEA_SUGGESTION_MIN_SCORE, 0.5),
+    weakResultLimit: numberFromEnv(POST_IDEA_SUGGESTION_WEAK_RESULT_LIMIT, 5),
+    maxResults: numberFromEnv(POST_IDEA_SUGGESTION_MAX_RESULTS, 30),
+    // 混合檢索：用 entities/locations 對標題做字面比對，命中者一律視為「較相關」，
+    // 確保具體地名／機構（即使向量沒撈到或沒有 embedding）也會出現。
+    lexicalLimit: numberFromEnv(POST_IDEA_SUGGESTION_LEXICAL_LIMIT, 80),
+  },
+  photoSimilarity: {
+    maxDistance: numberFromEnv(PHOTO_SIMILARITY_MAX_DISTANCE, 0.12),
+    resultLimit: numberFromEnv(PHOTO_SIMILARITY_RESULT_LIMIT, 10),
   },
   featureToggle: {
     photoVector: FEATURE_TOGGLE_PHOTO_VECTOR === 'true',
