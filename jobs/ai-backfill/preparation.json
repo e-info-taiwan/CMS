@@ -2,7 +2,7 @@
   "preparedAt": "2026-09-23",
   "project": "mimetic-sweep-456508-k4",
   "region": "asia-east1",
-  "status": "clip_import_running_phash_cancelled_photo_labels_not_started",
+  "status": "clip_import_and_phash_running_photo_labels_paused",
   "jobsCreated": true,
   "productionBackfillExecuted": true,
   "defaultMode": "check",
@@ -58,12 +58,14 @@
     "job": "eic-photo-phash-backfill-prod",
     "plannedScope": "all photos missing pHash",
     "tasks": 8,
-    "status": "cancelled_by_user",
+    "status": "running",
     "pilotExecution": "eic-photo-phash-backfill-prod-xktql",
     "pilotSucceeded": 80,
-    "execution": "eic-photo-phash-backfill-prod-pg7nx",
+    "execution": "eic-photo-phash-backfill-prod-vnstv",
     "cancelledTasks": 8,
-    "cancelledAt": "2026-09-23T12:27:15Z"
+    "cancelledAt": "2026-09-23T12:27:15Z",
+    "previousCancelledExecution": "eic-photo-phash-backfill-prod-pg7nx",
+    "preservedCountAtResume": 24334
   },
   "vectorImport": {
     "job": "eic-photo-vector-import-prod",
@@ -78,7 +80,7 @@
   },
   "userRequestedState": {
     "clip": "continue importing existing vectors",
-    "phash": "paused; running execution cancelled",
+    "phash": "resumed with eight tasks; existing hashes retained",
     "photoLabels": "paused; annual apply not started",
     "cmsPhotoAiFields": "hidden in production",
     "cmsPostIdeaSuggestions": "hidden in production"
