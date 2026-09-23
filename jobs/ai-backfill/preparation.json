@@ -1,0 +1,47 @@
+{
+  "preparedAt": "2026-09-23",
+  "project": "mimetic-sweep-456508-k4",
+  "region": "asia-east1",
+  "status": "jobs_created_migrations_applied_backfill_in_progress",
+  "jobsCreated": true,
+  "productionBackfillExecuted": true,
+  "defaultMode": "check",
+  "tag": {
+    "job": "eic-tag-embedding-backfill-prod",
+    "buildId": "d41b5105-1b73-453d-9396-d2befcffe1c1",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-tag-embedding-backfill@sha256:cf75ed96da8c670e7b84ba3b0274791307a8a047ed778a26040fd034997b7d60",
+    "checkExecution": "eic-tag-embedding-backfill-prod-smx2k",
+    "pilotExecution": "eic-tag-embedding-backfill-prod-n7nbx",
+    "pilotUpdated": 50,
+    "backfillExecution": "eic-tag-embedding-backfill-prod-gjb8b"
+  },
+  "photo": {
+    "job": "eic-photo-ai-backfill-prod",
+    "buildId": "52ac7f87-57b5-40be-9381-6016e58a27f6",
+    "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:0316acbf0889bc3ce355a35f3cbd25277af68e8b62f87d4bfc47e82933dec209"
+  },
+  "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+  "projectRoles": [
+    "roles/aiplatform.user",
+    "roles/serviceusage.serviceUsageConsumer",
+    "roles/cloudsql.client"
+  ],
+  "bucket": "statics-e-info-prod",
+  "bucketRole": "roles/storage.objectViewer",
+  "secret": "eic-ai-backfill-prod-database-url",
+  "secretRole": "roles/secretmanager.secretAccessor",
+  "validation": [
+    "6 Node unit and isolated PostgreSQL integration tests passed",
+    "Go processor suite passed including photo Job unit and isolated PostgreSQL integration tests",
+    "Both dedicated Cloud Build image builds succeeded",
+    "Production Tag check and 50-item Vertex apply succeeded; 5 production schema migrations applied successfully"
+  ],
+  "secretVersion": 2,
+  "migration": {
+    "job": "eic-cms-migrate-prod",
+    "execution": "eic-cms-migrate-prod-r8mwk",
+    "status": "succeeded",
+    "appliedMigrations": 5,
+    "backupId": "1790162567742"
+  }
+}

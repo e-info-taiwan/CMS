@@ -273,7 +273,11 @@ export default withAuth(
               selections: graphql.arg({ type: graphql.nonNull(graphql.JSON) }),
             },
             resolve: async (_source, { postId, selections }, context) => {
-              return applyPostTagCandidates(context, postId as string, selections)
+              return applyPostTagCandidates(
+                context,
+                postId as string,
+                selections
+              )
             },
           }),
           applyPhotoImageLabelTags: graphql.field({
