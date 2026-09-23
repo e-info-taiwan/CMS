@@ -1,0 +1,523 @@
+{
+  "archivedAt": "2026-09-23T13:32:57.287421+00:00",
+  "project": "mimetic-sweep-456508-k4",
+  "region": "asia-east1",
+  "purpose": "Configuration references for jobs retired after the production rollout. Secret values and non-allowlisted environment values are omitted. Recreate from deployment scripts and secret references when needed.",
+  "jobs": [
+    {
+      "name": "eic-cms-migrate-prod",
+      "tasks": 1,
+      "parallelism": 1,
+      "taskTimeoutSeconds": "600",
+      "maxRetries": 0,
+      "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+      "annotations": {},
+      "containers": [
+        {
+          "image": "gcr.io/mimetic-sweep-456508-k4/e-info@sha256:9fa1a7e4f51cedbc2f35103bbd0ebb55b7c2823637e2d9c9fdc2400814586b11",
+          "resources": {
+            "limits": {
+              "cpu": "1",
+              "memory": "1Gi"
+            }
+          },
+          "env": [
+            {
+              "name": "DATABASE_PROVIDER",
+              "value": "postgresql"
+            },
+            {
+              "name": "IS_UI_DISABLED",
+              "valueOmitted": true
+            },
+            {
+              "name": "FEATURE_TOGGLE_PHOTO_VECTOR",
+              "valueOmitted": true
+            },
+            {
+              "name": "FEATURE_TOGGLE_TAG_VECTOR",
+              "valueOmitted": true
+            },
+            {
+              "name": "FEATURE_TOGGLE_POST_VECTOR",
+              "valueOmitted": true
+            },
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "2",
+                  "name": "eic-ai-backfill-prod-database-url"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "latestExecution": {
+        "completionStatus": "EXECUTION_SUCCEEDED",
+        "completionTimestamp": "2026-09-23T11:26:59.560041Z",
+        "creationTimestamp": "2026-09-23T11:26:24.246022Z",
+        "name": "eic-cms-migrate-prod-r8mwk"
+      }
+    },
+    {
+      "name": "eic-tag-embedding-backfill-prod",
+      "tasks": 1,
+      "parallelism": 1,
+      "taskTimeoutSeconds": "3600",
+      "maxRetries": 0,
+      "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+      "annotations": {},
+      "containers": [
+        {
+          "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-tag-embedding-backfill@sha256:cf75ed96da8c670e7b84ba3b0274791307a8a047ed778a26040fd034997b7d60",
+          "resources": {
+            "limits": {
+              "cpu": "1",
+              "memory": "512Mi"
+            }
+          },
+          "env": [
+            {
+              "name": "BACKFILL_MODE",
+              "value": "check"
+            },
+            {
+              "name": "BACKFILL_EXPECTED_DATABASE",
+              "value": "eic-prod"
+            },
+            {
+              "name": "BACKFILL_MAX_ITEMS",
+              "value": "50"
+            },
+            {
+              "name": "BACKFILL_BATCH_SIZE",
+              "value": "25"
+            },
+            {
+              "name": "BACKFILL_MAX_SECONDS",
+              "value": "3000"
+            },
+            {
+              "name": "BACKFILL_ATTEMPTS",
+              "value": "3"
+            },
+            {
+              "name": "TAG_VERTEX_PROJECT",
+              "value": "mimetic-sweep-456508-k4"
+            },
+            {
+              "name": "TAG_VERTEX_LOCATION",
+              "value": "asia-east1"
+            },
+            {
+              "name": "TAG_VERTEX_EMBEDDING_MODEL",
+              "value": "gemini-embedding-001"
+            },
+            {
+              "name": "BACKFILL_REQUEST_TIMEOUT_MS",
+              "value": "45000"
+            },
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "2",
+                  "name": "eic-ai-backfill-prod-database-url"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "latestExecution": {
+        "completionStatus": "EXECUTION_SUCCEEDED",
+        "completionTimestamp": "2026-09-23T11:36:51.348671Z",
+        "creationTimestamp": "2026-09-23T11:26:32.126786Z",
+        "name": "eic-tag-embedding-backfill-prod-gjb8b"
+      }
+    },
+    {
+      "name": "eic-photo-vector-import-prod",
+      "tasks": 1,
+      "parallelism": 1,
+      "taskTimeoutSeconds": "21600",
+      "maxRetries": 0,
+      "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+      "annotations": {},
+      "containers": [
+        {
+          "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-vector-import@sha256:ce5d338a167dcfbf9a9d3e6799740d50cc06ec5d22f8aec54ebede0fa35c2f9b",
+          "resources": {
+            "limits": {
+              "cpu": "1",
+              "memory": "1Gi"
+            }
+          },
+          "env": [
+            {
+              "name": "BACKFILL_MODE",
+              "value": "check"
+            },
+            {
+              "name": "BACKFILL_EXPECTED_DATABASE",
+              "value": "eic-prod"
+            },
+            {
+              "name": "BACKFILL_MAX_ITEMS",
+              "value": "200000"
+            },
+            {
+              "name": "BACKFILL_BATCH_SIZE",
+              "value": "250"
+            },
+            {
+              "name": "BACKFILL_MAX_SECONDS",
+              "value": "18000"
+            },
+            {
+              "name": "LAB_DB_HOST",
+              "value": "/cloudsql/mimetic-sweep-456508-k4:us-central1:einfo-dev"
+            },
+            {
+              "name": "LAB_DB_USER",
+              "value": "photo_vector_lab"
+            },
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "2",
+                  "name": "eic-ai-backfill-prod-database-url"
+                }
+              }
+            },
+            {
+              "name": "LAB_DB_PASSWORD",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "1",
+                  "name": "photo-vector-lab-db-password"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "latestExecution": {
+        "completionStatus": "EXECUTION_SUCCEEDED",
+        "completionTimestamp": "2026-09-23T12:45:33.740061Z",
+        "creationTimestamp": "2026-09-23T12:20:20.524811Z",
+        "name": "eic-photo-vector-import-prod-dpkf9"
+      }
+    },
+    {
+      "name": "eic-photo-clip-backfill-prod",
+      "tasks": 1,
+      "parallelism": 1,
+      "taskTimeoutSeconds": "3600",
+      "maxRetries": 0,
+      "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+      "annotations": {},
+      "containers": [
+        {
+          "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:666f064e5600821d5e43f2aea93d3a5ccc8bd4dbcbcdd2d488854446fc0f0297",
+          "resources": {
+            "limits": {
+              "cpu": "2",
+              "memory": "4Gi"
+            }
+          },
+          "env": [
+            {
+              "name": "AI_BACKFILL_JOB",
+              "value": "photos"
+            },
+            {
+              "name": "BACKFILL_FIELDS",
+              "value": "vector"
+            },
+            {
+              "name": "BACKFILL_MODE",
+              "value": "check"
+            },
+            {
+              "name": "BACKFILL_EXPECTED_DATABASE",
+              "value": "eic-prod"
+            },
+            {
+              "name": "BACKFILL_MAX_ITEMS",
+              "value": "50"
+            },
+            {
+              "name": "BACKFILL_BATCH_SIZE",
+              "value": "25"
+            },
+            {
+              "name": "BACKFILL_MAX_SECONDS",
+              "value": "3000"
+            },
+            {
+              "name": "BACKFILL_ATTEMPTS",
+              "value": "3"
+            },
+            {
+              "name": "BACKFILL_CREATED_FROM",
+              "value": "2025-12-31T16:00:00Z"
+            },
+            {
+              "name": "BACKFILL_CREATED_BEFORE",
+              "value": "2026-12-31T16:00:00Z"
+            },
+            {
+              "name": "IMAGE_BUCKET",
+              "value": "statics-e-info-prod"
+            },
+            {
+              "name": "ENABLE_IMAGE_VECTOR",
+              "value": "true"
+            },
+            {
+              "name": "ENABLE_IMAGE_LABEL",
+              "value": "false"
+            },
+            {
+              "name": "ENABLE_WATERMARK",
+              "value": "false"
+            },
+            {
+              "name": "TORCH_NUM_THREADS",
+              "value": "1"
+            },
+            {
+              "name": "VECTOR_IMAGE_MAX_SIZE",
+              "value": "384"
+            },
+            {
+              "name": "MAX_SOURCE_PIXELS",
+              "value": "60000000"
+            },
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "2",
+                  "name": "eic-ai-backfill-prod-database-url"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "latestExecution": {
+        "completionStatus": "EXECUTION_SUCCEEDED",
+        "completionTimestamp": "2026-09-23T13:24:01.907585Z",
+        "creationTimestamp": "2026-09-23T13:23:19.241674Z",
+        "name": "eic-photo-clip-backfill-prod-7t7s5"
+      }
+    },
+    {
+      "name": "eic-photo-phash-backfill-prod",
+      "tasks": 8,
+      "parallelism": 8,
+      "taskTimeoutSeconds": "3600",
+      "maxRetries": 0,
+      "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+      "annotations": {},
+      "containers": [
+        {
+          "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:666f064e5600821d5e43f2aea93d3a5ccc8bd4dbcbcdd2d488854446fc0f0297",
+          "resources": {
+            "limits": {
+              "cpu": "2",
+              "memory": "2Gi"
+            }
+          },
+          "env": [
+            {
+              "name": "BACKFILL_MODE",
+              "value": "check"
+            },
+            {
+              "name": "BACKFILL_EXPECTED_DATABASE",
+              "value": "eic-prod"
+            },
+            {
+              "name": "BACKFILL_MAX_ITEMS",
+              "value": "50"
+            },
+            {
+              "name": "BACKFILL_BATCH_SIZE",
+              "value": "25"
+            },
+            {
+              "name": "BACKFILL_MAX_SECONDS",
+              "value": "3000"
+            },
+            {
+              "name": "BACKFILL_ATTEMPTS",
+              "value": "3"
+            },
+            {
+              "name": "AI_BACKFILL_JOB",
+              "value": "photos"
+            },
+            {
+              "name": "IMAGE_BUCKET",
+              "value": "statics-e-info-prod"
+            },
+            {
+              "name": "BACKFILL_FIELDS",
+              "value": "phash"
+            },
+            {
+              "name": "ENABLE_IMAGE_VECTOR",
+              "value": "false"
+            },
+            {
+              "name": "ENABLE_IMAGE_LABEL",
+              "value": "false"
+            },
+            {
+              "name": "ENABLE_WATERMARK",
+              "value": "false"
+            },
+            {
+              "name": "MAX_SOURCE_PIXELS",
+              "value": "60000000"
+            },
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "2",
+                  "name": "eic-ai-backfill-prod-database-url"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "latestExecution": {
+        "completionStatus": "EXECUTION_FAILED",
+        "completionTimestamp": "2026-09-23T13:23:37.646200Z",
+        "creationTimestamp": "2026-09-23T13:23:14.626711Z",
+        "name": "eic-photo-phash-backfill-prod-d4g79"
+      }
+    },
+    {
+      "name": "eic-photo-ai-backfill-prod",
+      "tasks": 1,
+      "parallelism": 1,
+      "taskTimeoutSeconds": "3600",
+      "maxRetries": 0,
+      "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
+      "annotations": {},
+      "containers": [
+        {
+          "image": "asia-east1-docker.pkg.dev/mimetic-sweep-456508-k4/cloud-run-source-deploy/eic-photo-ai-backfill@sha256:de80a4f55ff2d5cc21ed59d972eb4ae4c8d40874b888d67c6381793c37e8bff9",
+          "resources": {
+            "limits": {
+              "cpu": "2",
+              "memory": "4Gi"
+            }
+          },
+          "env": [
+            {
+              "name": "BACKFILL_MODE",
+              "value": "check"
+            },
+            {
+              "name": "BACKFILL_EXPECTED_DATABASE",
+              "value": "eic-prod"
+            },
+            {
+              "name": "BACKFILL_MAX_ITEMS",
+              "value": "50"
+            },
+            {
+              "name": "BACKFILL_BATCH_SIZE",
+              "value": "25"
+            },
+            {
+              "name": "BACKFILL_MAX_SECONDS",
+              "value": "3000"
+            },
+            {
+              "name": "BACKFILL_ATTEMPTS",
+              "value": "3"
+            },
+            {
+              "name": "AI_BACKFILL_JOB",
+              "value": "photos"
+            },
+            {
+              "name": "IMAGE_BUCKET",
+              "value": "statics-e-info-prod"
+            },
+            {
+              "name": "BACKFILL_FIELDS",
+              "value": "ai"
+            },
+            {
+              "name": "BACKFILL_CREATED_FROM",
+              "value": "2025-12-31T16:00:00Z"
+            },
+            {
+              "name": "BACKFILL_CREATED_BEFORE",
+              "value": "2026-12-31T16:00:00Z"
+            },
+            {
+              "name": "ENABLE_IMAGE_VECTOR",
+              "value": "true"
+            },
+            {
+              "name": "ENABLE_IMAGE_LABEL",
+              "value": "true"
+            },
+            {
+              "name": "TORCH_NUM_THREADS",
+              "value": "1"
+            },
+            {
+              "name": "VECTOR_IMAGE_MAX_SIZE",
+              "value": "384"
+            },
+            {
+              "name": "ENABLE_WATERMARK",
+              "value": "false"
+            },
+            {
+              "name": "IMAGE_LABEL_MIN_SCORE",
+              "valueOmitted": true
+            },
+            {
+              "name": "IMAGE_LABEL_MAX_RESULTS",
+              "valueOmitted": true
+            },
+            {
+              "name": "MAX_SOURCE_PIXELS",
+              "value": "60000000"
+            },
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "key": "2",
+                  "name": "eic-ai-backfill-prod-database-url"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "latestExecution": {
+        "completionStatus": "EXECUTION_SUCCEEDED",
+        "completionTimestamp": "2026-09-23T12:16:51.462169Z",
+        "creationTimestamp": "2026-09-23T12:16:36.818717Z",
+        "name": "eic-photo-ai-backfill-prod-lk2m4"
+      }
+    }
+  ]
+}

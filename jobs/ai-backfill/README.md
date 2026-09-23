@@ -1,5 +1,11 @@
 # AI 回填 Cloud Run Jobs
 
+**資源清理（2026-09-23）：本次 6 個一次性 Cloud Run Jobs 已全部刪除，包含 migration
+與暫停的圖片標籤 Job。回填資料及執行結果保留，正式 Cloud Run services 不受影響。**
+`retired-job-configurations.json` 保存映像、資源及 Secret 參照，不含憑證值；
+清理紀錄在 `preparation.json`。以下 execute 指令均為歷史／重建後的操作範例，
+必須先重建對應 Job 才可執行，圖片標籤仍需依使用者新的恢復指示處理。
+
 **最新狀態（2026-09-23）：既有 CLIP 匯入已完成，今年缺漏 CLIP 已補 744 張，
 今年 13,134 張有可處理檔案的圖片均已有向量。pHash 恢復 8 個 task 並掃完全部分區，
 已有 115,615 張，剩餘 35 張來源例外。今年圖片標籤 apply 尚未啟動，維持暫停，
@@ -13,7 +19,7 @@
 另 20 張超大原圖已在有界的高記憶體重試中補齊。pHash execution 因來源例外回傳非零，
 成功資料均保留，不能視為全量成功。`reports/2026-09-23-clip.json` 保留四批歷程，最後已無缺漏。
 
-所有 Job 預設 `BACKFILL_MODE=check`，只查 DB、不寫業務資料、不呼叫 AI。
+Job 程式預設 `BACKFILL_MODE=check`，只查 DB、不寫業務資料、不呼叫 AI。
 
 | Job | 工作 | 並行設定 |
 | --- | --- | --- |
@@ -112,7 +118,7 @@ gcloud run jobs execute eic-photo-ai-backfill-prod \
 
 ## 手動檢查
 
-以下指令執行已部署的唯讀 check 模式：
+以下為重建 Job 後使用的唯讀 check 模式範例：
 
 ```bash
 gcloud run jobs execute eic-tag-embedding-backfill-prod \

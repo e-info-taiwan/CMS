@@ -2,8 +2,8 @@
   "preparedAt": "2026-09-23",
   "project": "mimetic-sweep-456508-k4",
   "region": "asia-east1",
-  "status": "backfills_completed_with_source_exceptions_photo_labels_paused",
-  "jobsCreated": true,
+  "status": "jobs_deleted_backfills_preserved_photo_labels_paused",
+  "jobsCreated": false,
   "productionBackfillExecuted": true,
   "defaultMode": "check",
   "tag": {
@@ -17,7 +17,8 @@
     "status": "succeeded",
     "filled": 4353,
     "blankNameSkipped": 1,
-    "eligibleRemaining": 0
+    "eligibleRemaining": 0,
+    "resourceState": "deleted"
   },
   "photo": {
     "job": "eic-photo-ai-backfill-prod",
@@ -26,9 +27,10 @@
     "pilotExecution": "eic-photo-ai-backfill-prod-zvcfs",
     "pilotSucceeded": 50,
     "plannedScope": "2026 Taipei upload dates: missing vectors and image labels",
-    "status": "paused_check_default",
+    "status": "paused_job_deleted",
     "annualCheckExecution": "eic-photo-ai-backfill-prod-lk2m4",
-    "annualApplyExecuted": false
+    "annualApplyExecuted": false,
+    "resourceState": "deleted"
   },
   "serviceAccount": "eic-ai-backfill@mimetic-sweep-456508-k4.iam.gserviceaccount.com",
   "projectRoles": [
@@ -55,7 +57,8 @@
     "execution": "eic-cms-migrate-prod-r8mwk",
     "status": "succeeded",
     "appliedMigrations": 5,
-    "backupId": "1790162567742"
+    "backupId": "1790162567742",
+    "resourceState": "deleted"
   },
   "phash": {
     "job": "eic-photo-phash-backfill-prod",
@@ -83,7 +86,8 @@
     "remainingCategories": {
       "missingObject": 18,
       "decodeError": 17
-    }
+    },
+    "resourceState": "deleted"
   },
   "vectorImport": {
     "job": "eic-photo-vector-import-prod",
@@ -102,7 +106,8 @@
     "imported": 114388,
     "noMatchingPhoto": 1348,
     "staleSource": 86,
-    "failed": 0
+    "failed": 0,
+    "resourceState": "deleted"
   },
   "userRequestedState": {
     "clip": "existing vector import complete; all 2026 processable photos have CLIP vectors",
@@ -164,7 +169,8 @@
     "exceptionsReport": "reports/2026-09-23-clip.json",
     "initialBatchExecution": "eic-photo-clip-backfill-prod-7cvqh",
     "largePixelExecution": "eic-photo-clip-backfill-prod-f622d",
-    "completionTime": "2026-09-23T13:24:01Z"
+    "completionTime": "2026-09-23T13:24:01Z",
+    "resourceState": "deleted"
   },
   "coverage": {
     "observedAt": "2026-09-23T13:25:00Z",
@@ -176,5 +182,23 @@
     "year2026Processable": 13134,
     "year2026Clip": 13134,
     "year2026PhotoLabels": 8
+  },
+  "jobsPreviouslyCreated": true,
+  "cleanup": {
+    "project": "mimetic-sweep-456508-k4",
+    "region": "asia-east1",
+    "deletedJobs": [
+      "eic-cms-migrate-prod",
+      "eic-tag-embedding-backfill-prod",
+      "eic-photo-vector-import-prod",
+      "eic-photo-clip-backfill-prod",
+      "eic-photo-phash-backfill-prod",
+      "eic-photo-ai-backfill-prod"
+    ],
+    "deletedAt": "2026-09-23T13:33:42.238429+00:00",
+    "verifiedNoJobsRemainInRegion": true,
+    "configurationArchive": "retired-job-configurations.json",
+    "productionServicesUnchanged": true,
+    "recreateBeforeExecuting": true
   }
 }
