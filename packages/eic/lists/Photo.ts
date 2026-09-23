@@ -17,10 +17,10 @@ import {
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
-// Keep GraphQL filter types stable while hiding disabled AI controls in Admin UI.
+// Keystone derives list search fields from available GraphQL filters.
 const photoAiListControls = {
-  isFilterable: () => envVar.featureToggle.photoVector,
-  isOrderable: () => envVar.featureToggle.photoVector,
+  isFilterable: envVar.featureToggle.photoVector,
+  isOrderable: envVar.featureToggle.photoVector,
 }
 
 const listConfigurations = list({
