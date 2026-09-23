@@ -46,6 +46,7 @@ const {
   FEATURE_TOGGLE_PHOTO_VECTOR,
   FEATURE_TOGGLE_TAG_VECTOR,
   FEATURE_TOGGLE_POST_VECTOR,
+  FEATURE_TOGGLE_POST_IDEA_SUGGESTIONS,
 } = process.env
 
 const parseRoutePrefixConfig = () => {
@@ -174,6 +175,9 @@ export default {
     photoVector: FEATURE_TOGGLE_PHOTO_VECTOR === 'true',
     tagVector: FEATURE_TOGGLE_TAG_VECTOR === 'true',
     postVector: FEATURE_TOGGLE_POST_VECTOR === 'true',
+    postIdeaSuggestions:
+      FEATURE_TOGGLE_POST_VECTOR === 'true' &&
+      FEATURE_TOGGLE_POST_IDEA_SUGGESTIONS !== 'false',
   },
   webUrlBase:
     WEB_URL_BASE || 'https://eic-web-dev-1090198686704.asia-east1.run.app',

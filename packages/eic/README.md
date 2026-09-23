@@ -221,3 +221,14 @@ A1: 如果錯誤訊息與 `@mirrormedia/lilith-core` 有關，可以嘗試先到
 ## Patch
 
 ### 目前使用 patch-package 讓 keystone admin UI (keystone-6/core 5.2.0) 可以在手機版進行編輯，該功能已在 keystone-6/core 5.5.1 新增，日後更新 keystone 板上時可移除。
+
+
+### 暫時隱藏圖片 AI 與報題建議
+
+`FEATURE_TOGGLE_PHOTO_VECTOR=false` 會隱藏圖片的 pHash／比對、向量狀態、
+Vision 結果與狀態、圖片自動標籤按鈕（包含列表）。DB 與已回填資料保留。
+
+`FEATURE_TOGGLE_POST_IDEA_SUGGESTIONS=false` 獨立停用報題建議：導覽列隱藏、
+頁面回到 Dashboard、mutation 拒絕請求，不影響文章標籤建議。未設定此開關時
+沿用 `FEATURE_TOGGLE_POST_VECTOR`，保持 dev 原有行為。UI 從 runtime GraphQL
+取得布林開關，不把 server environment config 打包到前端。

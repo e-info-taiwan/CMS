@@ -211,7 +211,9 @@ const listConfigurations = list({
       label: '圖片向量狀態',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -221,7 +223,9 @@ const listConfigurations = list({
       validation: { isRequired: true },
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -230,7 +234,9 @@ const listConfigurations = list({
       db: { isNullable: true },
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -239,7 +245,9 @@ const listConfigurations = list({
       db: { isNullable: true },
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -248,7 +256,9 @@ const listConfigurations = list({
       db: { isNullable: true },
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -257,7 +267,9 @@ const listConfigurations = list({
       ui: {
         views: './lists/views/image-label-suggestions',
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -265,7 +277,9 @@ const listConfigurations = list({
       label: 'Google Vision 原始標籤',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -273,7 +287,9 @@ const listConfigurations = list({
       label: '圖片標籤狀態',
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -282,7 +298,9 @@ const listConfigurations = list({
       db: { isNullable: true },
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -291,7 +309,9 @@ const listConfigurations = list({
       db: { isNullable: true },
       ui: {
         createView: { fieldMode: 'hidden' },
-        itemView: { fieldMode: 'read' },
+        itemView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
         listView: { fieldMode: 'hidden' },
       },
     }),
@@ -308,7 +328,9 @@ const listConfigurations = list({
         query: '',
         createView: { fieldMode: 'hidden' },
         itemView: { fieldMode: 'hidden' },
-        listView: { fieldMode: 'read' },
+        listView: {
+          fieldMode: envVar.featureToggle.photoVector ? 'read' : 'hidden',
+        },
       },
     }),
     hasImageVector: virtual({
@@ -343,7 +365,9 @@ const listConfigurations = list({
   },
   ui: {
     listView: {
-      initialColumns: ['name', 'imageFile', 'tags', 'autoGenerateImageTags'],
+      initialColumns: envVar.featureToggle.photoVector
+        ? ['name', 'imageFile', 'tags', 'autoGenerateImageTags']
+        : ['name', 'imageFile', 'tags'],
       initialSort: {
         // @ts-ignore: `updatedAt` field does exist
         field: 'updatedAt',

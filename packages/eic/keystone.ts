@@ -108,6 +108,15 @@ export default withAuth(
       isDisabled: envVar.isUIDisabled,
       // For our starter, we check that someone has session data before letting them see the Admin UI.
       isAccessAllowed: (context) => !!context.session?.data,
+      pageMiddleware: ({ context }) => {
+        const pathname = context.req?.url?.split('?')[0]
+        if (
+          !envVar.featureToggle.postIdeaSuggestions &&
+          pathname?.replace(/\/$/, '') === '/post-idea-suggestions'
+        ) {
+          return { kind: 'redirect', to: '/' }
+        }
+      },
     },
     lists,
     session,
@@ -141,6 +150,12 @@ export default withAuth(
       return {
         // For RSS feed generation for querying posts by rssTarget with where clause
         query: {
+          postIdeaSuggestionsEnabled: graphql.field({
+            type: graphql.nonNull(graphql.Boolean),
+            resolve: (_source, _args, context) =>
+              !!context.session?.data &&
+              envVar.featureToggle.postIdeaSuggestions,
+          }),
           checkTagNameSimilarity: graphql.field({
             type: graphql.nonNull(graphql.JSON),
             args: {
@@ -309,7 +324,7 @@ export default withAuth(
               { input, selectedKeywords, structuredInput },
               context
             ) => {
-              if (!envVar.featureToggle.postVector) {
+              if (!envVar.featureToggle.postIdeaSuggestions) {
                 throw new Error('報題建議功能目前已停用')
               }
               return suggestPostIdea(
