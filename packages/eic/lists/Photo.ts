@@ -17,6 +17,12 @@ import {
 
 const { allowRoles, admin, moderator, editor } = utils.accessControl
 
+// Keep GraphQL filter types stable while hiding disabled AI controls in Admin UI.
+const photoAiListControls = {
+  isFilterable: () => envVar.featureToggle.photoVector,
+  isOrderable: () => envVar.featureToggle.photoVector,
+}
+
 const listConfigurations = list({
   fields: {
     name: text({
@@ -146,6 +152,7 @@ const listConfigurations = list({
       },
     }),
     phash: text({
+      ...photoAiListControls,
       label: 'pHash',
       ui: {
         createView: { fieldMode: 'hidden' },
@@ -208,6 +215,7 @@ const listConfigurations = list({
       },
     }),
     imageVectorStatus: text({
+      ...photoAiListControls,
       label: '圖片向量狀態',
       ui: {
         createView: { fieldMode: 'hidden' },
@@ -218,6 +226,7 @@ const listConfigurations = list({
       },
     }),
     imageVectorRetryCount: integer({
+      ...photoAiListControls,
       label: '圖片向量重試次數',
       defaultValue: 0,
       validation: { isRequired: true },
@@ -230,6 +239,7 @@ const listConfigurations = list({
       },
     }),
     imageVectorFailReason: text({
+      ...photoAiListControls,
       label: '圖片向量失敗原因',
       db: { isNullable: true },
       ui: {
@@ -241,6 +251,7 @@ const listConfigurations = list({
       },
     }),
     imageVectorFailedAt: timestamp({
+      ...photoAiListControls,
       label: '圖片向量失敗時間',
       db: { isNullable: true },
       ui: {
@@ -252,6 +263,7 @@ const listConfigurations = list({
       },
     }),
     imageVectorUpdatedAt: timestamp({
+      ...photoAiListControls,
       label: '圖片向量更新時間',
       db: { isNullable: true },
       ui: {
@@ -284,6 +296,7 @@ const listConfigurations = list({
       },
     }),
     imageLabelStatus: text({
+      ...photoAiListControls,
       label: '圖片標籤狀態',
       ui: {
         createView: { fieldMode: 'hidden' },
@@ -294,6 +307,7 @@ const listConfigurations = list({
       },
     }),
     imageLabelFailReason: text({
+      ...photoAiListControls,
       label: '圖片標籤失敗原因',
       db: { isNullable: true },
       ui: {
@@ -305,6 +319,7 @@ const listConfigurations = list({
       },
     }),
     imageLabelUpdatedAt: timestamp({
+      ...photoAiListControls,
       label: '圖片標籤更新時間',
       db: { isNullable: true },
       ui: {
@@ -364,6 +379,9 @@ const listConfigurations = list({
     }),
   },
   ui: {
+    searchFields: envVar.featureToggle.photoVector
+      ? undefined
+      : ['name', 'description'],
     listView: {
       initialColumns: envVar.featureToggle.photoVector
         ? ['name', 'imageFile', 'tags', 'autoGenerateImageTags']
