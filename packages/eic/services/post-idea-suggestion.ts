@@ -15,6 +15,13 @@ const LEXICAL_MIN_TERM_LENGTH = 2
 const KEYWORD_OPTION_LIMIT = 8
 const ENTITY_OPTION_LIMIT = 10
 const LOCATION_OPTION_LIMIT = 10
+const EXCLUDED_CATEGORY_SLUG = 'editorpick'
+const EXCLUDED_SECTION_SLUG = 'supplement'
+const EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS = [
+  'envbooks',
+  'photography',
+  'naturebooknews',
+] as const
 const BROAD_KEYWORD_BLOCKLIST = new Set([
   '台灣',
   '全球',
@@ -85,8 +92,8 @@ type PostResult = {
   state: string | null
   publishTime: Date
   contentPreview: string | null
-  section: { name: string } | null
-  categories: { name: string }[]
+  section: { name: string; slug: string } | null
+  categories: { name: string; slug: string }[]
   tags: { name: string }[]
 }
 
@@ -128,6 +135,19 @@ type ScoredPostForDebug = {
 
 const normalizeText = (value: unknown) =>
   typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
+
+const isExcludedSuggestionPost = (post: PostResult) => {
+  const categorySlugs = new Set(post.categories.map((item) => item.slug))
+  if (categorySlugs.has(EXCLUDED_CATEGORY_SLUG)) {
+    return true
+  }
+  return (
+    post.section?.slug === EXCLUDED_SECTION_SLUG &&
+    EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS.some((slug) =>
+      categorySlugs.has(slug)
+    )
+  )
+}
 
 const normalizeStringArray = (value: unknown, limit: number) => {
   if (!Array.isArray(value)) {
@@ -396,12 +416,26 @@ async function findPostVectorCandidates({
        AND pv."model" = $3
        AND pv."embedding" IS NOT NULL
        AND (pv."embedding" <=> CAST($1 AS vector)) <= $4
+       AND NOT EXISTS (
+         SELECT 1
+         FROM "_Category_posts" cp
+         JOIN "Category" c ON c."id" = cp."A"
+         LEFT JOIN "Section" s ON s."id" = c."section"
+         WHERE cp."B" = pv."post"
+           AND (
+             c."slug" = $5
+             OR (s."slug" = $6 AND c."slug" = ANY($7::text[]))
+           )
+       )
      ORDER BY pv."embedding" <=> CAST($1 AS vector) ASC
-     LIMIT $5`,
+     LIMIT $8`,
     toVectorLiteral(embedding),
     POST_VECTOR_KIND_DOCUMENT,
     envVar.tagEmbedding.vertex.model,
     config.maxDistance,
+    EXCLUDED_CATEGORY_SLUG,
+    EXCLUDED_SECTION_SLUG,
+    [...EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS],
     config.candidateLimit
   )) as PostVectorCandidateRow[]
 
@@ -598,8 +632,8 @@ const POST_SELECT_FIELDS = {
   state: true,
   publishTime: true,
   contentPreview: true,
-  section: { select: { name: true } },
-  categories: { select: { name: true } },
+  section: { select: { name: true, slug: true } },
+  categories: { select: { name: true, slug: true } },
   tags: { select: { name: true } },
 } as const
 
@@ -626,7 +660,32 @@ async function findLexicalPosts({
     { contentPreview: { contains: term } },
   ])
   const posts = (await context.prisma.Post.findMany({
-    where: { OR: orConditions },
+    where: {
+      AND: [
+        { OR: orConditions },
+        {
+          NOT: {
+            categories: {
+              some: {
+                OR: [
+                  { slug: { equals: EXCLUDED_CATEGORY_SLUG } },
+                  {
+                    AND: [
+                      { slug: { in: [...EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS] } },
+                      {
+                        section: {
+                          slug: { equals: EXCLUDED_SECTION_SLUG },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    },
     select: POST_SELECT_FIELDS,
     take: limit,
     orderBy: { publishTime: 'desc' },
@@ -1183,10 +1242,14 @@ export async function suggestPostIdea(
       : []
   const postsById = new Map<number, PostResult>()
   for (const post of lexicalPosts) {
-    postsById.set(Number(post.id), post)
+    if (!isExcludedSuggestionPost(post)) {
+      postsById.set(Number(post.id), post)
+    }
   }
   for (const post of fetchedPosts) {
-    postsById.set(Number(post.id), post)
+    if (!isExcludedSuggestionPost(post)) {
+      postsById.set(Number(post.id), post)
+    }
   }
 
   const matchedEntitiesFor = (post: PostResult) => {
