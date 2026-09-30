@@ -55,6 +55,7 @@ type PostIdeaStructuredData = {
 }
 
 type KeywordOptionGroup = 'keyword'
+type PostIdeaSearchMode = 'expanded' | 'selected-only'
 
 type KeywordOption = {
   value: string
@@ -341,6 +342,15 @@ const buildIdeaQueryText = (
     .join('\n')
 }
 
+const buildSelectedOnlyQueryText = (
+  originalInput: string,
+  selectedKeywords: string[]
+) =>
+  [
+    `原始輸入：${originalInput}`,
+    `使用者確認要比對的關鍵詞：${selectedKeywords.join('、')}`,
+  ].join('\n')
+
 const collectKeywordOptions = (
   structured: PostIdeaStructuredData
 ): KeywordOption[] => {
@@ -624,6 +634,36 @@ const collectLexicalSearchTerms = (
     lexicalTerms: uniqueSearchTerms([...anchorTerms, ...conceptTerms]),
   }
 }
+
+const collectSelectedOnlySearchTerms = (
+  originalInput: string,
+  selectedKeywords: string[]
+) => {
+  const anchorTerms = uniqueSearchTerms([
+    normalizeText(originalInput),
+    ...selectedKeywords,
+  ])
+  return {
+    anchorTerms,
+    conceptTerms: [...anchorTerms],
+    fallbackConceptTerms: [...anchorTerms],
+    lexicalTerms: [...anchorTerms],
+  }
+}
+
+const buildSelectedOnlyStructuredData = (
+  originalInput: string,
+  selectedKeywords: string[]
+): PostIdeaStructuredData => ({
+  normalizedTitle: originalInput,
+  summary: '',
+  keywords: uniqueSearchTerms([originalInput, ...selectedKeywords]),
+  entities: [],
+  locations: [],
+  timeScope: '',
+  sectionHints: [],
+  tagHints: [],
+})
 
 const POST_SELECT_FIELDS = {
   id: true,
@@ -1039,7 +1079,8 @@ export async function suggestPostIdea(
   context: KeystoneContext,
   input: string,
   selectedKeywordsInput?: string[] | null,
-  structuredInput?: unknown
+  structuredInput?: unknown,
+  searchModeInput?: string | null
 ) {
   assertUserCanSuggestPostIdea(context)
 
@@ -1060,6 +1101,8 @@ export async function suggestPostIdea(
     selectedKeywordsInput == null
       ? undefined
       : normalizeSelectedKeywords(selectedKeywordsInput)
+  const searchMode: PostIdeaSearchMode =
+    searchModeInput === 'selected-only' ? 'selected-only' : 'expanded'
   let structured = normalizeStructuredIdeaPayload(structuredInput)
   if (!structured) {
     try {
@@ -1111,6 +1154,7 @@ export async function suggestPostIdea(
       weakMatch: false,
       results: [],
       analysis: null,
+      searchMode,
       debug: {
         originalInput,
         queryText,
@@ -1136,11 +1180,14 @@ export async function suggestPostIdea(
     })
   }
 
-  const queryText = buildIdeaQueryText(
-    originalInput,
-    structured,
-    selectedKeywords
-  )
+  const comparisonStructured =
+    searchMode === 'selected-only'
+      ? buildSelectedOnlyStructuredData(originalInput, selectedKeywords)
+      : structured
+  const queryText =
+    searchMode === 'selected-only'
+      ? buildSelectedOnlyQueryText(originalInput, selectedKeywords)
+      : buildIdeaQueryText(originalInput, structured, selectedKeywords)
   const config = envVar.postIdeaSuggestion
 
   let embedding: number[] = []
@@ -1157,11 +1204,10 @@ export async function suggestPostIdea(
   }
 
   // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
-  const lexicalSearchTerms = collectLexicalSearchTerms(
-    structured,
-    originalInput,
-    selectedKeywords
-  )
+  const lexicalSearchTerms =
+    searchMode === 'selected-only'
+      ? collectSelectedOnlySearchTerms(originalInput, selectedKeywords)
+      : collectLexicalSearchTerms(structured, originalInput, selectedKeywords)
   const { anchorTerms, conceptTerms, fallbackConceptTerms, lexicalTerms } =
     lexicalSearchTerms
   let lexicalPosts: PostResult[] = []
@@ -1187,12 +1233,13 @@ export async function suggestPostIdea(
       weakMatch: false,
       results: [],
       analysis: null,
+      searchMode,
       debug: {
         originalInput,
         queryText,
         keywordOptions: keywordOptions.map((option) => option.value),
         selectedKeywords,
-        structured,
+        structured: comparisonStructured,
         anchorTerms,
         conceptTerms,
         lexicalTerms,
@@ -1278,7 +1325,7 @@ export async function suggestPostIdea(
         distance: vector ? vector.distance : null,
         lexicalMatch,
         matchedEntities: lexicalMatch ? matchedEntitiesFor(post) : [],
-        structured,
+        structured: comparisonStructured,
       })
     })
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
@@ -1361,7 +1408,7 @@ export async function suggestPostIdea(
     analysis = await withTimeout(
       callGeminiForCoverageAnalysis({
         originalInput,
-        structured,
+        structured: comparisonStructured,
         posts: analysisSource.map((item) => ({
           post: item.post,
           sourcePreview: item.sourcePreview,
@@ -1401,6 +1448,7 @@ export async function suggestPostIdea(
     weakMatch,
     results,
     analysis,
+    searchMode,
     debug,
   }
 }

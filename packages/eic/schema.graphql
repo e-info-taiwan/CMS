@@ -3677,7 +3677,7 @@ type Mutation {
   suggestPostTagsWithAi(postId: ID!): JSON!
   applyPostTagCandidates(postId: ID!, selections: JSON!): JSON!
   applyPhotoImageLabelTags(photoId: ID!): JSON!
-  suggestPostIdea(input: String!, selectedKeywords: [String!], structuredInput: JSON): JSON!
+  suggestPostIdea(input: String!, selectedKeywords: [String!], structuredInput: JSON, searchMode: String): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure

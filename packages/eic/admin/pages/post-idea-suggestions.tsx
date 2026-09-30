@@ -12,11 +12,13 @@ const SUGGEST_POST_IDEA = gql`
     $input: String!
     $selectedKeywords: [String!]
     $structuredInput: JSON
+    $searchMode: String
   ) {
     suggestPostIdea(
       input: $input
       selectedKeywords: $selectedKeywords
       structuredInput: $structuredInput
+      searchMode: $searchMode
     )
   }
 `
@@ -78,6 +80,8 @@ type KeywordOption = {
   group?: string
 }
 
+type SearchMode = 'expanded' | 'selected-only'
+
 type SuggestionPayload = {
   structured?: StructuredIdea
   queryText?: string
@@ -87,6 +91,7 @@ type SuggestionPayload = {
   weakMatch?: boolean
   results?: SuggestionResult[]
   analysis?: CoverageAnalysis | null
+  searchMode?: SearchMode
 }
 
 const tagList = (items?: string[]) =>
@@ -361,6 +366,7 @@ function EnabledPostIdeaSuggestionsPage() {
   const [input, setInput] = useState('')
   const [payload, setPayload] = useState<SuggestionPayload | null>(null)
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
+  const [searchMode, setSearchMode] = useState<SearchMode>('expanded')
   const [mutate, { loading }] = useMutation(SUGGEST_POST_IDEA)
 
   const trimmedInputLength = input.trim().length
@@ -376,6 +382,7 @@ function EnabledPostIdeaSuggestionsPage() {
           input: input.trim(),
           selectedKeywords: keywords,
           structuredInput: keywords ? payload?.structured ?? null : null,
+          searchMode,
         },
       })
       const nextPayload = data?.suggestPostIdea as SuggestionPayload | undefined
@@ -398,7 +405,26 @@ function EnabledPostIdeaSuggestionsPage() {
         tone: 'negative',
       })
     }
-  }, [canSubmit, input, mutate, payload?.structured, toasts])
+  }, [canSubmit, input, mutate, payload?.structured, searchMode, toasts])
+
+  const changeSearchMode = useCallback(
+    (nextMode: SearchMode) => {
+      setSearchMode(nextMode)
+      setPayload((current) =>
+        current && !current.needsKeywordSelection
+          ? {
+              ...current,
+              needsKeywordSelection: true,
+              results: [],
+              analysis: null,
+              weakMatch: false,
+              searchMode: nextMode,
+            }
+          : current
+      )
+    },
+    []
+  )
 
   const results = payload?.results ?? []
   const rawKeywordOptions = payload?.keywordOptions ?? []
@@ -476,6 +502,7 @@ function EnabledPostIdeaSuggestionsPage() {
               setInput('')
               setPayload(null)
               setSelectedKeywords([])
+              setSearchMode('expanded')
             }}
             isDisabled={loading && !input}
           >
@@ -496,6 +523,63 @@ function EnabledPostIdeaSuggestionsPage() {
                 background: '#fff',
               }}
             >
+              <div style={{ marginBottom: 16 }}>
+                <div
+                  style={{
+                    color: '#374151',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    marginBottom: 8,
+                  }}
+                >
+                  比對模式
+                </div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {([
+                    ['expanded', 'A｜延伸比對'],
+                    ['selected-only', 'B｜勾選詞限定'],
+                  ] as const).map(([value, label]) => {
+                    const active = searchMode === value
+                    return (
+                      <label
+                        key={value}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '8px 12px',
+                          background: active ? '#eff6ff' : '#fff',
+                          color: active ? '#1d4ed8' : '#4b5563',
+                          borderRight:
+                            value === 'expanded'
+                              ? '1px solid #d1d5db'
+                              : 'none',
+                          cursor: loading ? 'default' : 'pointer',
+                          fontSize: 14,
+                          fontWeight: active ? 600 : 400,
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="post-idea-search-mode"
+                          value={value}
+                          checked={active}
+                          onChange={() => changeSearchMode(value)}
+                          disabled={loading}
+                          style={{ marginRight: 6 }}
+                        />
+                        {label}
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
               <div
                 style={{
                   display: 'flex',

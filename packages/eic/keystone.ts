@@ -318,10 +318,13 @@ export default withAuth(
               structuredInput: graphql.arg({
                 type: graphql.JSON,
               }),
+              searchMode: graphql.arg({
+                type: graphql.String,
+              }),
             },
             resolve: async (
               _source,
-              { input, selectedKeywords, structuredInput },
+              { input, selectedKeywords, structuredInput, searchMode },
               context
             ) => {
               if (!envVar.featureToggle.postIdeaSuggestions) {
@@ -331,7 +334,8 @@ export default withAuth(
                 context,
                 input as string,
                 selectedKeywords as string[] | null | undefined,
-                structuredInput
+                structuredInput,
+                searchMode as string | null | undefined
               )
             },
           }),
