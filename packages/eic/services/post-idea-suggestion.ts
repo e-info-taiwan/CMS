@@ -146,7 +146,11 @@ const normalizeText = (value: unknown) =>
 
 const isExcludedSuggestionPost = (post: PostResult) => {
   const categorySlugs = new Set(post.categories.map((item) => item.slug))
+  const tagNames = new Set(post.tags.map((item) => item.name))
   if (categorySlugs.has(EXCLUDED_CATEGORY_SLUG)) {
+    return true
+  }
+  if (EXCLUDED_SUPPLEMENT_TAG_NAMES.some((name) => tagNames.has(name))) {
     return true
   }
   return (
@@ -753,8 +757,8 @@ const POST_SELECT_FIELDS = {
   tags: { select: { name: true } },
 } as const
 
-// 字面比對：核心詞須出現在標題、副標或標籤，且勾選角度群組也必須命中。
-// 因此搜尋式等同於 (核心 + 角度一) OR (核心 + 角度二) ...。
+// 先放寬取得核心詞或勾選角度有命中的文章，最後再依核心位置、
+// 勾選詞命中數及向量距離排序，避免候選階段過早漏掉文章。
 async function findLexicalPosts({
   context,
   coreTerms,
@@ -776,18 +780,20 @@ async function findLexicalPosts({
   const coreConditions = requiredCoreTerms.flatMap((term) => [
     { title: { contains: term } },
     { subtitle: { contains: term } },
+    { contentPreview: { contains: term } },
     { tags: { some: { name: { contains: term } } } },
   ])
   const angleConditions = angleTerms.flatMap((term) => [
     { title: { contains: term } },
     { subtitle: { contains: term } },
     { contentPreview: { contains: term } },
+    { tags: { some: { name: { contains: term } } } },
   ])
+  const candidateConditions = [...coreConditions, ...angleConditions]
   const posts = (await context.prisma.Post.findMany({
     where: {
       AND: [
-        { OR: coreConditions },
-        ...(angleConditions.length > 0 ? [{ OR: angleConditions }] : []),
+        { OR: candidateConditions },
         {
           NOT: {
             OR: [
@@ -1456,47 +1462,73 @@ export async function suggestPostIdea(
         sourcePreview: vector?.sourcePreview ?? '',
         distance: vector ? vector.distance : null,
         lexicalMatch,
-        matchedEntities: lexicalMatch ? matchedEntitiesFor(post) : [],
+        matchedEntities: matchedEntitiesFor(post),
         structured: comparisonStructured,
       })
     })
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score)
 
-  const coreSet = new Set(coreTerms.map((term) => term.toLowerCase()))
-  const angleSet = new Set(angleTerms.map((term) => term.toLowerCase()))
-  const hasCoreMatch = (item: ReturnType<typeof scorePost>) =>
-    coreSet.size === 0 ||
-    item.matchedEntities.some((term) => coreSet.has(term.toLowerCase()))
-  const hasAngleMatch = (item: ReturnType<typeof scorePost>) =>
-    angleSet.size === 0 ||
-    item.matchedEntities.some((term) => angleSet.has(term.toLowerCase()))
-  const isDirectListMatch = (item: ReturnType<typeof scorePost>) =>
-    item.lexicalMatch && hasCoreMatch(item) && hasAngleMatch(item)
-  const passesRelevanceFloor = (item: ReturnType<typeof scorePost>) =>
-    isDirectListMatch(item) || item.score >= config.minScore
-  // 「相似內容」只列直接命中主題錨點的文章。向量上接近但沒有命中主題的文章
-  // 仍可作為完整分析的背景參考，但不要包裝成相似內容。
-  const isStrong = (item: ReturnType<typeof scorePost>) =>
-    isDirectListMatch(item) &&
-    (item.lexicalMatch ||
-      (item.distance !== null && item.distance <= config.strongDistance))
-  const strongPool = scored.filter(isStrong)
-  const selectedStrong: ReturnType<typeof scorePost>[] = []
-  if (coreSet.size > 0) {
-    takeUniqueScoredPosts(
-      selectedStrong,
-      strongPool.filter(hasCoreMatch),
-      config.maxResults
+  const fieldText = (values: Array<string | null | undefined>) =>
+    values.filter((value): value is string => Boolean(value)).join(' ')
+  const coreMatchPriority = (item: ReturnType<typeof scorePost>) => {
+    const post = item.post
+    if (coreTerms.some((term) => includesTerm(post.title, term))) return 4
+    if (
+      coreTerms.some((term) => includesTerm(post.subtitle ?? '', term))
+    ) {
+      return 3
+    }
+    const tagText = fieldText(post.tags.map((tag) => tag.name))
+    if (coreTerms.some((term) => includesTerm(tagText, term))) return 2
+    if (
+      coreTerms.some((term) => includesTerm(post.contentPreview ?? '', term))
+    ) {
+      return 1
+    }
+    return 0
+  }
+  const selectedKeywordHitCount = (item: ReturnType<typeof scorePost>) => {
+    const post = item.post
+    const text = fieldText([
+      post.title,
+      post.subtitle,
+      post.contentPreview,
+      ...post.tags.map((tag) => tag.name),
+    ])
+    return angleTerms.filter((term) => includesTerm(text, term)).length
+  }
+  const distanceForSort = (item: ReturnType<typeof scorePost>) =>
+    item.distance ?? Number.POSITIVE_INFINITY
+  const ranked = [...scored].sort((a, b) => {
+    const coreDifference = coreMatchPriority(b) - coreMatchPriority(a)
+    if (coreDifference !== 0) return coreDifference
+    const keywordDifference =
+      selectedKeywordHitCount(b) - selectedKeywordHitCount(a)
+    if (keywordDifference !== 0) return keywordDifference
+    const distanceDifference = distanceForSort(a) - distanceForSort(b)
+    if (distanceDifference !== 0) return distanceDifference
+    return b.score - a.score
+  })
+  const isRankedMatch = (item: ReturnType<typeof scorePost>) => {
+    const corePriority = coreMatchPriority(item)
+    const keywordHits = selectedKeywordHitCount(item)
+    if (corePriority > 0) {
+      return (
+        keywordHits > 0 ||
+        (item.distance !== null && item.distance <= config.strongDistance)
+      )
+    }
+    return (
+      keywordHits >= 2 &&
+      item.distance !== null &&
+      item.distance <= config.strongDistance
     )
   }
-  takeUniqueScoredPosts(selectedStrong, strongPool, config.maxResults)
-  const selectedWeak = scored
-    .filter(
-      (item) =>
-        !isStrong(item) && isDirectListMatch(item) && passesRelevanceFloor(item)
-    )
-    .slice(0, config.weakResultLimit)
+  const selectedStrong = ranked
+    .filter(isRankedMatch)
+    .slice(0, config.maxResults)
+  const selectedWeak: ReturnType<typeof scorePost>[] = []
   const weakMatch = selectedStrong.length === 0
 
   const toResult = (
@@ -1533,7 +1565,7 @@ export async function suggestPostIdea(
   // 完整分析：優先讀命中主題錨點的文章，再補向量接近與高分文章。
   const analysisSource = selectAnalysisPosts({
     selectedStrong,
-    scored,
+    scored: ranked,
     anchorTerms,
   })
   let analysis: PostIdeaCoverageAnalysis | null = null
