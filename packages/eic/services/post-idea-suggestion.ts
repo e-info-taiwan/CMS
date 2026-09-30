@@ -789,54 +789,61 @@ async function findLexicalPosts({
     { contentPreview: { contains: term } },
     { tags: { some: { name: { contains: term } } } },
   ])
-  const candidateConditions = [...coreConditions, ...angleConditions]
-  const posts = (await context.prisma.Post.findMany({
-    where: {
-      AND: [
-        { OR: candidateConditions },
-        {
-          NOT: {
-            OR: [
-              {
-                categories: {
-                  some: {
-                    OR: [
-                      { slug: { equals: EXCLUDED_CATEGORY_SLUG } },
-                      {
-                        AND: [
-                          {
-                            slug: {
-                              in: [...EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS],
+  const findPosts = async (conditions: typeof coreConditions) =>
+    (await context.prisma.Post.findMany({
+      where: {
+        AND: [
+          { OR: conditions },
+          {
+            NOT: {
+              OR: [
+                {
+                  categories: {
+                    some: {
+                      OR: [
+                        { slug: { equals: EXCLUDED_CATEGORY_SLUG } },
+                        {
+                          AND: [
+                            {
+                              slug: {
+                                in: [...EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS],
+                              },
                             },
-                          },
-                          {
-                            section: {
-                              slug: { equals: EXCLUDED_SECTION_SLUG },
+                            {
+                              section: {
+                                slug: { equals: EXCLUDED_SECTION_SLUG },
+                              },
                             },
-                          },
-                        ],
-                      },
-                    ],
+                          ],
+                        },
+                      ],
+                    },
                   },
                 },
-              },
-              {
-                tags: {
-                  some: {
-                    name: { in: [...EXCLUDED_SUPPLEMENT_TAG_NAMES] },
+                {
+                  tags: {
+                    some: {
+                      name: { in: [...EXCLUDED_SUPPLEMENT_TAG_NAMES] },
+                    },
                   },
                 },
-              },
-            ],
+              ],
+            },
           },
-        },
-      ],
-    },
-    select: POST_SELECT_FIELDS,
-    take: limit,
-    orderBy: { publishTime: 'desc' },
-  })) as PostResult[]
-  return posts
+        ],
+      },
+      select: POST_SELECT_FIELDS,
+      take: limit,
+      orderBy: { publishTime: 'desc' },
+    })) as PostResult[]
+
+  // 核心文章與泛角度文章分開取，避免大量近期角度文章把較舊的核心文章
+  // 擠出候選池，導致它們沒有機會進入後續的相關性排序。
+  const [corePosts, anglePosts] = await Promise.all([
+    findPosts(coreConditions),
+    angleConditions.length > 0 ? findPosts(angleConditions) : [],
+  ])
+  return [...new Map([...corePosts, ...anglePosts].map((post) => [post.id, post])).values()]
 }
 
 // 針對指定文章補查向量距離（給字面命中、但不在向量候選裡的文章用）。
