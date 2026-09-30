@@ -527,6 +527,14 @@ const collectInputAnchorTerms = (
   }
 
   const anchors = input.length <= 24 ? [input] : []
+  // The complete idea is useful when an article contains the exact phrase, but
+  // it must not be the only anchor. For example, articles about "塑膠袋" rarely
+  // contain the full input "塑膠袋減量政策成效" verbatim.
+  anchors.push(
+    ...segmentInputTerms(input).filter(
+      (term) => term.length >= 3 && !isGenericStandaloneTerm(term)
+    )
+  )
   for (const keyword of selectedKeywords) {
     const text = normalizeText(keyword)
     if (!text || !input.includes(text)) {
@@ -538,9 +546,6 @@ const collectInputAnchorTerms = (
         anchors.push(anchor)
       }
     }
-  }
-  if (anchors.length === 0 && selectedKeywords.length === 0) {
-    anchors.push(...segmentInputTerms(input))
   }
   return anchors
 }
