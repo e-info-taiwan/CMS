@@ -23,6 +23,11 @@ const EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS = [
   'photography',
   'naturebooknews',
 ] as const
+const EXCLUDED_SUPPLEMENT_TAG_NAMES = [
+  '環境書摘',
+  '攝影賞析',
+  '自然書訊',
+] as const
 const BROAD_KEYWORD_BLOCKLIST = new Set([
   '台灣',
   '全球',
@@ -748,7 +753,7 @@ const POST_SELECT_FIELDS = {
   tags: { select: { name: true } },
 } as const
 
-// 字面比對：核心詞群組與勾選角度群組都必須命中；各群組內則是 OR。
+// 字面比對：核心詞須出現在標題、副標或標籤，且勾選角度群組也必須命中。
 // 因此搜尋式等同於 (核心 + 角度一) OR (核心 + 角度二) ...。
 async function findLexicalPosts({
   context,
@@ -771,7 +776,7 @@ async function findLexicalPosts({
   const coreConditions = requiredCoreTerms.flatMap((term) => [
     { title: { contains: term } },
     { subtitle: { contains: term } },
-    { contentPreview: { contains: term } },
+    { tags: { some: { name: { contains: term } } } },
   ])
   const angleConditions = angleTerms.flatMap((term) => [
     { title: { contains: term } },
@@ -785,23 +790,38 @@ async function findLexicalPosts({
         ...(angleConditions.length > 0 ? [{ OR: angleConditions }] : []),
         {
           NOT: {
-            categories: {
-              some: {
-                OR: [
-                  { slug: { equals: EXCLUDED_CATEGORY_SLUG } },
-                  {
-                    AND: [
-                      { slug: { in: [...EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS] } },
+            OR: [
+              {
+                categories: {
+                  some: {
+                    OR: [
+                      { slug: { equals: EXCLUDED_CATEGORY_SLUG } },
                       {
-                        section: {
-                          slug: { equals: EXCLUDED_SECTION_SLUG },
-                        },
+                        AND: [
+                          {
+                            slug: {
+                              in: [...EXCLUDED_SUPPLEMENT_CATEGORY_SLUGS],
+                            },
+                          },
+                          {
+                            section: {
+                              slug: { equals: EXCLUDED_SECTION_SLUG },
+                            },
+                          },
+                        ],
                       },
                     ],
                   },
-                ],
+                },
               },
-            },
+              {
+                tags: {
+                  some: {
+                    name: { in: [...EXCLUDED_SUPPLEMENT_TAG_NAMES] },
+                  },
+                },
+              },
+            ],
           },
         },
       ],
@@ -1418,6 +1438,7 @@ export async function suggestPostIdea(
       post.title,
       post.subtitle ?? '',
       post.contentPreview ?? '',
+      ...post.tags.map((tag) => tag.name),
     ].join(' ')
     return lexicalTerms.filter((term) => includesTerm(haystack, term))
   }
