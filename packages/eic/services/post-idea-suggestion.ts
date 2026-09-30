@@ -8,6 +8,7 @@ const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 const POST_VECTOR_KIND_DOCUMENT = 'document'
 // 餵給 Gemini 做覆蓋面分析的文章數上限與每篇摘要長度，控制 token 與延遲。
 const ANALYSIS_POST_LIMIT = 10
+const PRIORITY_RESULT_FLOOR = 12
 const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 const COVERAGE_ANALYSIS_TIMEOUT_MS = 30_000
 // 混合檢索：字面比對的詞最短長度。
@@ -1531,8 +1532,7 @@ export async function suggestPostIdea(
     const keywordHits = selectedKeywordHitCount(item)
     if (coreTerms.length > 0) {
       if (!matchesPrimaryCoreTerm(item)) return false
-      const requiredKeywordHits = Math.min(2, Math.max(1, angleTerms.length))
-      return keywordHits >= requiredKeywordHits
+      return keywordHits > 0
     }
     const requiredKeywordHits = Math.max(2, Math.ceil(angleTerms.length / 2))
     return (
@@ -1541,9 +1541,18 @@ export async function suggestPostIdea(
       item.distance <= config.strongDistance
     )
   }
-  const selectedStrong = ranked
-    .filter(isRankedMatch)
-    .slice(0, config.maxResults)
+  const rankedMatches = ranked.filter(isRankedMatch)
+  const highEvidenceMatches = rankedMatches.filter(
+    (item) => selectedKeywordHitCount(item) >= 2
+  )
+  const priorityResultLimit = Math.min(
+    PRIORITY_RESULT_FLOOR,
+    config.maxResults
+  )
+  const selectedStrong =
+    highEvidenceMatches.length >= priorityResultLimit
+      ? highEvidenceMatches.slice(0, config.maxResults)
+      : rankedMatches.slice(0, priorityResultLimit)
   const selectedWeak: ReturnType<typeof scorePost>[] = []
   const weakMatch = selectedStrong.length === 0
 
