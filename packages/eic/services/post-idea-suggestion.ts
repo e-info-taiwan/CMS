@@ -1516,8 +1516,9 @@ export async function suggestPostIdea(
     if (corePriority > 0) {
       return keywordHits > 0
     }
+    const requiredKeywordHits = Math.max(2, Math.ceil(angleTerms.length / 2))
     return (
-      keywordHits >= 2 &&
+      keywordHits >= requiredKeywordHits &&
       item.distance !== null &&
       item.distance <= config.strongDistance
     )
