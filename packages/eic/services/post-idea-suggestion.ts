@@ -12,6 +12,7 @@ const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 const COVERAGE_ANALYSIS_TIMEOUT_MS = 30_000
 // 混合檢索：字面比對的詞最短長度。
 const LEXICAL_MIN_TERM_LENGTH = 2
+const CORE_KEYWORD_LIMIT = 3
 const KEYWORD_OPTION_LIMIT = 8
 const ENTITY_OPTION_LIMIT = 10
 const LOCATION_OPTION_LIMIT = 10
@@ -46,6 +47,7 @@ const GENERIC_STANDALONE_LEXICAL_TERMS = new Set([
 type PostIdeaStructuredData = {
   normalizedTitle: string
   summary: string
+  coreKeywords: string[]
   keywords: string[]
   entities: string[]
   locations: string[]
@@ -214,6 +216,10 @@ const parseStructuredIdea = (text: string): PostIdeaStructuredData => {
   return {
     normalizedTitle,
     summary,
+    coreKeywords: normalizeStringArray(
+      payload.coreKeywords,
+      CORE_KEYWORD_LIMIT
+    ),
     keywords: normalizeStringArray(payload.keywords, KEYWORD_OPTION_LIMIT),
     entities: normalizeStringArray(payload.entities, ENTITY_OPTION_LIMIT),
     locations: normalizeStringArray(payload.locations, LOCATION_OPTION_LIMIT),
@@ -240,6 +246,10 @@ const normalizeStructuredIdeaPayload = (
   return {
     normalizedTitle,
     summary,
+    coreKeywords: normalizeStringArray(
+      payload.coreKeywords,
+      CORE_KEYWORD_LIMIT
+    ),
     keywords: normalizeStringArray(payload.keywords, KEYWORD_OPTION_LIMIT),
     entities: normalizeStringArray(payload.entities, ENTITY_OPTION_LIMIT),
     locations: normalizeStringArray(payload.locations, LOCATION_OPTION_LIMIT),
@@ -295,13 +305,20 @@ async function callGeminiForStructuredIdea(
 {
   "normalizedTitle": "用一句完整中文標題整理報題方向",
   "summary": "用 1 到 3 句整理核心議題、衝突、可能角度",
-  "keywords": ["最多 8 個具體關鍵詞，避免地點、機關名稱、人物、國家範圍或過於抽象的詞"],
+  "coreKeywords": ["1 到 3 個不可遺失的具體主體，例如知本濕地、塑膠袋、AI資料中心；不要放政策、影響、爭議等角度詞"],
+  "keywords": ["最多 8 個可供使用者勾選的議題角度，不要重複 coreKeywords，避免機關名稱、人物、國家範圍或過於抽象的詞"],
   "entities": ["人物、機關、組織、公司"],
   "locations": ["地點"],
   "timeScope": "近期、歷史脈絡、長期追蹤，或空字串",
   "sectionHints": ["可能適用的頻道或主題分類"],
   "tagHints": ["可能適用的標籤"]
 }
+
+coreKeywords 規則：
+- 必須能回答「這篇報導不能少了哪個具體對象，否則就變成另一個題目？」
+- 「知本濕地太陽光電開發爭議」的核心是「知本濕地」，太陽光電、環境衝擊是可勾選角度。
+- 「塑膠袋減量政策成效」的核心是「塑膠袋」，限塑政策、減量成效是可勾選角度。
+- 優先沿用使用者輸入中的原文，不要自行擴寫成更寬泛的上位概念。
 
 使用者輸入：
 ${input}`
@@ -328,6 +345,7 @@ const buildIdeaQueryText = (
     `原始輸入：${originalInput}`,
     `整理後標題：${structured.normalizedTitle}`,
     `摘要：${structured.summary}`,
+    `主題核心：${structured.coreKeywords.join('、')}`,
     selectedKeywords && selectedKeywords.length > 0
       ? `使用者確認要比對的關鍵詞：${selectedKeywords.join('、')}`
       : '',
@@ -344,10 +362,12 @@ const buildIdeaQueryText = (
 
 const buildSelectedOnlyQueryText = (
   originalInput: string,
-  selectedKeywords: string[]
+  selectedKeywords: string[],
+  coreKeywords: string[]
 ) =>
   [
     `原始輸入：${originalInput}`,
+    `主題核心：${coreKeywords.join('、')}`,
     `使用者確認要比對的關鍵詞：${selectedKeywords.join('、')}`,
   ].join('\n')
 
@@ -571,8 +591,36 @@ const uniqueSearchTerms = (raw: string[]) => {
 const isGenericStandaloneTerm = (term: string) =>
   term.length < 3 || GENERIC_STANDALONE_LEXICAL_TERMS.has(term)
 
-// 將使用者原始發想拆成兩種搜尋訊號：
-// anchorTerms 是主題錨點，可單獨撈文章；conceptTerms 是角度詞，只做加分或 fallback。
+const isValidCoreKeyword = (term: string) =>
+  term.length >= LEXICAL_MIN_TERM_LENGTH &&
+  !GENERIC_STANDALONE_LEXICAL_TERMS.has(term)
+
+const resolveCoreKeywords = (
+  structured: PostIdeaStructuredData,
+  originalInput: string
+) => {
+  const provided = uniqueSearchTerms(structured.coreKeywords).filter(
+    isValidCoreKeyword
+  )
+  if (provided.length > 0) {
+    return provided.slice(0, CORE_KEYWORD_LIMIT)
+  }
+
+  const namedSubjects = uniqueSearchTerms([
+    ...structured.locations,
+    ...structured.entities,
+  ]).filter((term) => originalInput.includes(term))
+  if (namedSubjects.length > 0) {
+    return namedSubjects.slice(0, CORE_KEYWORD_LIMIT)
+  }
+
+  const segmented = segmentInputTerms(originalInput).filter(
+    (term) => term.length >= 3 && !isGenericStandaloneTerm(term)
+  )
+  return segmented.slice(0, CORE_KEYWORD_LIMIT)
+}
+
+// 將使用者原始發想拆成搜尋訊號；實際清單必須同時命中核心詞與勾選角度。
 const collectLexicalSearchTerms = (
   structured: PostIdeaStructuredData,
   originalInput: string,
@@ -631,18 +679,28 @@ const collectLexicalSearchTerms = (
   const fallbackConceptTerms = conceptTerms.filter(
     (term) => !isGenericStandaloneTerm(term)
   )
+  const coreTerms = uniqueSearchTerms(structured.coreKeywords).filter(
+    isValidCoreKeyword
+  )
 
   return {
     anchorTerms,
+    coreTerms: coreTerms.length > 0 ? coreTerms : anchorTerms,
+    angleTerms: uniqueSearchTerms(selectedKeywords),
     conceptTerms,
     fallbackConceptTerms,
-    lexicalTerms: uniqueSearchTerms([...anchorTerms, ...conceptTerms]),
+    lexicalTerms: uniqueSearchTerms([
+      ...coreTerms,
+      ...anchorTerms,
+      ...conceptTerms,
+    ]),
   }
 }
 
 const collectSelectedOnlySearchTerms = (
   originalInput: string,
-  selectedKeywords: string[]
+  selectedKeywords: string[],
+  coreKeywords: string[]
 ) => {
   const anchorTerms = uniqueSearchTerms([
     normalizeText(originalInput),
@@ -650,18 +708,26 @@ const collectSelectedOnlySearchTerms = (
   ])
   return {
     anchorTerms,
+    coreTerms: uniqueSearchTerms(coreKeywords),
+    angleTerms: uniqueSearchTerms(selectedKeywords),
     conceptTerms: [...anchorTerms],
     fallbackConceptTerms: [...anchorTerms],
-    lexicalTerms: [...anchorTerms],
+    lexicalTerms: uniqueSearchTerms([
+      ...coreKeywords,
+      ...anchorTerms,
+      ...selectedKeywords,
+    ]),
   }
 }
 
 const buildSelectedOnlyStructuredData = (
   originalInput: string,
-  selectedKeywords: string[]
+  selectedKeywords: string[],
+  coreKeywords: string[]
 ): PostIdeaStructuredData => ({
   normalizedTitle: originalInput,
   summary: '',
+  coreKeywords,
   keywords: uniqueSearchTerms([originalInput, ...selectedKeywords]),
   entities: [],
   locations: [],
@@ -682,24 +748,32 @@ const POST_SELECT_FIELDS = {
   tags: { select: { name: true } },
 } as const
 
-// 字面比對：標題／副標／內文摘要含有任一詞的文章。不需要 embedding，
-// 因此即使向量沒撈到、甚至該文沒有向量，具體地名／機構文章也會被找出來。
+// 字面比對：核心詞群組與勾選角度群組都必須命中；各群組內則是 OR。
+// 因此搜尋式等同於 (核心 + 角度一) OR (核心 + 角度二) ...。
 async function findLexicalPosts({
   context,
-  anchorTerms,
+  coreTerms,
+  angleTerms,
   fallbackConceptTerms,
   limit,
 }: {
   context: KeystoneContext
-  anchorTerms: string[]
+  coreTerms: string[]
+  angleTerms: string[]
   fallbackConceptTerms: string[]
   limit: number
 }): Promise<PostResult[]> {
-  const terms = anchorTerms.length > 0 ? anchorTerms : fallbackConceptTerms
-  if (terms.length === 0) {
+  const requiredCoreTerms =
+    coreTerms.length > 0 ? coreTerms : fallbackConceptTerms
+  if (requiredCoreTerms.length === 0) {
     return []
   }
-  const orConditions = terms.flatMap((term) => [
+  const coreConditions = requiredCoreTerms.flatMap((term) => [
+    { title: { contains: term } },
+    { subtitle: { contains: term } },
+    { contentPreview: { contains: term } },
+  ])
+  const angleConditions = angleTerms.flatMap((term) => [
     { title: { contains: term } },
     { subtitle: { contains: term } },
     { contentPreview: { contains: term } },
@@ -707,7 +781,8 @@ async function findLexicalPosts({
   const posts = (await context.prisma.Post.findMany({
     where: {
       AND: [
-        { OR: orConditions },
+        { OR: coreConditions },
+        ...(angleConditions.length > 0 ? [{ OR: angleConditions }] : []),
         {
           NOT: {
             categories: {
@@ -1131,6 +1206,10 @@ export async function suggestPostIdea(
       })
     }
   }
+  structured = {
+    ...structured,
+    coreKeywords: resolveCoreKeywords(structured, originalInput),
+  }
   let keywordOptions =
     selectedKeywords === undefined
       ? collectKeywordOptions(structured)
@@ -1185,13 +1264,29 @@ export async function suggestPostIdea(
     })
   }
 
+  const coreKeywords = resolveCoreKeywords(structured, originalInput)
+  if (coreKeywords.length === 0) {
+    throw new GraphQLError('請至少保留一個主題核心詞', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+  structured = { ...structured, coreKeywords }
+
   const comparisonStructured =
     searchMode === 'selected-only'
-      ? buildSelectedOnlyStructuredData(originalInput, selectedKeywords)
+      ? buildSelectedOnlyStructuredData(
+          originalInput,
+          selectedKeywords,
+          coreKeywords
+        )
       : structured
   const queryText =
     searchMode === 'selected-only'
-      ? buildSelectedOnlyQueryText(originalInput, selectedKeywords)
+      ? buildSelectedOnlyQueryText(
+          originalInput,
+          selectedKeywords,
+          coreKeywords
+        )
       : buildIdeaQueryText(originalInput, structured, selectedKeywords)
   const config = envVar.postIdeaSuggestion
 
@@ -1211,15 +1306,26 @@ export async function suggestPostIdea(
   // 混合檢索：用實體／地點對標題等做字面比對，補上向量沒撈到的具體場域文章。
   const lexicalSearchTerms =
     searchMode === 'selected-only'
-      ? collectSelectedOnlySearchTerms(originalInput, selectedKeywords)
+      ? collectSelectedOnlySearchTerms(
+          originalInput,
+          selectedKeywords,
+          coreKeywords
+        )
       : collectLexicalSearchTerms(structured, originalInput, selectedKeywords)
-  const { anchorTerms, conceptTerms, fallbackConceptTerms, lexicalTerms } =
-    lexicalSearchTerms
+  const {
+    anchorTerms,
+    coreTerms,
+    angleTerms,
+    conceptTerms,
+    fallbackConceptTerms,
+    lexicalTerms,
+  } = lexicalSearchTerms
   let lexicalPosts: PostResult[] = []
   try {
     lexicalPosts = await findLexicalPosts({
       context,
-      anchorTerms,
+      coreTerms,
+      angleTerms,
       fallbackConceptTerms,
       limit: config.lexicalLimit,
     })
@@ -1336,16 +1442,18 @@ export async function suggestPostIdea(
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score)
 
-  const anchorSet = new Set(anchorTerms.map((term) => term.toLowerCase()))
-  const hasAnchorMatch = (item: ReturnType<typeof scorePost>) =>
-    anchorSet.size > 0 &&
-    item.matchedEntities.some((term) => anchorSet.has(term.toLowerCase()))
+  const coreSet = new Set(coreTerms.map((term) => term.toLowerCase()))
+  const angleSet = new Set(angleTerms.map((term) => term.toLowerCase()))
+  const hasCoreMatch = (item: ReturnType<typeof scorePost>) =>
+    coreSet.size === 0 ||
+    item.matchedEntities.some((term) => coreSet.has(term.toLowerCase()))
+  const hasAngleMatch = (item: ReturnType<typeof scorePost>) =>
+    angleSet.size === 0 ||
+    item.matchedEntities.some((term) => angleSet.has(term.toLowerCase()))
   const isDirectListMatch = (item: ReturnType<typeof scorePost>) =>
-    anchorSet.size > 0
-      ? hasAnchorMatch(item)
-      : item.lexicalMatch && item.score >= config.minScore
+    item.lexicalMatch && hasCoreMatch(item) && hasAngleMatch(item)
   const passesRelevanceFloor = (item: ReturnType<typeof scorePost>) =>
-    hasAnchorMatch(item) || item.score >= config.minScore
+    isDirectListMatch(item) || item.score >= config.minScore
   // 「相似內容」只列直接命中主題錨點的文章。向量上接近但沒有命中主題的文章
   // 仍可作為完整分析的背景參考，但不要包裝成相似內容。
   const isStrong = (item: ReturnType<typeof scorePost>) =>
@@ -1354,10 +1462,10 @@ export async function suggestPostIdea(
       (item.distance !== null && item.distance <= config.strongDistance))
   const strongPool = scored.filter(isStrong)
   const selectedStrong: ReturnType<typeof scorePost>[] = []
-  if (anchorSet.size > 0) {
+  if (coreSet.size > 0) {
     takeUniqueScoredPosts(
       selectedStrong,
-      strongPool.filter(hasAnchorMatch),
+      strongPool.filter(hasCoreMatch),
       config.maxResults
     )
   }

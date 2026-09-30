@@ -26,6 +26,7 @@ const SUGGEST_POST_IDEA = gql`
 type StructuredIdea = {
   normalizedTitle?: string
   summary?: string
+  coreKeywords?: string[]
   keywords?: string[]
   entities?: string[]
   locations?: string[]
@@ -366,6 +367,7 @@ function EnabledPostIdeaSuggestionsPage() {
   const [input, setInput] = useState('')
   const [payload, setPayload] = useState<SuggestionPayload | null>(null)
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
+  const [coreKeywords, setCoreKeywords] = useState<string[]>([])
   const [searchMode, setSearchMode] = useState<SearchMode>('expanded')
   const [mutate, { loading }] = useMutation(SUGGEST_POST_IDEA)
 
@@ -381,12 +383,20 @@ function EnabledPostIdeaSuggestionsPage() {
         variables: {
           input: input.trim(),
           selectedKeywords: keywords,
-          structuredInput: keywords ? payload?.structured ?? null : null,
+          structuredInput: keywords
+            ? {
+                ...(payload?.structured ?? {}),
+                coreKeywords: coreKeywords
+                  .map((keyword) => keyword.trim())
+                  .filter(Boolean),
+              }
+            : null,
           searchMode,
         },
       })
       const nextPayload = data?.suggestPostIdea as SuggestionPayload | undefined
       if (nextPayload?.needsKeywordSelection) {
+        setCoreKeywords(nextPayload.structured?.coreKeywords ?? [])
         setSelectedKeywords(
           nextPayload.keywordOptions?.map((option) => option.value) ?? []
         )
@@ -405,7 +415,15 @@ function EnabledPostIdeaSuggestionsPage() {
         tone: 'negative',
       })
     }
-  }, [canSubmit, input, mutate, payload?.structured, searchMode, toasts])
+  }, [
+    canSubmit,
+    coreKeywords,
+    input,
+    mutate,
+    payload?.structured,
+    searchMode,
+    toasts,
+  ])
 
   const changeSearchMode = useCallback(
     (nextMode: SearchMode) => {
@@ -449,6 +467,9 @@ function EnabledPostIdeaSuggestionsPage() {
     [keywordOptionValues, selectedKeywordSet]
   )
   const selectedKeywordCount = selectedKeywordsForSubmit.length
+  const validCoreKeywordCount = coreKeywords.filter(
+    (keyword) => keyword.trim().length > 0
+  ).length
   const needsKeywordSelection = Boolean(payload?.needsKeywordSelection)
   const weakMatch = Boolean(payload?.weakMatch)
   const analysis = payload?.analysis ?? null
@@ -502,6 +523,7 @@ function EnabledPostIdeaSuggestionsPage() {
               setInput('')
               setPayload(null)
               setSelectedKeywords([])
+              setCoreKeywords([])
               setSearchMode('expanded')
             }}
             isDisabled={loading && !input}
@@ -523,6 +545,102 @@ function EnabledPostIdeaSuggestionsPage() {
                 background: '#fff',
               }}
             >
+              <div style={{ marginBottom: 18 }}>
+                <div
+                  style={{
+                    color: '#374151',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    marginBottom: 8,
+                  }}
+                >
+                  確認主題核心
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  {coreKeywords.map((keyword, index) => (
+                    <div
+                      key={`core-${index}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        border: '1px solid #2563eb',
+                        borderRadius: 8,
+                        background: '#eff6ff',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <input
+                        aria-label={`主題核心 ${index + 1}`}
+                        value={keyword}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          setCoreKeywords((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index ? value : item
+                            )
+                          )
+                        }}
+                        disabled={loading}
+                        style={{
+                          width: Math.max(96, keyword.length * 18),
+                          maxWidth: 220,
+                          border: 0,
+                          outline: 0,
+                          padding: '7px 9px',
+                          color: '#1d4ed8',
+                          background: 'transparent',
+                          fontSize: 14,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`移除主題核心 ${keyword}`}
+                        title="移除"
+                        onClick={() =>
+                          setCoreKeywords((current) =>
+                            current.filter((_, itemIndex) => itemIndex !== index)
+                          )
+                        }
+                        disabled={loading}
+                        style={{
+                          border: 0,
+                          borderLeft: '1px solid #bfdbfe',
+                          background: 'transparent',
+                          color: '#1d4ed8',
+                          cursor: 'pointer',
+                          padding: '7px 9px',
+                          fontSize: 16,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {coreKeywords.length < 3 && (
+                    <Button
+                      onClick={() =>
+                        setCoreKeywords((current) => [...current, ''])
+                      }
+                      isDisabled={loading}
+                    >
+                      新增核心詞
+                    </Button>
+                  )}
+                </div>
+                {validCoreKeywordCount === 0 && (
+                  <div style={{ color: '#b91c1c', fontSize: 13, marginTop: 8 }}>
+                    請保留至少一個主題核心詞
+                  </div>
+                )}
+              </div>
               <div style={{ marginBottom: 16 }}>
                 <div
                   style={{
@@ -639,7 +757,10 @@ function EnabledPostIdeaSuggestionsPage() {
                   tone="active"
                   onClick={() => run(selectedKeywordsForSubmit)}
                   isDisabled={
-                    loading || !canSubmit || selectedKeywordCount === 0
+                    loading ||
+                    !canSubmit ||
+                    selectedKeywordCount === 0 ||
+                    validCoreKeywordCount === 0
                   }
                 >
                   {loading ? '比對中...' : '用勾選詞比對'}
