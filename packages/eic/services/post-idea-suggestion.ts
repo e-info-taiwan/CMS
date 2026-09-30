@@ -1514,10 +1514,7 @@ export async function suggestPostIdea(
     const corePriority = coreMatchPriority(item)
     const keywordHits = selectedKeywordHitCount(item)
     if (corePriority > 0) {
-      return (
-        keywordHits > 0 ||
-        (item.distance !== null && item.distance <= config.strongDistance)
-      )
+      return keywordHits > 0
     }
     return (
       keywordHits >= 2 &&
