@@ -336,6 +336,7 @@ ${input}`
   const result = await ai.models.generateContent({
     model: envVar.ai.gemini.model,
     contents: prompt,
+    config: { temperature: 0 },
   })
 
   const text = result.text?.trim()
@@ -778,19 +779,23 @@ async function findLexicalPosts({
   if (requiredCoreTerms.length === 0) {
     return []
   }
-  const coreConditions = requiredCoreTerms.flatMap((term) => [
+  const coreStrongConditions = requiredCoreTerms.flatMap((term) => [
     { title: { contains: term } },
     { subtitle: { contains: term } },
-    { contentPreview: { contains: term } },
     { tags: { some: { name: { contains: term } } } },
   ])
+  const coreBodyConditions = requiredCoreTerms.map((term) => ({
+    contentPreview: { contains: term },
+  }))
   const angleConditions = angleTerms.flatMap((term) => [
     { title: { contains: term } },
     { subtitle: { contains: term } },
     { contentPreview: { contains: term } },
     { tags: { some: { name: { contains: term } } } },
   ])
-  const findPosts = async (conditions: typeof coreConditions) =>
+  const findPosts = async (
+    conditions: Array<(typeof angleConditions)[number]>
+  ) =>
     (await context.prisma.Post.findMany({
       where: {
         AND: [
@@ -840,11 +845,19 @@ async function findLexicalPosts({
 
   // 核心文章與泛角度文章分開取，避免大量近期角度文章把較舊的核心文章
   // 擠出候選池，導致它們沒有機會進入後續的相關性排序。
-  const [corePosts, anglePosts] = await Promise.all([
-    findPosts(coreConditions),
+  const [coreStrongPosts, coreBodyPosts, anglePosts] = await Promise.all([
+    findPosts(coreStrongConditions),
+    findPosts(coreBodyConditions),
     angleConditions.length > 0 ? findPosts(angleConditions) : [],
   ])
-  return [...new Map([...corePosts, ...anglePosts].map((post) => [post.id, post])).values()]
+  return [
+    ...new Map(
+      [...coreStrongPosts, ...coreBodyPosts, ...anglePosts].map((post) => [
+        post.id,
+        post,
+      ])
+    ).values(),
+  ]
 }
 
 // 針對指定文章補查向量距離（給字面命中、但不在向量候選裡的文章用）。
