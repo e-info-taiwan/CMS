@@ -1505,6 +1505,19 @@ export async function suggestPostIdea(
     ])
     return angleTerms.filter((term) => includesTerm(text, term)).length
   }
+  const matchesAllCoreTerms = (item: ReturnType<typeof scorePost>) => {
+    const post = item.post
+    const text = fieldText([
+      post.title,
+      post.subtitle,
+      post.contentPreview,
+      ...post.tags.map((tag) => tag.name),
+    ])
+    return (
+      coreTerms.length > 0 &&
+      coreTerms.every((term) => includesTerm(text, term))
+    )
+  }
   const distanceForSort = (item: ReturnType<typeof scorePost>) =>
     item.distance ?? Number.POSITIVE_INFINITY
   const ranked = [...scored].sort((a, b) => {
@@ -1518,9 +1531,9 @@ export async function suggestPostIdea(
     return b.score - a.score
   })
   const isRankedMatch = (item: ReturnType<typeof scorePost>) => {
-    const corePriority = coreMatchPriority(item)
     const keywordHits = selectedKeywordHitCount(item)
-    if (corePriority > 0) {
+    if (coreTerms.length > 0) {
+      if (!matchesAllCoreTerms(item)) return false
       return keywordHits > 0
     }
     const requiredKeywordHits = Math.max(2, Math.ceil(angleTerms.length / 2))
