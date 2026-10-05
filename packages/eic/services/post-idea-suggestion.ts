@@ -1518,7 +1518,7 @@ export async function suggestPostIdea(
     ])
     return angleTerms.filter((term) => includesTerm(text, term)).length
   }
-  const matchesPrimaryCoreTerm = (item: ReturnType<typeof scorePost>) => {
+  const coreHitCount = (item: ReturnType<typeof scorePost>) => {
     const post = item.post
     const text = fieldText([
       post.title,
@@ -1526,7 +1526,7 @@ export async function suggestPostIdea(
       post.contentPreview,
       ...post.tags.map((tag) => tag.name),
     ])
-    return coreTerms.length > 0 && includesTerm(text, coreTerms[0])
+    return coreTerms.filter((term) => includesTerm(text, term)).length
   }
   const distanceForSort = (item: ReturnType<typeof scorePost>) =>
     item.distance ?? Number.POSITIVE_INFINITY
@@ -1541,11 +1541,12 @@ export async function suggestPostIdea(
     return b.score - a.score
   })
   const isRankedMatch = (item: ReturnType<typeof scorePost>) => {
-    const keywordHits = selectedKeywordHitCount(item)
     if (coreTerms.length > 0) {
-      if (!matchesPrimaryCoreTerm(item)) return false
-      return keywordHits > 0
+      // 複合題目至少要命中兩個核心詞；候選詞只用於排序，不可單獨放寬結果。
+      const requiredCoreHits = Math.min(2, coreTerms.length)
+      return coreHitCount(item) >= requiredCoreHits
     }
+    const keywordHits = selectedKeywordHitCount(item)
     const requiredKeywordHits = Math.max(2, Math.ceil(angleTerms.length / 2))
     return (
       keywordHits >= requiredKeywordHits &&
