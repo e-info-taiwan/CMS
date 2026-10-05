@@ -8,7 +8,6 @@ const ALLOWED_ROLES = ['admin', 'moderator', 'editor', 'contributor'] as const
 const POST_VECTOR_KIND_DOCUMENT = 'document'
 // 餵給 Gemini 做覆蓋面分析的文章數上限與每篇摘要長度，控制 token 與延遲。
 const ANALYSIS_POST_LIMIT = 10
-const PRIORITY_RESULT_FLOOR = 12
 const ANALYSIS_PREVIEW_MAX_LENGTH = 320
 const COVERAGE_ANALYSIS_TIMEOUT_MS = 30_000
 // 混合檢索：字面比對的詞最短長度。
@@ -1555,17 +1554,9 @@ export async function suggestPostIdea(
     )
   }
   const rankedMatches = ranked.filter(isRankedMatch)
-  const highEvidenceMatches = rankedMatches.filter(
-    (item) => selectedKeywordHitCount(item) >= 2
-  )
-  const priorityResultLimit = Math.min(
-    PRIORITY_RESULT_FLOOR,
-    config.maxResults
-  )
-  const selectedStrong =
-    highEvidenceMatches.length >= priorityResultLimit
-      ? highEvidenceMatches.slice(0, config.maxResults)
-      : rankedMatches.slice(0, priorityResultLimit)
+  // 不因為高證據文章不足而放寬條件補足固定篇數；資料庫沒有足夠貼題文章
+  // 時，保留實際通過核心詞與勾選詞條件的結果即可。
+  const selectedStrong = rankedMatches.slice(0, config.maxResults)
   const selectedWeak: ReturnType<typeof scorePost>[] = []
   const weakMatch = selectedStrong.length === 0
 
