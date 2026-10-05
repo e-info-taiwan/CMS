@@ -341,6 +341,7 @@ coreKeywords 規則：
 - 「河川整治造成原生魚類棲地破碎」→ coreKeywords: ["河川整治", "原生魚類"]
 - 「光電板退役後的回收制度」→ coreKeywords: ["光電板", "退役", "回收"]
 - 「氣候變遷下高山森林物種遷徙與保育廊道」→ coreKeywords: ["高山森林", "物種遷徙", "保育廊道"]
+- 「都市樹木修剪規範如何兼顧防災與老樹健康」→ coreKeywords: ["都市樹木"]；keywords 可包含「樹木修剪」「防災」「老樹健康」
 
 keywords 規則：
 - 放入報題的重要分析角度、原因、影響、制度與同義表述。
@@ -1536,7 +1537,7 @@ export async function suggestPostIdea(
     ])
     return angleTerms.filter((term) => includesTerm(text, term)).length
   }
-  const coreHitCount = (item: ReturnType<typeof scorePost>) => {
+  const matchedCoreTerms = (item: ReturnType<typeof scorePost>) => {
     const post = item.post
     const text = fieldText([
       post.title,
@@ -1544,7 +1545,7 @@ export async function suggestPostIdea(
       post.contentPreview,
       ...post.tags.map((tag) => tag.name),
     ])
-    return coreTerms.filter((term) => includesTerm(text, term)).length
+    return coreTerms.filter((term) => includesTerm(text, term))
   }
   const distanceForSort = (item: ReturnType<typeof scorePost>) =>
     item.distance ?? Number.POSITIVE_INFINITY
@@ -1560,9 +1561,15 @@ export async function suggestPostIdea(
   })
   const isRankedMatch = (item: ReturnType<typeof scorePost>) => {
     if (coreTerms.length > 0) {
-      // 複合題目至少要命中兩個核心詞；候選詞只用於排序，不可單獨放寬結果。
-      const requiredCoreHits = Math.min(2, coreTerms.length)
-      return coreHitCount(item) >= requiredCoreHits
+      // 第一個核心詞是必要主體；若有其他核心詞，再至少命中其中一個。
+      // 例如「光電板 AND（退役 OR 回收）」不能由「退役＋回收」取代主體。
+      const matches = matchedCoreTerms(item)
+      const [primaryCoreTerm, ...secondaryCoreTerms] = coreTerms
+      return (
+        matches.includes(primaryCoreTerm) &&
+        (secondaryCoreTerms.length === 0 ||
+          secondaryCoreTerms.some((term) => matches.includes(term)))
+      )
     }
     const keywordHits = selectedKeywordHitCount(item)
     const requiredKeywordHits = Math.max(2, Math.ceil(angleTerms.length / 2))
