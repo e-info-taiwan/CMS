@@ -558,6 +558,17 @@ function EnabledPostIdeaSuggestionsPage() {
                 </div>
                 <div
                   style={{
+                    color: '#6b7280',
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    marginBottom: 10,
+                  }}
+                >
+                  請選擇或編輯一定要有的核心詞來搜尋過去相關文章（對過去資料庫搜尋使用
+                  AND）。
+                </div>
+                <div
+                  style={{
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: 8,
@@ -697,6 +708,29 @@ function EnabledPostIdeaSuggestionsPage() {
                     )
                   })}
                 </div>
+                <div
+                  style={{
+                    color: '#6b7280',
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    marginTop: 8,
+                  }}
+                >
+                  A｜延伸比對：參考完整發想與 AI 整理內容，尋找語意相近的文章。
+                  <br />
+                  B｜勾選詞限定：只依確認的核心詞與勾選詞比對，結果較容易預期。
+                </div>
+              </div>
+              <div
+                style={{
+                  color: '#6b7280',
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  marginBottom: 10,
+                }}
+              >
+                請選擇延伸角度；選擇愈少，比對愈精確；選擇愈多，範疇愈廣（對過去資料庫搜尋使用
+                OR）。
               </div>
               <div
                 style={{
