@@ -3800,6 +3800,7 @@ type Query {
   exactPHashDuplicatePhotos(id: ID!): [Photo]!
   nearPHashDuplicatePhotos(id: ID!): [Photo]!
   suggestPhotoTagsFromImageLabels(photoId: ID!): JSON!
+  checkRssTitleSimilarity(title: String!): JSON!
   similarRssArticlesByPostTitle(id: ID!): [RssArticle]!
   memberFavoriteStats(memberId: ID!): MemberFavoriteStats!
 }
