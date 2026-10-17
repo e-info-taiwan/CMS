@@ -17,7 +17,7 @@ import {
   findNearPHashDuplicatePhotos,
 } from './services/photo-phash-duplicates'
 import { findSimilarPhotos } from './services/photo-similarity'
-import { findSimilarRssArticlesByPostTitle } from './services/post-title-similarity'
+import { findSimilarRssArticlesByPostTitle, checkRssTitleSimilarity } from './services/post-title-similarity'
 import { getMemberFavoriteStats } from './services/member-favorite-stats'
 import { checkTagNameSimilarity } from './services/tag-similarity-check'
 import type {
@@ -236,6 +236,11 @@ export default withAuth(
             resolve: async (_source, { photoId }, context) => {
               return suggestPhotoTagsFromImageLabels(context, photoId as string)
             },
+          }),
+          checkRssTitleSimilarity: graphql.field({
+            type: graphql.nonNull(graphql.JSON),
+            args: { title: graphql.arg({ type: graphql.nonNull(graphql.String) }) },
+            resolve: async (_source, { title }, context) => checkRssTitleSimilarity(context, title),
           }),
           similarRssArticlesByPostTitle: graphql.field({
             type: graphql.nonNull(graphql.list(base.object('RssArticle'))),
