@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM node:24.22.1-slim
 
 ARG GCSFUSE_VERSION=3.11.2
 
