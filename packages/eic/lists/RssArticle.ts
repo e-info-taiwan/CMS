@@ -18,6 +18,7 @@ const listConfigurations = list({
     }),
     link: text({
       label: '原文連結',
+      ui: { views: './lists/views/rss-link' },
       isIndexed: 'unique',
       validation: { isRequired: true },
     }),
@@ -30,18 +31,26 @@ const listConfigurations = list({
       db: { isNullable: true },
     }),
     fetchedAt: timestamp({
-      label: '抓取時間',
+      label: '首次抓取時間',
       validation: { isRequired: true },
       defaultValue: { kind: 'now' },
     }),
     summary: text({
-      label: '摘要',
-      ui: { displayMode: 'textarea' },
+      label: 'RSS 內容／摘要',
+      ui: {
+        displayMode: 'textarea',
+        description: '僅顯示 RSS 提供的文字內容；若來源只提供摘要，此處不會是文章全文。',
+        views: './lists/views/rss-content',
+      },
     }),
   },
   ui: {
+    label: '外部媒體 RSS',
+    labelField: 'title',
+    searchFields: ['title', 'source', 'summary'],
+    description: '最近三個月收集的外部媒體文章，可搜尋標題、媒體與 RSS 內容，或篩選來源及日期。',
     listView: {
-      initialColumns: ['id', 'source', 'title', 'publishedAt', 'fetchedAt'],
+      initialColumns: ['title', 'source', 'publishedAt', 'fetchedAt', 'summary', 'link'],
       initialSort: { field: 'fetchedAt', direction: 'DESC' },
       pageSize: 50,
     },

@@ -1,0 +1,128 @@
+{
+  "status": "succeeded",
+  "scope": "2026 Taipei upload dates, missing CLIP only",
+  "executions": [
+    {
+      "execution": "eic-photo-clip-backfill-prod-wz576",
+      "completionTime": "2026-09-23T12:59:51.759558Z",
+      "succeeded": 46,
+      "failed": 4,
+      "shardSummaries": [
+        {
+          "fields": "vector",
+          "shard": "0/1",
+          "processed": 50,
+          "succeeded": 46,
+          "failed": 4,
+          "next_cursor": 139380,
+          "end_id": 141800
+        }
+      ],
+      "failures": [
+        {
+          "photoId": 29147,
+          "error": "read/prepare source: source image is too large: 9921x14034=139231314 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 137565,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        },
+        {
+          "photoId": 137605,
+          "error": "read/prepare source: source image is too large: 9792x6528=63922176 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 138983,
+          "error": "read/prepare source: source image is too large: 9355x12598=117854290 pixels exceeds max 60000000"
+        }
+      ]
+    },
+    {
+      "execution": "eic-photo-clip-backfill-prod-7cvqh",
+      "completionTime": "2026-09-23T13:05:57.751430Z",
+      "succeeded": 692,
+      "failed": 6,
+      "shardSummaries": [
+        {
+          "fields": "vector",
+          "shard": "0/1",
+          "processed": 698,
+          "succeeded": 692,
+          "failed": 6,
+          "next_cursor": 141800,
+          "end_id": 141800
+        }
+      ],
+      "failures": [
+        {
+          "photoId": 29147,
+          "error": "read/prepare source: source image is too large: 9921x14034=139231314 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 137565,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        },
+        {
+          "photoId": 137605,
+          "error": "read/prepare source: source image is too large: 9792x6528=63922176 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 138983,
+          "error": "read/prepare source: source image is too large: 9355x12598=117854290 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 139728,
+          "error": "read/prepare source: source image is too large: 16493x10322=170240746 pixels exceeds max 60000000"
+        },
+        {
+          "photoId": 139731,
+          "error": "read/prepare source: source image is too large: 17067x8501=145086567 pixels exceeds max 60000000"
+        }
+      ]
+    },
+    {
+      "execution": "eic-photo-clip-backfill-prod-f622d",
+      "completionTime": "2026-09-23T13:14:29.839253Z",
+      "succeeded": 5,
+      "failed": 1,
+      "shardSummaries": [
+        {
+          "fields": "vector",
+          "shard": "0/1",
+          "processed": 6,
+          "succeeded": 5,
+          "failed": 1,
+          "next_cursor": 139731,
+          "end_id": 141800
+        }
+      ],
+      "failures": [
+        {
+          "photoId": 137565,
+          "error": "read/prepare source: source exceeds 40 MiB job limit"
+        }
+      ]
+    },
+    {
+      "execution": "eic-photo-clip-backfill-prod-7t7s5",
+      "completionTime": "2026-09-23T13:24:01.907585Z",
+      "succeeded": 1,
+      "failed": 0,
+      "shardSummaries": [
+        {
+          "fields": "vector",
+          "shard": "0/1",
+          "processed": 1,
+          "succeeded": 1,
+          "failed": 0,
+          "next_cursor": 137565,
+          "end_id": 141800
+        }
+      ],
+      "failures": []
+    }
+  ],
+  "remaining": 0,
+  "remainingCategories": {},
+  "remainingFailures": []
+}

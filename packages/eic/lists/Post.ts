@@ -354,6 +354,7 @@ const listConfigurations = list({
       },
     }),
     title: text({
+      ui: { views: './lists/views/post/title-rss-check' },
       label: '標題',
       validation: { isRequired: true },
     }),
@@ -603,7 +604,7 @@ const listConfigurations = list({
         createView: { fieldMode: 'hidden' },
         listView: { fieldMode: 'hidden' },
         itemView: {
-          fieldMode: envVar.featureToggle.postVector ? 'edit' : 'hidden',
+          fieldMode: 'hidden',
         },
       },
     }),
