@@ -41,7 +41,7 @@ export function Field(props: FieldProps<typeof controller>) {
       {result.articles.length === 0 && <p>目前沒有找到高相似標題。</p>}
       {result.articles.map(article => <div key={article.id} style={{ margin: '8px 0' }}>
         <a href={/^https?:\/\//i.test(article.link) ? article.link : undefined} target="_blank" rel="noopener noreferrer">{article.title}</a>
-        <div>{article.source}{article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString('zh-TW')}` : ''} · 語意距離 {article.distance.toFixed(3)}</div>
+        <div>{article.source}{article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString('zh-TW')}` : ''} · 相似度 {((1 - article.distance) * 100).toFixed(1)}%</div>
       </div>)}
     </div>}
   </>
