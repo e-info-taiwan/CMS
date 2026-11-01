@@ -1,9 +1,11 @@
+import crypto from 'crypto'
+import bcryptjs from 'bcryptjs'
 import { list } from '@keystone-6/core'
 // @ts-ignore: no definition
 import { utils } from '@mirrormedia/lilith-core'
 import { text, password, select } from '@keystone-6/core/fields'
 
-const { allowRolesForUsers, admin, moderator, editor } = utils.accessControl
+const { allowRoles, admin, moderator, editor } = utils.accessControl
 
 const listConfigurations = list({
   fields: {
@@ -15,10 +17,34 @@ const listConfigurations = list({
       label: 'Email',
       validation: { isRequired: true },
       isIndexed: 'unique',
+      hooks: {
+        resolveInput: ({ resolvedData }) => {
+          if (typeof resolvedData.email === 'string') {
+            return resolvedData.email.trim().toLowerCase()
+          }
+          return resolvedData.email
+        },
+      },
     }),
     password: password({
       label: '密碼',
-      validation: { isRequired: true },
+      db: { isNullable: false },
+      ui: {
+        createView: { fieldMode: 'hidden' },
+        itemView: { fieldMode: 'hidden' },
+        listView: { fieldMode: 'hidden' },
+      },
+      hooks: {
+        resolveInput: async ({ operation, resolvedData }) => {
+          if (operation === 'create' && !resolvedData.password) {
+            return bcryptjs.hash(crypto.randomBytes(32).toString('hex'), 10)
+          }
+          if (operation === 'update' && resolvedData.password === null) {
+            return undefined
+          }
+          return resolvedData.password
+        },
+      },
     }),
     role: select({
       label: '角色權限',
@@ -53,10 +79,10 @@ const listConfigurations = list({
   },
   access: {
     operation: {
-      query: allowRolesForUsers(admin, moderator, editor),
-      update: allowRolesForUsers(admin, moderator),
-      create: allowRolesForUsers(admin, moderator),
-      delete: allowRolesForUsers(admin),
+      query: allowRoles(admin, moderator, editor),
+      update: allowRoles(admin, moderator),
+      create: allowRoles(admin, moderator),
+      delete: allowRoles(admin),
     },
   },
   graphql: {

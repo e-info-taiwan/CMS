@@ -2022,17 +2022,8 @@ input PhotoWhereInput {
   id: IDFilter
   name: StringFilter
   description: StringFilter
-  phash: StringFilter
   posts: PostManyRelationFilter
   tags: TagManyRelationFilter
-  imageVectorStatus: StringFilter
-  imageVectorRetryCount: IntFilter
-  imageVectorFailReason: StringNullableFilter
-  imageVectorFailedAt: DateTimeNullableFilter
-  imageVectorUpdatedAt: DateTimeNullableFilter
-  imageLabelStatus: StringFilter
-  imageLabelFailReason: StringNullableFilter
-  imageLabelUpdatedAt: DateTimeNullableFilter
   createdAt: DateTimeNullableFilter
   updatedAt: DateTimeNullableFilter
   createdBy: UserWhereInput
@@ -2049,15 +2040,6 @@ input PhotoOrderByInput {
   id: OrderDirection
   name: OrderDirection
   description: OrderDirection
-  phash: OrderDirection
-  imageVectorStatus: OrderDirection
-  imageVectorRetryCount: OrderDirection
-  imageVectorFailReason: OrderDirection
-  imageVectorFailedAt: OrderDirection
-  imageVectorUpdatedAt: OrderDirection
-  imageLabelStatus: OrderDirection
-  imageLabelFailReason: OrderDirection
-  imageLabelUpdatedAt: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -3672,34 +3654,13 @@ type Mutation {
   deleteUser(where: UserWhereUniqueInput!): User
   deleteUsers(where: [UserWhereUniqueInput!]!): [User]
   endSession: Boolean!
-  authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
-  createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
   suggestPostTagsWithAi(postId: ID!): JSON!
   applyPostTagCandidates(postId: ID!, selections: JSON!): JSON!
   applyPhotoImageLabelTags(photoId: ID!): JSON!
   suggestPostIdea(input: String!, selectedKeywords: [String!], structuredInput: JSON, searchMode: String): JSON!
 }
 
-union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
-
-type UserAuthenticationWithPasswordSuccess {
-  sessionToken: String!
-  item: User!
-}
-
-type UserAuthenticationWithPasswordFailure {
-  message: String!
-}
-
-input CreateInitialUserInput {
-  name: String
-  email: String
-  password: String
-  role: String
-}
-
 type Query {
-  checkTagNameSimilarity(name: String!): JSON!
   ads(where: AdWhereInput! = {}, orderBy: [AdOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AdWhereUniqueInput): [Ad!]
   ad(where: AdWhereUniqueInput!): Ad
   adsCount(where: AdWhereInput! = {}): Int
@@ -3795,6 +3756,8 @@ type Query {
   usersCount(where: UserWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
+  postIdeaSuggestionsEnabled: Boolean!
+  checkTagNameSimilarity(name: String!): JSON!
   postsForRssTarget(rssTarget: String!): [Post]!
   similarPhotos(id: ID!): [Photo]!
   exactPHashDuplicatePhotos(id: ID!): [Photo]!

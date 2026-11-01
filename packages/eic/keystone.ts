@@ -17,7 +17,10 @@ import {
   findNearPHashDuplicatePhotos,
 } from './services/photo-phash-duplicates'
 import { findSimilarPhotos } from './services/photo-similarity'
-import { findSimilarRssArticlesByPostTitle, checkRssTitleSimilarity } from './services/post-title-similarity'
+import {
+  findSimilarRssArticlesByPostTitle,
+  checkRssTitleSimilarity,
+} from './services/post-title-similarity'
 import { getMemberFavoriteStats } from './services/member-favorite-stats'
 import { checkTagNameSimilarity } from './services/tag-similarity-check'
 import type {
@@ -25,21 +28,9 @@ import type {
   MemberFavoriteStats,
 } from './services/member-favorite-stats'
 import express from 'express'
-import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
+import { withGoogleAuth } from './services/google-oauth'
 import { ACL } from './type'
-
-const { withAuth } = createAuth({
-  listKey: 'User',
-  identityField: 'email',
-  sessionData: 'name role',
-  secretField: 'password',
-  initFirstItem: {
-    // If there are no items in the database, keystone will ask you to create
-    // a new user, filling in these fields.
-    fields: ['name', 'email', 'password', 'role'],
-  },
-})
 
 const session = statelessSessions(appConfig.session)
 
@@ -93,7 +84,7 @@ const extendPrismaSchemaWithVectors = (schema: string) => {
   return nextSchema
 }
 
-export default withAuth(
+export default withGoogleAuth(
   config({
     db: {
       provider: appConfig.database.provider,
@@ -239,8 +230,11 @@ export default withAuth(
           }),
           checkRssTitleSimilarity: graphql.field({
             type: graphql.nonNull(graphql.JSON),
-            args: { title: graphql.arg({ type: graphql.nonNull(graphql.String) }) },
-            resolve: async (_source, { title }, context) => checkRssTitleSimilarity(context, title),
+            args: {
+              title: graphql.arg({ type: graphql.nonNull(graphql.String) }),
+            },
+            resolve: async (_source, { title }, context) =>
+              checkRssTitleSimilarity(context, title),
           }),
           similarRssArticlesByPostTitle: graphql.field({
             type: graphql.nonNull(graphql.list(base.object('RssArticle'))),

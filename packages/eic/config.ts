@@ -24,6 +24,16 @@ const session: { secret: string; maxAge: number } = {
   maxAge: envVar.session.maxAge,
 }
 
+const googleOAuth: {
+  clientId: string
+  clientSecret: string
+  redirectUri: string
+} = {
+  clientId: envVar.googleOAuth.clientId,
+  clientSecret: envVar.googleOAuth.clientSecret,
+  redirectUri: envVar.googleOAuth.redirectUri,
+}
+
 const storage = {
   gcpUrlBase: `https://storage.googleapis.com/${envVar.gcs.bucket}/`,
   webUrlBase: `https://storage.googleapis.com/${envVar.gcs.bucket}/`,
@@ -50,6 +60,7 @@ const images = {
 export default {
   database,
   session,
+  googleOAuth,
   storage,
   googleCloudStorage,
   files,
