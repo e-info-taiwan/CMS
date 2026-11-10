@@ -46,6 +46,8 @@ RUN yarn build
 
 RUN yarn cache clean
 
+ENV NODE_ENV production
+
 RUN chmod +x run.sh
 
 EXPOSE 3000

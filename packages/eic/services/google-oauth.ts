@@ -400,14 +400,28 @@ function buildSigninErrorRedirect(
   return `/signin?${params.toString()}`
 }
 
+function shouldUseSecureCookies(req: express.Request): boolean {
+  if (
+    process.env.NODE_ENV === 'production' ||
+    appConfig.googleOAuth.redirectUri.startsWith('https://') ||
+    req.secure
+  ) {
+    return true
+  }
+  const forwardedProto = (req.headers['x-forwarded-proto'] as string)
+    ?.split(',')[0]
+    ?.trim()
+    ?.toLowerCase()
+  return forwardedProto === 'https'
+}
+
 export function registerGoogleOAuthRoutes(
   app: express.Express,
   commonContext: KeystoneContext
 ) {
-  const isProd = process.env.NODE_ENV === 'production'
-
   app.get('/api/auth/google/start', async (req, res) => {
     const returnTo = sanitizeReturnTo(req.query.from)
+    const secureCookie = shouldUseSecureCookies(req)
 
     if (!isGoogleOAuthConfigured()) {
       res.redirect(buildSigninErrorRedirect('oauth_not_configured', returnTo))
@@ -432,7 +446,7 @@ export function registerGoogleOAuthRoutes(
         sealedState,
         {
           httpOnly: true,
-          secure: isProd,
+          secure: secureCookie,
           sameSite: 'lax',
           path: '/api/auth/google',
           maxAge: Math.floor(OAUTH_STATE_TTL_MS / 1000),
@@ -449,9 +463,10 @@ export function registerGoogleOAuthRoutes(
   })
 
   app.get('/api/auth/google/callback', async (req, res) => {
+    const secureCookie = shouldUseSecureCookies(req)
     const clearStateCookie = cookie.serialize(OAUTH_STATE_COOKIE_NAME, '', {
       httpOnly: true,
-      secure: isProd,
+      secure: secureCookie,
       sameSite: 'lax',
       path: '/api/auth/google',
       maxAge: 0,

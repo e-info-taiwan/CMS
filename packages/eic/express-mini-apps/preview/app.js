@@ -117,6 +117,7 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
   // proxy preview server traffic to subdirectory to prevent path collision between CMS and preview server
   router.get(
     '/images-next/*',
+    authenticationMw,
     createProxyMiddleware({
       target: previewServer.origin,
       changeOrigin: true,
@@ -129,15 +130,18 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
   router.use('/_next', (req, res, next) => {
     const referer = req.headers.referer || ''
     if (referer.includes(previewServer.path)) {
-      return previewAssetProxyMiddleware(req, res, next)
+      return authenticationMw(req, res, () =>
+        previewAssetProxyMiddleware(req, res, next)
+      )
     }
     return next()
   })
 
-  router.use('/lib/public', previewAssetProxyMiddleware)
+  router.use('/lib/public', authenticationMw, previewAssetProxyMiddleware)
 
   router.get(
     `${previewServer.path}/images-next/*`,
+    authenticationMw,
     createProxyMiddleware({
       target: previewServer.origin,
       changeOrigin: true,
@@ -157,6 +161,7 @@ export function createPreviewMiniApp({ previewServer, keystoneContext }) {
 
   router.use(
     `${previewServer.path}/_next/*`,
+    authenticationMw,
     createProxyMiddleware({
       target: previewServer.origin,
       changeOrigin: true,

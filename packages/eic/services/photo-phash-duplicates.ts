@@ -13,6 +13,14 @@ async function findPHashDuplicatePhotos(
   minDistance: number,
   maxDistance: number
 ) {
+  if (
+    envVar.accessControlStrategy === 'cms' &&
+    context.req &&
+    !context.session?.data?.role
+  ) {
+    return []
+  }
+
   if (!envVar.featureToggle.photoVector) {
     return []
   }

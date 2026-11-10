@@ -164,6 +164,12 @@ export default withGoogleAuth(
               }),
             },
             resolve: async (_source, { rssTarget }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb，最多 25 篇以降低 DB 負載
               const targetsJson = JSON.stringify([rssTarget])
               const RSS_TARGET_LIMIT = 25
@@ -192,6 +198,12 @@ export default withGoogleAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               return findSimilarPhotos(context, id as string)
             },
           }),
@@ -203,6 +215,12 @@ export default withGoogleAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               return findExactPHashDuplicatePhotos(context, id as string)
             },
           }),
@@ -214,6 +232,12 @@ export default withGoogleAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               return findNearPHashDuplicatePhotos(context, id as string)
             },
           }),
@@ -244,6 +268,12 @@ export default withGoogleAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               if (!envVar.featureToggle.postVector) {
                 return []
               }

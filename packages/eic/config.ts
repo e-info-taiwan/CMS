@@ -19,9 +19,12 @@ const database: { provider: 'postgresql' | 'sqlite'; url: string } = {
       : envVar.database.url,
 }
 
-const session: { secret: string; maxAge: number } = {
+const session: { secret: string; maxAge: number; secure: boolean } = {
   secret: envVar.session.secret,
   maxAge: envVar.session.maxAge,
+  secure:
+    process.env.NODE_ENV === 'production' ||
+    envVar.googleOAuth.redirectUri.startsWith('https://'),
 }
 
 const googleOAuth: {
