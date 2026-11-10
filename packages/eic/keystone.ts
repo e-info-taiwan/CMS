@@ -17,7 +17,10 @@ import {
   findNearPHashDuplicatePhotos,
 } from './services/photo-phash-duplicates'
 import { findSimilarPhotos } from './services/photo-similarity'
-import { findSimilarRssArticlesByPostTitle, checkRssTitleSimilarity } from './services/post-title-similarity'
+import {
+  findSimilarRssArticlesByPostTitle,
+  checkRssTitleSimilarity,
+} from './services/post-title-similarity'
 import { getMemberFavoriteStats } from './services/member-favorite-stats'
 import { checkTagNameSimilarity } from './services/tag-similarity-check'
 import type {
@@ -25,21 +28,9 @@ import type {
   MemberFavoriteStats,
 } from './services/member-favorite-stats'
 import express from 'express'
-import { createAuth } from '@keystone-6/auth'
 import { statelessSessions } from '@keystone-6/core/session'
+import { withGoogleAuth } from './services/google-oauth'
 import { ACL } from './type'
-
-const { withAuth } = createAuth({
-  listKey: 'User',
-  identityField: 'email',
-  sessionData: 'name role',
-  secretField: 'password',
-  initFirstItem: {
-    // If there are no items in the database, keystone will ask you to create
-    // a new user, filling in these fields.
-    fields: ['name', 'email', 'password', 'role'],
-  },
-})
 
 const session = statelessSessions(appConfig.session)
 
@@ -93,7 +84,7 @@ const extendPrismaSchemaWithVectors = (schema: string) => {
   return nextSchema
 }
 
-export default withAuth(
+export default withGoogleAuth(
   config({
     db: {
       provider: appConfig.database.provider,
@@ -173,6 +164,12 @@ export default withAuth(
               }),
             },
             resolve: async (_source, { rssTarget }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               // PostgreSQL: WHERE rssTargets @> '["yahoo"]'::jsonb，最多 25 篇以降低 DB 負載
               const targetsJson = JSON.stringify([rssTarget])
               const RSS_TARGET_LIMIT = 25
@@ -201,6 +198,12 @@ export default withAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               return findSimilarPhotos(context, id as string)
             },
           }),
@@ -212,6 +215,12 @@ export default withAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               return findExactPHashDuplicatePhotos(context, id as string)
             },
           }),
@@ -223,6 +232,12 @@ export default withAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               return findNearPHashDuplicatePhotos(context, id as string)
             },
           }),
@@ -239,8 +254,11 @@ export default withAuth(
           }),
           checkRssTitleSimilarity: graphql.field({
             type: graphql.nonNull(graphql.JSON),
-            args: { title: graphql.arg({ type: graphql.nonNull(graphql.String) }) },
-            resolve: async (_source, { title }, context) => checkRssTitleSimilarity(context, title),
+            args: {
+              title: graphql.arg({ type: graphql.nonNull(graphql.String) }),
+            },
+            resolve: async (_source, { title }, context) =>
+              checkRssTitleSimilarity(context, title),
           }),
           similarRssArticlesByPostTitle: graphql.field({
             type: graphql.nonNull(graphql.list(base.object('RssArticle'))),
@@ -250,6 +268,12 @@ export default withAuth(
               }),
             },
             resolve: async (_source, { id }, context) => {
+              if (
+                envVar.accessControlStrategy === ACL.CMS &&
+                !context.session?.data?.role
+              ) {
+                return []
+              }
               if (!envVar.featureToggle.postVector) {
                 return []
               }

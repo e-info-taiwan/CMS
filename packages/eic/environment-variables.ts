@@ -1,3 +1,5 @@
+import crypto from 'crypto'
+
 const {
   IS_UI_DISABLED,
   ACCESS_CONTROL_STRATEGY,
@@ -7,6 +9,12 @@ const {
   DATABASE_URL,
   SESSION_SECRET,
   SESSION_MAX_AGE,
+  GOOGLE_OAUTH_CLIENT_ID,
+  GOOGLE_OAUTH_CLIENT_SECRET,
+  GOOGLE_OAUTH_REDIRECT_URI,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  GOOGLE_REDIRECT_URI,
   GCS_BUCKET,
   FILES_BASE_URL,
   FILES_STORAGE_PATH,
@@ -69,6 +77,21 @@ const numberFromEnv = (value: string | undefined, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+const INSECURE_DEFAULT_SESSION_SECRET =
+  'default_session_secret_and_it_should_be_more_than_32_characters'
+
+const resolveSessionSecret = (rawSecret: string | undefined) => {
+  if (
+    typeof rawSecret === 'string' &&
+    rawSecret.length >= 32 &&
+    rawSecret !== INSECURE_DEFAULT_SESSION_SECRET
+  ) {
+    return rawSecret
+  }
+
+  return crypto.randomBytes(48).toString('hex')
+}
+
 enum DatabaseProvider {
   Sqlite = 'sqlite',
   Postgres = 'postgresql',
@@ -95,12 +118,23 @@ export default {
     url: DATABASE_URL || 'postgres://00000000@localhost:5432/eic',
   },
   session: {
-    secret:
-      SESSION_SECRET ||
-      'default_session_secret_and_it_should_be_more_than_32_characters',
+    secret: resolveSessionSecret(SESSION_SECRET),
     maxAge:
       (typeof SESSION_MAX_AGE === 'string' && parseInt(SESSION_MAX_AGE)) ||
       60 * 60 * 24 * 1, // 1 days
+  },
+  googleOAuth: {
+    clientId: (GOOGLE_OAUTH_CLIENT_ID || GOOGLE_CLIENT_ID || '').trim(),
+    clientSecret: (
+      GOOGLE_OAUTH_CLIENT_SECRET ||
+      GOOGLE_CLIENT_SECRET ||
+      ''
+    ).trim(),
+    redirectUri: (
+      GOOGLE_OAUTH_REDIRECT_URI ||
+      GOOGLE_REDIRECT_URI ||
+      ''
+    ).trim(),
   },
   gcs: {
     bucket: GCS_BUCKET || 'statics-e-info-dev',

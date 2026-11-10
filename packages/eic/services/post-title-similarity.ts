@@ -29,6 +29,14 @@ export async function findSimilarRssArticlesByPostTitle(
   context: KeystoneContext,
   postIdInput: string | number
 ) {
+  if (
+    envVar.accessControlStrategy === 'cms' &&
+    context.req &&
+    !context.session?.data?.role
+  ) {
+    return []
+  }
+
   if (!envVar.featureToggle.postVector) {
     return []
   }

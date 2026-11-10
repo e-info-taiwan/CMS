@@ -14,6 +14,19 @@ cloud runs:
 ## Environment Variables
 關於 lilith-readr 中使用到哪些環境變數，可以至 [`environment-variables.ts`](https://github.com/mirror-media/Lilith/blob/main/packages/readr/environment-variables.ts) 查看。
 
+### Google OAuth 登入設定
+CMS 後台採用 Google OAuth 2.0（Authorization Code + PKCE + OIDC `nonce` 驗證）登入，並比對 `User` list 中的 `email` 與 `role` 權限：
+
+```
+GOOGLE_OAUTH_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=your-google-oauth-client-secret
+GOOGLE_OAUTH_REDIRECT_URI=https://your-cms-domain/api/auth/google/callback
+SESSION_SECRET=your-random-secret-at-least-32-characters-long
+```
+
+- 在 Google Cloud Console 建立 OAuth 2.0 用戶端 ID（Web application），並將 `https://<your-cms-domain>/api/auth/google/callback`（本機開發為 `http://localhost:3000/api/auth/google/callback`）加入「已授權的重新導向 URI (Authorized redirect URIs)」。
+- 僅限已存在於 CMS `User` list 中的 Gmail / Google 帳號可登入，並沿用該 `User` 設定的 `role`；若資料庫中尚無任何 `User`（`count === 0`），第一位通過 Google OAuth 驗證的使用者會自動建立為 `admin`。
+
 ### CDN cache invalidation
 本專案支援兩種 CDN 失效方式，擇一設定即可：
 
