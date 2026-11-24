@@ -31,6 +31,9 @@ import express from 'express'
 import { statelessSessions } from '@keystone-6/core/session'
 import { withGoogleAuth } from './services/google-oauth'
 import { ACL } from './type'
+import { createSecurityTelemetry } from './services/security-telemetry'
+
+const securityTelemetry = createSecurityTelemetry({ secret: appConfig.session.secret })
 
 const session = statelessSessions(appConfig.session)
 
@@ -111,6 +114,7 @@ export default withGoogleAuth(
     },
     lists,
     session,
+    graphql: { apolloConfig: { plugins: [securityTelemetry.plugin] } },
     extendGraphqlSchema: graphql.extend((base) => {
       const MemberFavoriteSectionStatsType =
         graphql.object<MemberFavoriteSectionStats>()({

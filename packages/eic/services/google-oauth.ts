@@ -13,6 +13,9 @@ import type {
 } from '@keystone-6/core/types'
 import type express from 'express'
 import appConfig from '../config'
+import { createSecurityTelemetry } from './security-telemetry'
+
+const securityTelemetry = createSecurityTelemetry({ secret: appConfig.session.secret })
 
 export const OAUTH_STATE_COOKIE_NAME = 'eic-google-oauth-state'
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000 // 10 minutes
@@ -498,6 +501,7 @@ export function registerGoogleOAuthRoutes(
       !statePayload ||
       !timingSafeEqualString(queryState, statePayload.state)
     ) {
+      securityTelemetry.emit('login', 'failure', null, 'google-oauth')
       console.warn('[登入日誌] Google OAuth 登入失敗:', {
         timestamp: new Date().toISOString(),
         reason: 'invalid_state',
@@ -511,6 +515,7 @@ export function registerGoogleOAuthRoutes(
     }
 
     if (queryError || !queryCode) {
+      securityTelemetry.emit('login', 'failure', null, 'google-oauth')
       console.warn('[登入日誌] Google OAuth 登入失敗:', {
         timestamp: new Date().toISOString(),
         reason: queryError || 'missing_code',
@@ -539,6 +544,7 @@ export function registerGoogleOAuthRoutes(
       const cmsUser = await findOrBootstrapCmsUser(reqContext, googleIdentity)
 
       if (!cmsUser || !cmsUser.role) {
+        securityTelemetry.emit('login', 'failure', googleIdentity.email, 'google-oauth')
         console.warn('[登入日誌] Google OAuth 登入失敗:', {
           timestamp: new Date().toISOString(),
           reason: 'user_not_in_allowlist',
@@ -569,6 +575,7 @@ export function registerGoogleOAuthRoutes(
 
       appendSetCookieHeader(res, clearStateCookie)
 
+      securityTelemetry.emit('login', 'success', cmsUser.email, 'google-oauth')
       console.log('[登入日誌]', {
         timestamp: new Date().toISOString(),
         userId: cmsUser.id,
@@ -586,6 +593,7 @@ export function registerGoogleOAuthRoutes(
         errObj?.code === 'UNVERIFIED_EMAIL'
           ? 'unverified_email'
           : 'oauth_failed'
+      securityTelemetry.emit('login', 'failure', null, 'google-oauth')
       console.warn('[登入日誌] Google OAuth 登入失敗:', {
         timestamp: new Date().toISOString(),
         reason: errObj?.message || errorCode,

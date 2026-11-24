@@ -1,4 +1,9 @@
 steps:
+  - name: node:24-alpine
+    id: security-telemetry-tests
+    entrypoint: node
+    args: ["--test", "packages/eic/services/security-telemetry.test.js"]
+
   # Pull previous image
   - name: gcr.io/cloud-builders/docker
     args:
