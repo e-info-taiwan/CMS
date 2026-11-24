@@ -21,17 +21,19 @@ function createSecurityTelemetry({ secret, service = process.env.K_SERVICE || 'c
       return {
         async executionDidStart() {
           return {
-            willResolveField({ context, info }) {
-              if (info.path.prev) return
+            willResolveField({ context, contextValue, info }) {
+              const ctx = contextValue || context
+              if (!ctx || !info || info.path.prev) return
               const isMutation = info.parentType.name === 'Mutation'
-              const identity = context.session?.data?.email || context.session?.data?.id
+              const identity = ctx.session?.data?.email || ctx.session?.data?.id
               const field = info.fieldName
-              return (error) => {
+              return (error, result) => {
                 if (error) {
                   if (deniedCodes.has(error.extensions?.code)) emit('authorize', 'denied', identity, field)
                   return
                 }
-                if (!isMutation) return
+                if (!isMutation || result == null || result instanceof Error) return
+                if (Array.isArray(result) && !result.some(x => x != null && !(x instanceof Error) && typeof x.then !== 'function')) return
                 // Public member/newsletter actions are not inherently unauthorized.
                 const sensitive = /^(create|update|delete)(User|Post|Photo|Tag|Category|Section|Config|Author|Ad|HomepagePick|Topic|Event|Job)(s|Many)?$/.test(field)
                 if (identity) emit('admin-write', 'success', identity, field)

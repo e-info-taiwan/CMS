@@ -41,6 +41,9 @@ RUN if [ -d "local-core-lib" ]; then \
 
 RUN yarn postinstall
 
+## Verify telemetry against the installed Apollo runtime before deployment
+RUN node --test services/security-telemetry*.test.js
+
 ## Build application bundles
 RUN yarn build
 
